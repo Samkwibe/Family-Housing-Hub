@@ -1,0 +1,21 @@
+
+{
+    "common": {
+      "welcome": "Welcome",
+      "dashboard": "Dashboard",
+      "rent": "Rent",
+      "maintenance": "Maintenance",
+      "documents": "Documents",
+      "messages": "Messages",
+      "landlord": "Landlord",
+      "logout": "Logout"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "welcome": "Welcome back, {{name}}!",
+      "rentStatus": "Rent Status",
+      "maintenance": "Maintenance",
+      "documents": "Documents",
+      "messages": "Messages"
+    }
+  }

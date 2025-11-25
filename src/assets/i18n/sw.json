@@ -1,0 +1,21 @@
+{
+    "common": {
+      "welcome": "Karibu",
+      "dashboard": "Dashibodi",
+      "rent": "Kodi",
+      "maintenance": "Matengenezo",
+      "documents": "Nyaraka",
+      "messages": "Ujumbe",
+      "landlord": "Mwenye Nyumba",
+      "logout": "Toka"
+    },
+    "dashboard": {
+      "title": "Dashibodi",
+      "welcome": "Karibu tena, {{name}}!",
+      "rentStatus": "Hali ya Kodi",
+      "maintenance": "Matengenezo",
+      "documents": "Nyaraka",
+      "messages": "Ujumbe"
+    }
+  }
+  

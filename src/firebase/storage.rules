@@ -1,0 +1,53 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 5 * 1024 * 1024;
+    }
+    
+    function isValidDocument() {
+      return (request.resource.contentType.matches('image/.*') ||
+              request.resource.contentType == 'application/pdf') &&
+             request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // Profile photos - 5MB limit
+    match /profile-photos/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isOwner(userId) && isValidImage();
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Maintenance images - 5MB limit
+    match /maintenance/{userId}/{requestId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isOwner(userId) && isValidImage();
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Documents - 10MB limit
+    match /documents/{userId}/{fileName} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow write: if isAuthenticated() && isOwner(userId) && isValidDocument();
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Receipts - 10MB limit
+    match /receipts/{userId}/{paymentId}/{fileName} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow write: if isAuthenticated() && isOwner(userId) && isValidDocument();
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+  }
+}

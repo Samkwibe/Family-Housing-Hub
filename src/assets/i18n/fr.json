@@ -1,0 +1,21 @@
+
+{
+    "common": {
+      "welcome": "Bienvenue",
+      "dashboard": "Tableau de bord",
+      "rent": "Loyer",
+      "maintenance": "Entretien",
+      "documents": "Documents",
+      "messages": "Messages",
+      "landlord": "Propriétaire",
+      "logout": "Déconnexion"
+    },
+    "dashboard": {
+      "title": "Tableau de bord",
+      "welcome": "Bon retour, {{name}} !",
+      "rentStatus": "Statut du loyer",
+      "maintenance": "Entretien",
+      "documents": "Documents",
+      "messages": "Messages"
+    }
+  }

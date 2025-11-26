@@ -1,11 +1,13 @@
-// src/contexts/FamilyContext.jsx
+// src/contexts/FamilyContext.jsx - Complete Family Data Management
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { 
   maintenanceService, 
   rentService, 
-  documentService 
+  documentService,
+  messageService
 } from '../services/firebaseService';
+import toast from 'react-hot-toast';
 
 const FamilyContext = createContext();
 
@@ -18,10 +20,12 @@ export function FamilyProvider({ children }) {
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [rentPayments, setRentPayments] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState({
     maintenance: false,
     rent: false,
-    documents: false
+    documents: false,
+    messages: false
   });
 
   // Load maintenance requests
@@ -34,18 +38,13 @@ export function FamilyProvider({ children }) {
       setMaintenanceRequests(requests || []);
     } catch (error) {
       console.error('Error loading maintenance requests:', error);
-      // Set empty array instead of showing error for offline mode
       setMaintenanceRequests([]);
-      // Only show toast for non-offline errors
-      if (!error.message.includes('offline')) {
-        toast.error('Failed to load maintenance requests');
-      }
     } finally {
       setLoading(prev => ({ ...prev, maintenance: false }));
     }
   };
   
-  // Apply similar safe patterns to other load functions
+  // Load rent payments
   const loadRentPayments = async () => {
     if (!currentUser) return;
     
@@ -56,14 +55,12 @@ export function FamilyProvider({ children }) {
     } catch (error) {
       console.error('Error loading rent payments:', error);
       setRentPayments([]);
-      if (!error.message.includes('offline')) {
-        toast.error('Failed to load rent payments');
-      }
     } finally {
       setLoading(prev => ({ ...prev, rent: false }));
     }
   };
-  // laod codumrnts
+
+  // Load documents
   const loadDocuments = async () => {
     if (!currentUser) return;
     
@@ -74,11 +71,24 @@ export function FamilyProvider({ children }) {
     } catch (error) {
       console.error('Error loading documents:', error);
       setDocuments([]);
-      if (!error.message.includes('offline')) {
-        toast.error('Failed to load documents');
-      }
     } finally {
       setLoading(prev => ({ ...prev, documents: false }));
+    }
+  };
+
+  // Load messages
+  const loadMessages = async () => {
+    if (!currentUser) return;
+    
+    setLoading(prev => ({ ...prev, messages: true }));
+    try {
+      const msgs = await messageService.getUserMessages(currentUser.uid);
+      setMessages(msgs || []);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      setMessages([]);
+    } finally {
+      setLoading(prev => ({ ...prev, messages: false }));
     }
   };
 
@@ -86,61 +96,61 @@ export function FamilyProvider({ children }) {
   const submitMaintenanceRequest = async (requestData) => {
     if (!currentUser) throw new Error('Not authenticated');
 
-    try {
-      const requestId = await maintenanceService.createRequest(currentUser.uid, requestData);
-      await loadMaintenanceRequests(); // Reload to get the new request
-      toast.success('Maintenance request submitted!');
-      return requestId;
-    } catch (error) {
-      console.error('Error submitting maintenance request:', error);
-      toast.error('Failed to submit maintenance request');
-      throw error;
-    }
+    const requestId = await maintenanceService.createRequest(currentUser.uid, requestData);
+    await loadMaintenanceRequests();
+    return requestId;
   };
 
-  // Create rent payment
-  const createRentPayment = async (paymentData) => {
+  // Add rent payment (alias for compatibility)
+  const addRentPayment = async (paymentData) => {
     if (!currentUser) throw new Error('Not authenticated');
 
-    try {
-      const paymentId = await rentService.createPayment(currentUser.uid, paymentData);
-      await loadRentPayments(); // Reload to get the new payment
-      toast.success('Rent payment recorded!');
-      return paymentId;
-    } catch (error) {
-      console.error('Error creating rent payment:', error);
-      toast.error('Failed to record rent payment');
-      throw error;
-    }
+    const paymentId = await rentService.createPayment(currentUser.uid, paymentData);
+    await loadRentPayments();
+    return paymentId;
   };
 
-  // Upload document
-  const uploadDocument = async (documentData) => {
+  // Create rent payment (same as addRentPayment)
+  const createRentPayment = addRentPayment;
+
+  // Add document
+  const addDocument = async (documentData) => {
     if (!currentUser) throw new Error('Not authenticated');
 
-    try {
-      const docId = await documentService.uploadDocument(currentUser.uid, documentData);
-      await loadDocuments(); // Reload to get the new document
-      toast.success('Document uploaded successfully!');
-      return docId;
-    } catch (error) {
-      console.error('Error uploading document:', error);
-      toast.error('Failed to upload document');
-      throw error;
-    }
+    const docId = await documentService.uploadDocument(currentUser.uid, documentData);
+    await loadDocuments();
+    return docId;
   };
+
+  // Upload document (alias for compatibility)
+  const uploadDocument = addDocument;
 
   // Delete document
-  const deleteDocument = async (documentId, fileURL) => {
-    try {
-      await documentService.deleteDocument(documentId, fileURL);
-      await loadDocuments(); // Reload to reflect deletion
-      toast.success('Document deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting document:', error);
-      toast.error('Failed to delete document');
-      throw error;
-    }
+  const deleteDocument = async (documentId, filePath) => {
+    if (!currentUser) throw new Error('Not authenticated');
+
+    await documentService.deleteDocument(documentId, currentUser.uid, filePath);
+    await loadDocuments();
+  };
+
+  // Send message
+  const sendMessage = async (messageData) => {
+    if (!currentUser) throw new Error('Not authenticated');
+
+    const msgId = await messageService.sendMessage(currentUser.uid, {
+      ...messageData,
+      from: 'user'
+    });
+    await loadMessages();
+    return msgId;
+  };
+
+  // Mark message as read
+  const markMessageAsRead = async (messageId) => {
+    if (!currentUser) throw new Error('Not authenticated');
+
+    await messageService.markAsRead(messageId, currentUser.uid);
+    await loadMessages();
   };
 
   // Load all data when user changes
@@ -149,26 +159,45 @@ export function FamilyProvider({ children }) {
       loadMaintenanceRequests();
       loadRentPayments();
       loadDocuments();
+      loadMessages();
     } else {
       setMaintenanceRequests([]);
       setRentPayments([]);
       setDocuments([]);
+      setMessages([]);
     }
   }, [currentUser]);
 
   const value = {
+    // Data
     maintenanceRequests,
     rentPayments,
     documents,
+    messages,
     loading,
+    
+    // Maintenance functions
     submitMaintenanceRequest,
+    
+    // Rent functions
+    addRentPayment,
     createRentPayment,
+    
+    // Document functions
+    addDocument,
     uploadDocument,
     deleteDocument,
+    
+    // Message functions
+    sendMessage,
+    markMessageAsRead,
+    
+    // Utility
     refreshData: () => {
       loadMaintenanceRequests();
       loadRentPayments();
       loadDocuments();
+      loadMessages();
     }
   };
 

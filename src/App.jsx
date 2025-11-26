@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { FamilyProvider } from './contexts/FamilyContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingScreen from './components/LoadingScreen';
 import { Toaster } from 'react-hot-toast';
@@ -23,46 +24,55 @@ const Landlord = lazy(() => import('./pages/Landlord'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
 const HelpCenter = lazy(() => import('./pages/HelpCenter'));
+const ChildrenSavings = lazy(() => import('./pages/ChildrenSavings'));
+const FamilyHealth = lazy(() => import('./pages/FamilyHealth'));
+const Budget = lazy(() => import('./pages/Budget'));
+const FamilyCalendar = lazy(() => import('./pages/FamilyCalendar'));
+const CommunityResources = lazy(() => import('./pages/CommunityResources'));
+const AIAssistant = lazy(() => import('./pages/AIAssistant'));
+const ShoppingMeals = lazy(() => import('./pages/ShoppingMeals'));
+const FamilySafety = lazy(() => import('./pages/FamilySafety'));
+const Security = lazy(() => import('./pages/Security'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Protected Route with Onboarding Check
 const ProtectedRoute = ({ children }) => {
   const { currentUser, userProfile, profileComplete, loading } = useAuth();
   const location = useLocation();
-  
+
   if (loading) {
     return <LoadingScreen message="Verifying access..." />;
   }
-  
+
   if (!currentUser) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  
+
   // If profile is not complete and not on onboarding page
   if (!profileComplete && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
-  
+
   // If profile is complete but user is trying to access onboarding
   if (profileComplete && location.pathname === '/onboarding') {
     return <Navigate to="/" replace />;
   }
-  
+
   return children;
 };
 
 // Public Route Component
 const PublicRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
-  
+
   if (loading) {
     return <LoadingScreen message="Loading..." />;
   }
-  
+
   if (currentUser) {
     return <Navigate to="/" replace />;
   }
-  
+
   return children;
 };
 
@@ -77,20 +87,20 @@ const AppRouter = () => {
             <Login />
           </PublicRoute>
         } />
-        
+
         <Route path="/register" element={
           <PublicRoute>
             <Register />
           </PublicRoute>
         } />
-        
+
         {/* Onboarding Route (Protected but special) */}
         <Route path="/onboarding" element={
           <ProtectedRoute>
             <Onboarding />
           </ProtectedRoute>
         } />
-        
+
         {/* Protected Routes with Layout */}
         <Route path="/" element={
           <ProtectedRoute>
@@ -99,7 +109,7 @@ const AppRouter = () => {
             </Layout>
           </ProtectedRoute>
         } />
-        
+
         <Route path="/rent" element={
           <ProtectedRoute>
             <Layout>
@@ -107,7 +117,7 @@ const AppRouter = () => {
             </Layout>
           </ProtectedRoute>
         } />
-        
+
         <Route path="/maintenance" element={
           <ProtectedRoute>
             <Layout>
@@ -115,7 +125,7 @@ const AppRouter = () => {
             </Layout>
           </ProtectedRoute>
         } />
-        
+
         <Route path="/documents" element={
           <ProtectedRoute>
             <Layout>
@@ -123,7 +133,7 @@ const AppRouter = () => {
             </Layout>
           </ProtectedRoute>
         } />
-        
+
         <Route path="/messages" element={
           <ProtectedRoute>
             <Layout>
@@ -131,7 +141,7 @@ const AppRouter = () => {
             </Layout>
           </ProtectedRoute>
         } />
-        
+
         <Route path="/landlord" element={
           <ProtectedRoute>
             <Layout>
@@ -139,7 +149,7 @@ const AppRouter = () => {
             </Layout>
           </ProtectedRoute>
         } />
-        
+
         <Route path="/profile" element={
           <ProtectedRoute>
             <Layout>
@@ -147,7 +157,7 @@ const AppRouter = () => {
             </Layout>
           </ProtectedRoute>
         } />
-        
+
         <Route path="/settings" element={
           <ProtectedRoute>
             <Layout>
@@ -155,7 +165,7 @@ const AppRouter = () => {
             </Layout>
           </ProtectedRoute>
         } />
-        
+
         <Route path="/help" element={
           <ProtectedRoute>
             <Layout>
@@ -163,7 +173,79 @@ const AppRouter = () => {
             </Layout>
           </ProtectedRoute>
         } />
-        
+
+        <Route path="/children" element={
+          <ProtectedRoute>
+            <Layout>
+              <ChildrenSavings />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/health" element={
+          <ProtectedRoute>
+            <Layout>
+              <FamilyHealth />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/budget" element={
+          <ProtectedRoute>
+            <Layout>
+              <Budget />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/calendar" element={
+          <ProtectedRoute>
+            <Layout>
+              <FamilyCalendar />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/resources" element={
+          <ProtectedRoute>
+            <Layout>
+              <CommunityResources />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/assistant" element={
+          <ProtectedRoute>
+            <Layout>
+              <AIAssistant />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/shopping" element={
+          <ProtectedRoute>
+            <Layout>
+              <ShoppingMeals />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/safety" element={
+          <ProtectedRoute>
+            <Layout>
+              <FamilySafety />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/security" element={
+          <ProtectedRoute>
+            <Layout>
+              <Security />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
         {/* Fallback */}
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -193,64 +275,66 @@ function App() {
       <ThemeProvider>
         <Router>
           <AuthProvider>
-            <FamilyProvider>
-              <NotificationProvider>
-                <div className="App">
-                  {/* Offline Indicator */}
-                  {!isOnline && (
-                    <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-white px-4 py-2 text-center z-50">
-                      <p className="text-sm font-medium">
-                        ⚠️ You're currently offline. Some features may be limited.
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* Main App Content */}
-                  <AppRouter />
-                  
-                  {/* Global Toast Notifications */}
-                  <Toaster
-                    position="top-right"
-                    toastOptions={{
-                      duration: 4000,
-                      style: {
-                        background: '#363636',
-                        color: '#fff',
-                        borderRadius: '12px',
-                        fontSize: '14px',
-                        maxWidth: '500px',
-                        padding: '16px',
-                      },
-                      success: {
-                        duration: 3000,
+            <LanguageProvider>
+              <FamilyProvider>
+                <NotificationProvider>
+                  <div className="App">
+                    {/* Offline Indicator */}
+                    {!isOnline && (
+                      <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-white px-4 py-2 text-center z-50">
+                        <p className="text-sm font-medium">
+                          ⚠️ You're currently offline. Some features may be limited.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Main App Content */}
+                    <AppRouter />
+
+                    {/* Global Toast Notifications */}
+                    <Toaster
+                      position="top-right"
+                      toastOptions={{
+                        duration: 4000,
                         style: {
-                          background: '#10B981',
+                          background: '#363636',
+                          color: '#fff',
+                          borderRadius: '12px',
+                          fontSize: '14px',
+                          maxWidth: '500px',
+                          padding: '16px',
                         },
-                        iconTheme: {
-                          primary: '#fff',
-                          secondary: '#10B981',
+                        success: {
+                          duration: 3000,
+                          style: {
+                            background: '#10B981',
+                          },
+                          iconTheme: {
+                            primary: '#fff',
+                            secondary: '#10B981',
+                          },
                         },
-                      },
-                      error: {
-                        duration: 5000,
-                        style: {
-                          background: '#EF4444',
+                        error: {
+                          duration: 5000,
+                          style: {
+                            background: '#EF4444',
+                          },
+                          iconTheme: {
+                            primary: '#fff',
+                            secondary: '#EF4444',
+                          },
                         },
-                        iconTheme: {
-                          primary: '#fff',
-                          secondary: '#EF4444',
+                        loading: {
+                          style: {
+                            background: '#3B82F6',
+                          },
                         },
-                      },
-                      loading: {
-                        style: {
-                          background: '#3B82F6',
-                        },
-                      },
-                    }}
-                  />
-                </div>
-              </NotificationProvider>
-            </FamilyProvider>
+                      }}
+                    />
+                  </div>
+                </NotificationProvider>
+              </FamilyProvider>
+            </LanguageProvider>
           </AuthProvider>
         </Router>
       </ThemeProvider>

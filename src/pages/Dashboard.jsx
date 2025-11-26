@@ -345,7 +345,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
                     <p className="font-semibold text-gray-900">Total Paid This Year</p>
-                    <p className="text-sm text-gray-600">2024</p>
+                    <p className="text-sm text-gray-600">{new Date().getFullYear()}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-gray-900">

@@ -11,12 +11,7 @@ export default defineConfig({
       // Optimize JSX runtime
       jsxRuntime: 'automatic',
       // Babel config for better optimization
-      babel: {
-        plugins: [
-          // Remove console logs in production
-          process.env.NODE_ENV === 'production' && 'transform-remove-console'
-        ].filter(Boolean)
-      }
+      // Note: transform-remove-console removed to avoid dependency issues
     })
   ],
   

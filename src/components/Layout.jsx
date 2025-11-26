@@ -1,32 +1,49 @@
 // src/components/Layout.jsx
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Home, 
-  DollarSign, 
-  Wrench, 
-  FileText, 
+import {
+  Home,
+  DollarSign,
+  Wrench,
+  FileText,
   MessageCircle,
   Building,
   Menu,
   X,
   User,
-  Bell,
   LogOut,
   Settings,
   HelpCircle,
-  Shield
+  Shield,
+  PiggyBank,
+  Heart,
+  Wallet,
+  Calendar,
+  Users,
+  Zap,
+  ShoppingCart,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFamily } from '../contexts/FamilyContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import LangSwitch from './LangSwitch';
+import NotificationCenter from './NotificationCenter';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Rent', href: '/rent', icon: DollarSign },
+  { name: 'Budget', href: '/budget', icon: Wallet },
   { name: 'Maintenance', href: '/maintenance', icon: Wrench },
+  { name: 'Calendar', href: '/calendar', icon: Calendar },
+  { name: 'Shopping & Meals', href: '/shopping', icon: ShoppingCart },
   { name: 'Documents', href: '/documents', icon: FileText },
   { name: 'Messages', href: '/messages', icon: MessageCircle },
+  { name: 'Children', href: '/children', icon: PiggyBank },
+  { name: 'Health', href: '/health', icon: Heart },
+  { name: 'Safety', href: '/safety', icon: AlertTriangle },
+  { name: 'AI Assistant', href: '/assistant', icon: Zap },
+  { name: 'Resources', href: '/resources', icon: Users },
   { name: 'Landlord', href: '/landlord', icon: Building },
   { name: 'Profile', href: '/profile', icon: User },
 ];
@@ -54,8 +71,8 @@ export default function Layout({ children }) {
   const userMenuItems = [
     { name: 'Your Profile', icon: User, action: () => navigate('/profile') },
     { name: 'Settings', icon: Settings, action: () => navigate('/settings') },
+    { name: 'Security', icon: Shield, action: () => navigate('/security') },
     { name: 'Help & Support', icon: HelpCircle, action: () => navigate('/help') },
-    { name: 'Privacy & Security', icon: Shield, action: () => navigate('/privacy') },
   ];
 
   return (
@@ -63,7 +80,7 @@ export default function Layout({ children }) {
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div 
+          <div
             className="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity"
             onClick={() => setSidebarOpen(false)}
           />
@@ -71,9 +88,8 @@ export default function Layout({ children }) {
       )}
 
       {/* Mobile sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform lg:hidden ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
             <Home className="h-8 w-8 text-blue-600 mr-2" />
@@ -86,22 +102,21 @@ export default function Layout({ children }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        
+
         <nav className="mt-8 px-4 space-y-2">
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
-            
+
             return (
               <Link
                 key={item.name}
                 to={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? 'bg-blue-100 text-blue-700 shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
+                className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${isActive
+                  ? 'bg-blue-100 text-blue-700 shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
               >
                 <Icon className="h-5 w-5 mr-3" />
                 {item.name}
@@ -118,9 +133,19 @@ export default function Layout({ children }) {
         {/* Mobile user section */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <User className="h-5 w-5 text-blue-600" />
-            </div>
+            {userProfile?.photoURL ? (
+              <img
+                src={userProfile.photoURL}
+                alt={`${userProfile?.firstName || 'User'}'s avatar`}
+                className="h-10 w-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-blue-600 font-semibold text-sm">
+                  {userProfile?.firstName?.[0]}{userProfile?.lastName?.[0]}
+                </span>
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
                 {userProfile?.firstName} {userProfile?.lastName}
@@ -146,26 +171,24 @@ export default function Layout({ children }) {
             <Home className="h-8 w-8 text-blue-600 mr-2" />
             <span className="text-xl font-bold text-gray-900">FamilyHub</span>
           </div>
-          
+
           {/* Navigation */}
           <nav className="mt-8 flex-1 px-4 space-y-2">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
-              
+
               return (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-700 shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
+                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${isActive
+                    ? 'bg-blue-100 text-blue-700 shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
                 >
-                  <Icon className={`h-5 w-5 mr-3 transition-transform group-hover:scale-110 ${
-                    isActive ? 'text-blue-600' : 'text-gray-400'
-                  }`} />
+                  <Icon className={`h-5 w-5 mr-3 transition-transform group-hover:scale-110 ${isActive ? 'text-blue-600' : 'text-gray-400'
+                    }`} />
                   {item.name}
                   {item.name === 'Messages' && unreadMessages > 0 && (
                     <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -176,14 +199,24 @@ export default function Layout({ children }) {
               );
             })}
           </nav>
-          
+
           {/* User section */}
           <div className="flex-shrink-0 border-t border-gray-200 p-4">
             <div className="flex items-center">
               <div className="flex items-center flex-1 min-w-0">
-                <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-blue-600" />
-                </div>
+                {userProfile?.photoURL ? (
+                  <img
+                    src={userProfile.photoURL}
+                    alt={`${userProfile?.firstName || 'User'}'s avatar`}
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 font-semibold text-sm">
+                      {userProfile?.firstName?.[0]}{userProfile?.lastName?.[0]}
+                    </span>
+                  </div>
+                )}
                 <div className="ml-3 flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {userProfile?.firstName} {userProfile?.lastName}
@@ -267,20 +300,13 @@ export default function Layout({ children }) {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               {/* Language Switch */}
               <LangSwitch />
-              
+
               {/* Notifications */}
-              <button className="p-2 text-gray-600 hover:text-gray-900 transition-colors relative">
-                <Bell className="h-6 w-6" />
-                {unreadMessages > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {unreadMessages}
-                  </span>
-                )}
-              </button>
+              <NotificationCenter />
 
               {/* User profile */}
               <div className="relative">
@@ -294,9 +320,19 @@ export default function Layout({ children }) {
                     </p>
                     <p className="text-xs text-gray-500">Family</p>
                   </div>
-                  <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-blue-600" />
-                  </div>
+                  {userProfile?.photoURL ? (
+                    <img
+                      src={userProfile.photoURL}
+                      alt={`${userProfile?.firstName || 'User'}'s avatar`}
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-semibold text-sm">
+                        {userProfile?.firstName?.[0]}{userProfile?.lastName?.[0]}
+                      </span>
+                    </div>
+                  )}
                 </button>
 
                 {/* User dropdown menu for desktop */}

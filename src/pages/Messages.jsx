@@ -567,12 +567,19 @@ export default function Messages() {
           timestamp: serverTimestamp()
         } : null,
         attachments: attachmentUrls.length > 0 ? attachmentUrls : null,
-        // Sender info
-        senderName: `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim(),
-        senderEmail: userProfile?.email,
-        senderPhone: userProfile?.phone,
-        senderPhotoURL: userProfile?.photoURL
+        // Sender info - ensure no undefined values
+        senderName: `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || currentUser.displayName || 'User',
+        senderEmail: userProfile?.email || currentUser.email || null,
+        senderPhone: userProfile?.phone || null,
+        senderPhotoURL: userProfile?.photoURL || null
       };
+
+      // Remove undefined fields before sending to Firestore
+      Object.keys(messageData).forEach(key => {
+        if (messageData[key] === undefined) {
+          delete messageData[key];
+        }
+      });
 
       const messageRef = await addDoc(collection(db, 'messages'), messageData);
 

@@ -1,10 +1,15 @@
 // src/pages/Register.jsx
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
+import { Home, Eye, EyeOff, Mail, Lock, User, Phone, CheckCircle } from 'lucide-react';
+import { familyInvitationService } from '../services/firebaseService';
+import toast from 'react-hot-toast';
 
 export default function Register() {
+  const [searchParams] = useSearchParams();
+  const invitationId = searchParams.get('invitation');
+  
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -16,8 +21,28 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [invitation, setInvitation] = useState(null);
+  const [checkingInvitation, setCheckingInvitation] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
+
+  // Check for invitation on mount
+  useEffect(() => {
+    const checkInvitation = async () => {
+      if (invitationId) {
+        setCheckingInvitation(true);
+        try {
+          // In a real app, you'd fetch the invitation by ID
+          // For now, we'll check by email when they register
+          setCheckingInvitation(false);
+        } catch (error) {
+          console.error('Error checking invitation:', error);
+          setCheckingInvitation(false);
+        }
+      }
+    };
+    checkInvitation();
+  }, [invitationId]);
 
   function handleChange(e) {
     setFormData(prev => ({
@@ -41,12 +66,28 @@ export default function Register() {
 
     try {
       setLoading(true);
-      await signup(formData.email, formData.password, {
+      
+      // Check for pending invitations by email
+      const invitations = await familyInvitationService.getInvitationsByEmail(formData.email);
+      
+      const userCredential = await signup(formData.email, formData.password, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
         familyMembers: []
       });
+
+      // If there's a pending invitation, accept it automatically
+      if (invitations.length > 0) {
+        try {
+          await familyInvitationService.acceptInvitation(invitations[0].id, userCredential.user.uid);
+          toast.success('Welcome! You\'ve been added to the family account.');
+        } catch (invError) {
+          console.error('Error accepting invitation:', invError);
+          // Continue with registration even if invitation acceptance fails
+        }
+      }
+
       navigate('/');
     } catch (error) {
       console.error('Signup error:', error);

@@ -1,5 +1,5 @@
 // src/pages/Messages.jsx - Real User-to-User Messaging System
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Send,
@@ -200,13 +200,23 @@ export default function Messages() {
       where('receiverId', '==', currentUser.uid)
     );
 
-    const unsubscribeSent = onSnapshot(sentQuery, (snapshot) => {
-      updateMessages(snapshot, 'sent');
-    });
+    const unsubscribeSent = onSnapshot(sentQuery,
+      (snapshot) => {
+        updateMessages(snapshot, 'sent');
+      },
+      (error) => {
+        console.error('Error listening to sent messages:', error);
+      }
+    );
 
-    const unsubscribeReceived = onSnapshot(receivedQuery, (snapshot) => {
-      updateMessages(snapshot, 'received');
-    });
+    const unsubscribeReceived = onSnapshot(receivedQuery,
+      (snapshot) => {
+        updateMessages(snapshot, 'received');
+      },
+      (error) => {
+        console.error('Error listening to received messages:', error);
+      }
+    );
 
     return () => {
       unsubscribeSent();
@@ -215,7 +225,9 @@ export default function Messages() {
   }, [currentUser]);
 
   const updateMessages = (snapshot, type) => {
-    const newMessages = snapshot.docs.map(doc => ({
+    // Handle both initial load and updates
+    const changes = snapshot.docChanges();
+    const allMessages = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt?.toDate(),
@@ -224,13 +236,33 @@ export default function Messages() {
     }));
 
     setMessages(prev => {
-      const combined = [...prev, ...newMessages];
-      // Remove duplicates
-      const unique = combined.filter((msg, index, self) =>
-        index === self.findIndex(m => m.id === msg.id)
-      );
-      return unique.sort((a, b) => (a.createdAt || new Date()) - (b.createdAt || new Date()));
+      // Create a map for quick lookup
+      const messageMap = new Map();
+
+      // Add existing messages to map
+      prev.forEach(msg => {
+        messageMap.set(msg.id, msg);
+      });
+
+      // Update or add new/updated messages
+      allMessages.forEach(msg => {
+        messageMap.set(msg.id, msg);
+      });
+
+      // Convert back to array and sort
+      const unique = Array.from(messageMap.values());
+      return unique.sort((a, b) => {
+        const aTime = a.createdAt || a.sentAt || new Date(0);
+        const bTime = b.createdAt || b.sentAt || new Date(0);
+        return aTime - bTime;
+      });
     });
+
+    // Log new messages for debugging
+    const addedMessages = changes.filter(change => change.type === 'added');
+    if (addedMessages.length > 0) {
+      console.log(`New ${type} messages received:`, addedMessages.length);
+    }
   };
 
   // Group messages into conversations
@@ -321,10 +353,26 @@ export default function Messages() {
 
   // Get current conversation messages
   const currentConversation = conversations.find(c => c.id === selectedConversation);
-  const currentMessages = currentConversation?.messages || [];
+
+  // Get messages for current conversation - filter directly from messages array
+  // This ensures we always have the latest messages even if conversation hasn't updated yet
+  const currentMessages = useMemo(() => {
+    if (!selectedConversation || !currentUser) return [];
+
+    // Filter messages that belong to this conversation
+    return messages.filter(msg => {
+      const msgConversationId = [msg.senderId, msg.receiverId].sort().join('_');
+      return msgConversationId === selectedConversation;
+    }).sort((a, b) => {
+      const aTime = a.createdAt || a.sentAt || new Date(0);
+      const bTime = b.createdAt || b.sentAt || new Date(0);
+      return aTime - bTime;
+    });
+  }, [messages, selectedConversation, currentUser]);
 
   // Get user info for selected conversation
-  const otherUser = currentConversation?.otherUser;
+  // Use selectedUser if available (new conversation), otherwise use conversation's otherUser
+  const otherUser = selectedUser || currentConversation?.otherUser;
 
   // Search users
   const filteredUsers = allUsers.filter(user => {
@@ -336,13 +384,25 @@ export default function Messages() {
   });
 
   // Start conversation with a user
-  const startConversation = (user) => {
+  const startConversation = async (user) => {
     const conversationId = [currentUser.uid, user.id].sort().join('_');
-    setSelectedUser(user);
-    setSelectedConversation(conversationId);
+
+    // Check if conversation already exists
+    const existingConvo = conversations.find(c => c.id === conversationId);
+
+    if (existingConvo) {
+      // Conversation exists, use it
+      setSelectedConversation(conversationId);
+      setSelectedUser(null); // Clear selectedUser since we have conversation data
+      markConversationRead(conversationId);
+    } else {
+      // New conversation, set selectedUser to show chat interface
+      setSelectedUser(user);
+      setSelectedConversation(conversationId);
+    }
+
     setShowUserSearch(false);
     setShowNewMessage(false);
-    markConversationRead(conversationId);
   };
 
   // Get user location
@@ -449,7 +509,7 @@ export default function Messages() {
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
-    if (!selectedUser && !selectedConversation) {
+    if (!selectedUser && !selectedConversation && !otherUser) {
       toast.error('Please select a user to message');
       return;
     }
@@ -467,6 +527,9 @@ export default function Messages() {
         receiverId = selectedUser.id;
       } else if (currentConversation) {
         receiverId = currentConversation.otherUserId;
+      } else if (otherUser) {
+        // Fallback: use otherUser if available
+        receiverId = otherUser.id;
       } else {
         toast.error('No recipient selected');
         return;
@@ -511,24 +574,18 @@ export default function Messages() {
         senderPhotoURL: userProfile?.photoURL
       };
 
-      await addDoc(collection(db, 'messages'), messageData);
+      const messageRef = await addDoc(collection(db, 'messages'), messageData);
 
       // Mark as read for sender (they see it immediately)
-      setTimeout(async () => {
-        const newMessages = await getDocs(query(
-          collection(db, 'messages'),
-          where('senderId', '==', currentUser.uid),
-          where('receiverId', '==', receiverId),
-          orderBy('createdAt', 'desc'),
-          limit(1)
-        ));
-        if (!newMessages.empty) {
-          await updateDoc(doc(db, 'messages', newMessages.docs[0].id), {
-            read: true,
-            readAt: serverTimestamp()
-          });
-        }
-      }, 100);
+      // Update the message we just created directly
+      try {
+        await updateDoc(messageRef, {
+          read: true,
+          readAt: serverTimestamp()
+        });
+      } catch (err) {
+        console.warn('Could not mark message as read:', err);
+      }
 
       // Reset form
       setNewMessage('');
@@ -544,7 +601,18 @@ export default function Messages() {
       toast.success('Message sent!');
     } catch (error) {
       console.error('Send message error:', error);
-      toast.error('Failed to send message');
+      let errorMessage = 'Failed to send message';
+
+      // Provide more specific error messages
+      if (error.code === 'permission-denied') {
+        errorMessage = 'Permission denied. Please check your account permissions.';
+      } else if (error.code === 'unavailable') {
+        errorMessage = 'Service temporarily unavailable. Please try again.';
+      } else if (error.message) {
+        errorMessage = `Failed to send: ${error.message}`;
+      }
+
+      toast.error(errorMessage);
     } finally {
       setSending(false);
     }
@@ -810,7 +878,7 @@ export default function Messages() {
                   )}
                 </div>
               </div>
-            ) : selectedConversation && otherUser ? (
+            ) : (selectedConversation || selectedUser) && otherUser ? (
               /* Conversation View */
               <>
                 {/* Chat Header */}
@@ -876,94 +944,101 @@ export default function Messages() {
 
                 {/* Messages */}
                 <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50">
-                  {currentMessages.map((message, index) => {
-                    const isSent = message.senderId === currentUser.uid;
+                  {currentMessages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                      <MessageCircle className="h-16 w-16 text-gray-300 mb-4" />
+                      <p className="text-gray-500 font-medium mb-2">No messages yet</p>
+                      <p className="text-sm text-gray-400">Start the conversation by sending a message below</p>
+                    </div>
+                  ) : (
+                    currentMessages.map((message, index) => {
+                      const isSent = message.senderId === currentUser.uid;
 
-                    return (
-                      <div
-                        key={message.id || index}
-                        className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-xs lg:max-w-md ${isSent ? 'order-2' : 'order-1'}`}>
-                          {message.location && (
-                            <div className="mb-2 p-3 bg-white border border-gray-200 rounded-xl">
-                              <div className="flex items-center gap-2 mb-2">
-                                <MapPin className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm font-medium text-gray-900">Location</span>
-                              </div>
-                              <a
-                                href={`https://www.google.com/maps?q=${message.location.lat},${message.location.lng}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                              >
-                                <Navigation className="h-3 w-3" />
-                                View on Google Maps
-                              </a>
-                            </div>
-                          )}
-
-                          {message.attachments && message.attachments.length > 0 && (
-                            <div className="mb-2 space-y-2">
-                              {message.attachments.map((att, i) => (
-                                <div key={i} className="bg-white border border-gray-200 rounded-xl p-3">
-                                  {att.type === 'image' && (
-                                    <img src={att.url} alt={att.name} className="w-full rounded-lg mb-2" />
-                                  )}
-                                  {att.type === 'video' && (
-                                    <video src={att.url} controls className="w-full rounded-lg mb-2" />
-                                  )}
-                                  {att.type === 'audio' && (
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                        <Mic className="h-6 w-6 text-purple-600" />
-                                      </div>
-                                      <audio src={att.url} controls className="flex-1" />
-                                    </div>
-                                  )}
-                                  {att.type === 'file' && (
-                                    <div className="flex items-center gap-3">
-                                      <File className="h-8 w-8 text-blue-600" />
-                                      <div className="flex-1">
-                                        <p className="text-sm font-medium">{att.name}</p>
-                                        <a href={att.url} download className="text-xs text-blue-600 hover:text-blue-700">
-                                          Download
-                                        </a>
-                                      </div>
-                                    </div>
-                                  )}
+                      return (
+                        <div
+                          key={message.id || index}
+                          className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div className={`max-w-xs lg:max-w-md ${isSent ? 'order-2' : 'order-1'}`}>
+                            {message.location && (
+                              <div className="mb-2 p-3 bg-white border border-gray-200 rounded-xl">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <MapPin className="h-4 w-4 text-blue-600" />
+                                  <span className="text-sm font-medium text-gray-900">Location</span>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {message.message && (
-                            <div
-                              className={`px-4 py-3 rounded-2xl ${isSent
-                                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-md'
-                                : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100'
-                                }`}
-                            >
-                              <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                            </div>
-                          )}
-
-                          <div className={`flex items-center mt-1 space-x-1 ${isSent ? 'justify-end' : 'justify-start'
-                            }`}>
-                            <p className="text-xs text-gray-400">
-                              {formatTime(message.createdAt)}
-                            </p>
-                            {isSent && (
-                              <MessageStatus status={message.status} readAt={message.readAt} />
+                                <a
+                                  href={`https://www.google.com/maps?q=${message.location.lat},${message.location.lng}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                >
+                                  <Navigation className="h-3 w-3" />
+                                  View on Google Maps
+                                </a>
+                              </div>
                             )}
-                            {!isSent && message.read && (
-                              <Eye className="h-3 w-3 text-blue-500" />
+
+                            {message.attachments && message.attachments.length > 0 && (
+                              <div className="mb-2 space-y-2">
+                                {message.attachments.map((att, i) => (
+                                  <div key={i} className="bg-white border border-gray-200 rounded-xl p-3">
+                                    {att.type === 'image' && (
+                                      <img src={att.url} alt={att.name} className="w-full rounded-lg mb-2" />
+                                    )}
+                                    {att.type === 'video' && (
+                                      <video src={att.url} controls className="w-full rounded-lg mb-2" />
+                                    )}
+                                    {att.type === 'audio' && (
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                          <Mic className="h-6 w-6 text-purple-600" />
+                                        </div>
+                                        <audio src={att.url} controls className="flex-1" />
+                                      </div>
+                                    )}
+                                    {att.type === 'file' && (
+                                      <div className="flex items-center gap-3">
+                                        <File className="h-8 w-8 text-blue-600" />
+                                        <div className="flex-1">
+                                          <p className="text-sm font-medium">{att.name}</p>
+                                          <a href={att.url} download className="text-xs text-blue-600 hover:text-blue-700">
+                                            Download
+                                          </a>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
                             )}
+
+                            {message.message && (
+                              <div
+                                className={`px-4 py-3 rounded-2xl ${isSent
+                                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-md'
+                                  : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100'
+                                  }`}
+                              >
+                                <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                              </div>
+                            )}
+
+                            <div className={`flex items-center mt-1 space-x-1 ${isSent ? 'justify-end' : 'justify-start'
+                              }`}>
+                              <p className="text-xs text-gray-400">
+                                {formatTime(message.createdAt)}
+                              </p>
+                              {isSent && (
+                                <MessageStatus status={message.status} readAt={message.readAt} />
+                              )}
+                              {!isSent && message.read && (
+                                <Eye className="h-3 w-3 text-blue-500" />
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    }))}
 
                   {isTyping && (
                     <div className="flex justify-start">

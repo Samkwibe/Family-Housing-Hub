@@ -1,14 +1,14 @@
 // src/pages/Profile.jsx - Enhanced User Profile
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Camera, 
-  Save, 
-  Edit3, 
-  Lock, 
+import {
+  User,
+  Mail,
+  Phone,
+  Camera,
+  Save,
+  Edit3,
+  Lock,
   Shield,
   Upload,
   X,
@@ -31,23 +31,27 @@ import {
   ExternalLink
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { familyInvitationService } from '../services/firebaseService';
 
 export default function Profile() {
-  const { 
-    userProfile, 
+  const {
+    userProfile,
     currentUser,
-    updateUserProfile, 
+    updateUserProfile,
     uploadProfilePhoto,
     addFamilyMember,
     removeFamilyMember,
     updateLeaseInfo
   } = useAuth();
-  
+
   const [activeTab, setActiveTab] = useState('overview');
   const [editMode, setEditMode] = useState({});
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showAddMember, setShowAddMember] = useState(false);
+  const [showInviteMember, setShowInviteMember] = useState(false);
+  const [sentInvitations, setSentInvitations] = useState([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(false);
 
   // New family member form
   const [newMember, setNewMember] = useState({
@@ -57,14 +61,41 @@ export default function Profile() {
     phoneNumber: ''
   });
 
+  // Invitation form
+  const [invitationForm, setInvitationForm] = useState({
+    inviteeName: '',
+    inviteeEmail: '',
+    inviteePhone: '',
+    relationship: 'Family Member'
+  });
+
+  // Load sent invitations
+  useEffect(() => {
+    if (currentUser) {
+      loadSentInvitations();
+    }
+  }, [currentUser]);
+
+  const loadSentInvitations = async () => {
+    setLoadingInvitations(true);
+    try {
+      const invitations = await familyInvitationService.getSentInvitations(currentUser.uid);
+      setSentInvitations(invitations);
+    } catch (error) {
+      console.error('Error loading invitations:', error);
+    } finally {
+      setLoadingInvitations(false);
+    }
+  };
+
   // Format date helper
   const formatDate = (date) => {
     if (!date) return 'Not set';
     const d = new Date(date);
-    return d.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
@@ -123,9 +154,9 @@ export default function Profile() {
         <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-1 shadow-xl">
           <div className="w-full h-full rounded-xl bg-white overflow-hidden flex items-center justify-center">
             {userProfile?.photoURL || photoPreview ? (
-              <img 
-                src={photoPreview || userProfile.photoURL} 
-                alt="Profile" 
+              <img
+                src={photoPreview || userProfile.photoURL}
+                alt="Profile"
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -137,8 +168,8 @@ export default function Profile() {
             )}
           </div>
         </div>
-        <label 
-          htmlFor="photo-upload" 
+        <label
+          htmlFor="photo-upload"
           className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-3 rounded-xl cursor-pointer hover:bg-blue-700 transition-all shadow-lg hover:scale-110"
         >
           <Camera className="h-5 w-5" />
@@ -179,7 +210,7 @@ export default function Profile() {
     const handleSubmit = async (e) => {
       e.preventDefault();
       setLoading(true);
-      
+
       try {
         await updateUserProfile(localData);
         setEditMode(prev => ({ ...prev, personal: false }));
@@ -224,15 +255,15 @@ export default function Profile() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-          <input
-            type="tel"
-            value={localData.phone}
-            onChange={(e) => setLocalData(prev => ({ ...prev, phone: e.target.value }))}
+            <input
+              type="tel"
+              value={localData.phone}
+              onChange={(e) => setLocalData(prev => ({ ...prev, phone: e.target.value }))}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            placeholder="+1 (555) 123-4567"
-          />
+              placeholder="+1 (555) 123-4567"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
@@ -250,15 +281,15 @@ export default function Profile() {
             <MapPin className="h-5 w-5 text-blue-600" />
             <span>Address Information</span>
           </h4>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-3">
               <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
               <input
                 type="text"
                 value={localData.address.street}
-                onChange={(e) => setLocalData(prev => ({ 
-                  ...prev, 
+                onChange={(e) => setLocalData(prev => ({
+                  ...prev,
                   address: { ...prev.address, street: e.target.value }
                 }))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -269,8 +300,8 @@ export default function Profile() {
               <input
                 type="text"
                 value={localData.address.unit}
-                onChange={(e) => setLocalData(prev => ({ 
-                  ...prev, 
+                onChange={(e) => setLocalData(prev => ({
+                  ...prev,
                   address: { ...prev.address, unit: e.target.value }
                 }))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -282,8 +313,8 @@ export default function Profile() {
               <input
                 type="text"
                 value={localData.address.city}
-                onChange={(e) => setLocalData(prev => ({ 
-                  ...prev, 
+                onChange={(e) => setLocalData(prev => ({
+                  ...prev,
                   address: { ...prev.address, city: e.target.value }
                 }))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -293,8 +324,8 @@ export default function Profile() {
               <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
               <select
                 value={localData.address.state}
-                onChange={(e) => setLocalData(prev => ({ 
-                  ...prev, 
+                onChange={(e) => setLocalData(prev => ({
+                  ...prev,
                   address: { ...prev.address, state: e.target.value }
                 }))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
@@ -310,8 +341,8 @@ export default function Profile() {
               <input
                 type="text"
                 value={localData.address.zipCode}
-                onChange={(e) => setLocalData(prev => ({ 
-                  ...prev, 
+                onChange={(e) => setLocalData(prev => ({
+                  ...prev,
                   address: { ...prev.address, zipCode: e.target.value }
                 }))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -363,9 +394,40 @@ export default function Profile() {
       }
     };
 
+    const handleSendInvitation = async (e) => {
+      e.preventDefault();
+      if (!invitationForm.inviteeEmail && !invitationForm.inviteePhone) {
+        toast.error('Please provide either email or phone number');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await familyInvitationService.createInvitation(currentUser.uid, {
+          inviterName: `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || 'Family Member',
+          inviterEmail: userProfile?.email || currentUser.email,
+          inviteeName: invitationForm.inviteeName,
+          inviteeEmail: invitationForm.inviteeEmail,
+          inviteePhone: invitationForm.inviteePhone,
+          relationship: invitationForm.relationship,
+          familyId: userProfile?.familyId || currentUser.uid
+        });
+
+        toast.success('Invitation sent! They will receive an email/SMS to join your family.');
+        setInvitationForm({ inviteeName: '', inviteeEmail: '', inviteePhone: '', relationship: 'Family Member' });
+        setShowInviteMember(false);
+        loadSentInvitations(); // Refresh invitations list
+      } catch (error) {
+        console.error('Error sending invitation:', error);
+        toast.error('Failed to send invitation. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const handleRemoveMember = async (memberId) => {
       if (!window.confirm('Are you sure you want to remove this family member?')) return;
-      
+
       try {
         await removeFamilyMember(memberId);
       } catch (error) {
@@ -385,13 +447,22 @@ export default function Profile() {
               {familyMembers.length}
             </span>
           </h3>
-          <button
-            onClick={() => setShowAddMember(!showAddMember)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Member</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowInviteMember(true)}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-colors flex items-center space-x-2"
+            >
+              <Mail className="h-4 w-4" />
+              <span>Invite Member</span>
+            </button>
+            <button
+              onClick={() => setShowAddMember(!showAddMember)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Member</span>
+            </button>
+          </div>
         </div>
 
         {/* Add Member Form */}
@@ -399,17 +470,17 @@ export default function Profile() {
           <form onSubmit={handleAddMember} className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <h4 className="font-medium text-blue-900 mb-4">Add New Family Member</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-              <input
+                <input
                   type="text"
                   value={newMember.name}
                   onChange={(e) => setNewMember(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="John Doe"
-              />
-            </div>
-            <div>
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Relationship *</label>
                 <select
                   value={newMember.relationship}
@@ -426,7 +497,7 @@ export default function Profile() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
-              <input
+                <input
                   type="number"
                   value={newMember.age}
                   onChange={(e) => setNewMember(prev => ({ ...prev, age: e.target.value }))}
@@ -434,11 +505,11 @@ export default function Profile() {
                   placeholder="25"
                   min="0"
                   max="120"
-              />
-            </div>
-            <div>
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
-              <input
+                <input
                   type="tel"
                   value={newMember.phoneNumber}
                   onChange={(e) => setNewMember(prev => ({ ...prev, phoneNumber: e.target.value }))}
@@ -455,22 +526,121 @@ export default function Profile() {
               >
                 Cancel
               </button>
-            <button
-              type="submit"
-              disabled={loading}
+              <button
+                type="submit"
+                disabled={loading}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
-            >
+              >
                 {loading ? 'Adding...' : 'Add Member'}
-            </button>
+              </button>
             </div>
           </form>
+        )}
+
+        {/* Invite Member Modal */}
+        {showInviteMember && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-purple-600" />
+                    Invite Family Member
+                  </h2>
+                  <button
+                    onClick={() => setShowInviteMember(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="h-5 w-5 text-gray-500" />
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  Invite someone to join your family account. They'll receive an invitation to create an account and link to your family.
+                </p>
+              </div>
+
+              <form onSubmit={handleSendInvitation} className="p-6 space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Their Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={invitationForm.inviteeName}
+                    onChange={(e) => setInvitationForm(prev => ({ ...prev, inviteeName: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+                    placeholder="John Doe"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                  <input
+                    type="email"
+                    value={invitationForm.inviteeEmail}
+                    onChange={(e) => setInvitationForm(prev => ({ ...prev, inviteeEmail: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+                    placeholder="john@example.com"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Required if phone number is not provided</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={invitationForm.inviteePhone}
+                    onChange={(e) => setInvitationForm(prev => ({ ...prev, inviteePhone: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+                    placeholder="+1 (555) 123-4567"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Required if email is not provided</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Relationship</label>
+                  <select
+                    value={invitationForm.relationship}
+                    onChange={(e) => setInvitationForm(prev => ({ ...prev, relationship: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white"
+                  >
+                    <option value="Family Member">Family Member</option>
+                    <option value="Spouse">Spouse</option>
+                    <option value="Child">Child</option>
+                    <option value="Parent">Parent</option>
+                    <option value="Sibling">Sibling</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowInviteMember(false);
+                      setInvitationForm({ inviteeName: '', inviteeEmail: '', inviteePhone: '', relationship: 'Family Member' });
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || (!invitationForm.inviteeEmail && !invitationForm.inviteePhone)}
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
+                  >
+                    {loading ? 'Sending...' : 'Send Invitation'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
 
         {/* Members List */}
         {familyMembers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {familyMembers.map((member, index) => (
-              <div 
+              <div
                 key={member.id || index}
                 className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
               >
@@ -515,6 +685,60 @@ export default function Profile() {
             <p className="text-sm text-gray-400">Click "Add Member" to add family members</p>
           </div>
         )}
+
+        {/* Sent Invitations */}
+        {sentInvitations.length > 0 && (
+          <div className="mt-8">
+            <h4 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Mail className="h-4 w-4 text-purple-600" />
+              Sent Invitations ({sentInvitations.filter(i => i.status === 'pending').length} pending)
+            </h4>
+            <div className="space-y-3">
+              {sentInvitations.map((invitation) => (
+                <div
+                  key={invitation.id}
+                  className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-medium text-gray-900">{invitation.inviteeName || invitation.inviteeEmail}</p>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${invitation.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                          invitation.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                            invitation.status === 'declined' ? 'bg-red-100 text-red-700' :
+                              'bg-gray-100 text-gray-700'
+                        }`}>
+                        {invitation.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500">{invitation.inviteeEmail || invitation.inviteePhone}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Sent {invitation.createdAt ? new Date(invitation.createdAt).toLocaleDateString() : 'recently'}
+                      {invitation.status === 'accepted' && invitation.acceptedAt && (
+                        <span> • Accepted {new Date(invitation.acceptedAt).toLocaleDateString()}</span>
+                      )}
+                    </p>
+                  </div>
+                  {invitation.status === 'pending' && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await familyInvitationService.cancelInvitation(invitation.id, currentUser.uid);
+                          toast.success('Invitation cancelled');
+                          loadSentInvitations();
+                        } catch (error) {
+                          toast.error('Failed to cancel invitation');
+                        }
+                      }}
+                      className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -555,15 +779,15 @@ export default function Profile() {
             email: leaseData.landlordEmail
           }
         };
-        
+
         if (housingStatus === 'own') {
           updateData.mortgage = { monthlyPayment: leaseData.mortgageAmount };
-          updateData.property = { 
+          updateData.property = {
             value: leaseData.propertyValue,
             purchaseDate: leaseData.purchaseDate
           };
         }
-        
+
         await updateUserProfile(updateData);
         setEditLease(false);
         toast.success('Housing information updated!');
@@ -602,11 +826,10 @@ export default function Profile() {
                 <button
                   type="button"
                   onClick={() => setHousingStatus('rent')}
-                  className={`flex-1 py-4 px-6 rounded-xl border-2 font-semibold transition-all flex flex-col items-center ${
-                    housingStatus === 'rent'
+                  className={`flex-1 py-4 px-6 rounded-xl border-2 font-semibold transition-all flex flex-col items-center ${housingStatus === 'rent'
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
                       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <DollarSign className="h-8 w-8 mb-2" />
                   <span>I Rent</span>
@@ -615,11 +838,10 @@ export default function Profile() {
                 <button
                   type="button"
                   onClick={() => setHousingStatus('own')}
-                  className={`flex-1 py-4 px-6 rounded-xl border-2 font-semibold transition-all flex flex-col items-center ${
-                    housingStatus === 'own'
+                  className={`flex-1 py-4 px-6 rounded-xl border-2 font-semibold transition-all flex flex-col items-center ${housingStatus === 'own'
                       ? 'border-green-500 bg-green-50 text-green-700'
                       : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <Home className="h-8 w-8 mb-2" />
                   <span>I Own</span>
@@ -761,11 +983,10 @@ export default function Profile() {
             <button
               type="submit"
               disabled={loading}
-              className={`px-6 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 ${
-                housingStatus === 'own'
+              className={`px-6 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 ${housingStatus === 'own'
                   ? 'bg-green-600 text-white hover:bg-green-700'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
+                }`}
             >
               {loading ? 'Saving...' : 'Save Housing Info'}
             </button>
@@ -773,11 +994,10 @@ export default function Profile() {
         ) : (
           <div className="space-y-6">
             {/* Housing Status Badge */}
-            <div className={`inline-flex items-center px-4 py-2 rounded-full font-medium ${
-              currentHousingStatus === 'own'
+            <div className={`inline-flex items-center px-4 py-2 rounded-full font-medium ${currentHousingStatus === 'own'
                 ? 'bg-green-100 text-green-700'
                 : 'bg-blue-100 text-blue-700'
-            }`}>
+              }`}>
               {currentHousingStatus === 'own' ? (
                 <><Home className="h-4 w-4 mr-2" /> Homeowner</>
               ) : (
@@ -802,7 +1022,7 @@ export default function Profile() {
                       </p>
                     )}
                   </div>
-                  
+
                   <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
                     <div className="flex items-center space-x-2 text-blue-700 mb-2">
                       <DollarSign className="h-4 w-4" />
@@ -940,7 +1160,7 @@ export default function Profile() {
               {userProfile?.firstName} {userProfile?.lastName}
             </h1>
             <p className="text-blue-100 mb-4">{userProfile?.email}</p>
-            
+
             <div className="flex flex-wrap justify-center md:justify-start gap-3">
               {userProfile?.phone && (
                 <span className="inline-flex items-center px-3 py-1 bg-white/20 rounded-full text-sm">
@@ -954,11 +1174,10 @@ export default function Profile() {
                   {userProfile.address.city}, {userProfile.address.state}
                 </span>
               )}
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                userProfile?.profileComplete 
-                  ? 'bg-green-500/30 text-green-100' 
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${userProfile?.profileComplete
+                  ? 'bg-green-500/30 text-green-100'
                   : 'bg-orange-500/30 text-orange-100'
-              }`}>
+                }`}>
                 {userProfile?.profileComplete ? (
                   <><Check className="h-3 w-3 mr-1" /> Verified</>
                 ) : (
@@ -987,19 +1206,18 @@ export default function Profile() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="flex overflow-x-auto border-b border-gray-200">
           {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
+                }`}
+            >
               <tab.icon className="h-4 w-4" />
               <span>{tab.label}</span>
-                </button>
-              ))}
+            </button>
+          ))}
         </div>
 
         <div className="p-6">
@@ -1105,33 +1323,33 @@ export default function Profile() {
           )}
 
           {/* Personal Info Tab */}
-            {activeTab === 'personal' && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
+          {activeTab === 'personal' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Personal Information</h2>
-                  {!editMode.personal && (
-                    <button
-                      onClick={() => setEditMode(prev => ({ ...prev, personal: true }))}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                    >
-                      <Edit3 className="h-4 w-4" />
+                {!editMode.personal && (
+                  <button
+                    onClick={() => setEditMode(prev => ({ ...prev, personal: true }))}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Edit3 className="h-4 w-4" />
                     <span>Edit</span>
-                    </button>
-                  )}
-                </div>
-                {editMode.personal ? (
-                  <PersonalInfoForm />
-                ) : (
+                  </button>
+                )}
+              </div>
+              {editMode.personal ? (
+                <PersonalInfoForm />
+              ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                      <div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">First Name</label>
                       <p className="text-lg font-medium text-gray-900">{userProfile?.firstName || 'Not set'}</p>
-                      </div>
-                      <div>
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Last Name</label>
                       <p className="text-lg font-medium text-gray-900">{userProfile?.lastName || 'Not set'}</p>
-                      </div>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
                       <p className="text-lg font-medium text-gray-900">{userProfile?.email}</p>
@@ -1153,15 +1371,15 @@ export default function Profile() {
                         <p className="text-lg font-medium text-gray-400">Not set</p>
                       )}
                     </div>
-                      <div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Date of Birth</label>
                       <p className="text-lg font-medium text-gray-900">{formatDate(userProfile?.dateOfBirth)}</p>
-                      </div>
+                    </div>
                   </div>
-                  </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Family Tab */}
           {activeTab === 'family' && <FamilyMembersSection />}
@@ -1173,7 +1391,7 @@ export default function Profile() {
           {activeTab === 'security' && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold text-gray-900">Security Settings</h2>
-              
+
               {/* Change Password */}
               <div className="bg-gray-50 rounded-xl p-6">
                 <div className="flex items-start space-x-4">
@@ -1183,8 +1401,8 @@ export default function Profile() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">Password</h3>
                     <p className="text-gray-600 text-sm mt-1">Change your account password</p>
-                    <a 
-                      href="/settings" 
+                    <a
+                      href="/settings"
                       className="inline-flex items-center mt-3 text-blue-600 hover:text-blue-700 font-medium"
                     >
                       Change Password
@@ -1238,10 +1456,11 @@ export default function Profile() {
                   </div>
                 </div>
               </div>
-          </div>
+            </div>
           )}
         </div>
       </div>
     </div>
   );
 }
+

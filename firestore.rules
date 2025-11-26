@@ -212,5 +212,13 @@ service cloud.firestore {
       allow create: if isCreatingOwn();
       allow update, delete: if isDocOwner();
     }
+    
+    // Family invitations
+    match /familyInvitations/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
   }
 }

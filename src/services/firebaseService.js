@@ -1638,6 +1638,197 @@ export const securityService = {
   }
 };
 
+// Family Invitation Service
+export const familyInvitationService = {
+  // Create family invitation
+  async createInvitation(inviterId, invitationData) {
+    try {
+      const invitationId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const docRef = doc(db, 'familyInvitations', invitationId);
+
+      await setDoc(docRef, {
+        invitationId,
+        inviterId,
+        inviterName: invitationData.inviterName,
+        inviterEmail: invitationData.inviterEmail,
+        inviteeEmail: invitationData.inviteeEmail,
+        inviteePhone: invitationData.inviteePhone || null,
+        inviteeName: invitationData.inviteeName || '',
+        relationship: invitationData.relationship || 'Family Member',
+        familyId: invitationData.familyId || inviterId, // Use inviter's ID as family ID
+        status: 'pending', // pending, accepted, declined, expired
+        expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)), // 7 days
+        createdAt: serverTimestamp(),
+        acceptedAt: null
+      });
+
+      return invitationId;
+    } catch (error) {
+      console.error('Error creating invitation:', error);
+      throw new FirebaseServiceError('Failed to create invitation', 'INVITATION_CREATE_FAILED');
+    }
+  },
+
+  // Get invitations for a user (by email or phone)
+  async getInvitationsByEmail(email) {
+    try {
+      const q = query(
+        collection(db, 'familyInvitations'),
+        where('inviteeEmail', '==', email),
+        where('status', '==', 'pending')
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+        expiresAt: doc.data().expiresAt?.toDate()
+      })).filter(inv => {
+        // Filter out expired invitations
+        if (inv.expiresAt) {
+          return inv.expiresAt > new Date();
+        }
+        return true;
+      });
+    } catch (error) {
+      console.error('Error getting invitations:', error);
+      return [];
+    }
+  },
+
+  // Get invitations sent by a user
+  async getSentInvitations(userId) {
+    try {
+      const q = query(
+        collection(db, 'familyInvitations'),
+        where('inviterId', '==', userId)
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+        expiresAt: doc.data().expiresAt?.toDate(),
+        acceptedAt: doc.data().acceptedAt?.toDate()
+      })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    } catch (error) {
+      console.error('Error getting sent invitations:', error);
+      return [];
+    }
+  },
+
+  // Accept invitation
+  async acceptInvitation(invitationId, userId) {
+    try {
+      const invitationRef = doc(db, 'familyInvitations', invitationId);
+      const invitationSnap = await getDoc(invitationRef);
+
+      if (!invitationSnap.exists()) {
+        throw new FirebaseServiceError('Invitation not found', 'INVITATION_NOT_FOUND');
+      }
+
+      const invitationData = invitationSnap.data();
+
+      // Check if expired
+      if (invitationData.expiresAt?.toDate() < new Date()) {
+        throw new FirebaseServiceError('Invitation has expired', 'INVITATION_EXPIRED');
+      }
+
+      // Update invitation status
+      await updateDoc(invitationRef, {
+        status: 'accepted',
+        acceptedAt: serverTimestamp(),
+        acceptedBy: userId
+      });
+
+      // Add user to family
+      const inviterProfile = await userService.getUserProfile(invitationData.inviterId);
+      const familyId = invitationData.familyId || invitationData.inviterId;
+
+      // Update inviter's family list
+      const inviterFamilyMembers = inviterProfile?.familyMembers || [];
+      const newMember = {
+        id: userId,
+        name: invitationData.inviteeName || 'Family Member',
+        relationship: invitationData.relationship,
+        userId: userId,
+        addedAt: new Date()
+      };
+
+      await userService.updateUserProfile(invitationData.inviterId, {
+        familyMembers: [...inviterFamilyMembers, newMember],
+        updatedAt: new Date()
+      });
+
+      // Update invitee's profile to link to family
+      const inviteeProfile = await userService.getUserProfile(userId);
+      const inviteeFamilyMembers = inviteeProfile?.familyMembers || [];
+
+      await userService.updateUserProfile(userId, {
+        familyId: familyId,
+        familyMembers: [
+          ...inviteeFamilyMembers,
+          {
+            id: invitationData.inviterId,
+            name: invitationData.inviterName,
+            relationship: 'Family Head',
+            userId: invitationData.inviterId,
+            addedAt: new Date()
+          }
+        ],
+        updatedAt: new Date()
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+      throw new FirebaseServiceError('Failed to accept invitation', 'INVITATION_ACCEPT_FAILED');
+    }
+  },
+
+  // Decline invitation
+  async declineInvitation(invitationId) {
+    try {
+      await updateDoc(doc(db, 'familyInvitations', invitationId), {
+        status: 'declined',
+        declinedAt: serverTimestamp()
+      });
+      return true;
+    } catch (error) {
+      console.error('Error declining invitation:', error);
+      throw new FirebaseServiceError('Failed to decline invitation', 'INVITATION_DECLINE_FAILED');
+    }
+  },
+
+  // Cancel invitation
+  async cancelInvitation(invitationId, userId) {
+    try {
+      const invitationRef = doc(db, 'familyInvitations', invitationId);
+      const invitationSnap = await getDoc(invitationRef);
+
+      if (!invitationSnap.exists()) {
+        throw new FirebaseServiceError('Invitation not found', 'INVITATION_NOT_FOUND');
+      }
+
+      if (invitationSnap.data().inviterId !== userId) {
+        throw new FirebaseServiceError('Not authorized to cancel this invitation', 'UNAUTHORIZED');
+      }
+
+      await updateDoc(invitationRef, {
+        status: 'cancelled',
+        cancelledAt: serverTimestamp()
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error cancelling invitation:', error);
+      throw new FirebaseServiceError('Failed to cancel invitation', 'INVITATION_CANCEL_FAILED');
+    }
+  }
+};
+
 // Export cache utilities
 export const cacheUtils = {
   clearCache,

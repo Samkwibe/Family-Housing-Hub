@@ -2,10 +2,10 @@
 import React, { useState, useMemo } from 'react';
 import { useFamily } from '../contexts/FamilyContext';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  DollarSign, 
-  Calendar, 
-  CheckCircle, 
+import {
+  DollarSign,
+  Calendar,
+  CheckCircle,
   Clock,
   Plus,
   CreditCard,
@@ -22,7 +22,14 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Filter,
-  Search
+  Search,
+  Zap,
+  Droplet,
+  Wifi,
+  Trash2,
+  Edit,
+  Flame,
+  Tv
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -31,8 +38,22 @@ export default function Rent() {
   const { userProfile } = useAuth();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showRecordModal, setShowRecordModal] = useState(false);
+  const [showUtilitiesModal, setShowUtilitiesModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [submitting, setSubmitting] = useState(false);
+  const [utilities, setUtilities] = useState([]);
+  const [editingUtility, setEditingUtility] = useState(null);
+
+  // Utility form state
+  const [utilityForm, setUtilityForm] = useState({
+    name: '',
+    type: 'electricity', // electricity, water, gas, internet, cable, other
+    amount: '',
+    dueDate: '',
+    isPaid: false,
+    paidDate: '',
+    notes: ''
+  });
 
   // Payment form state
   const [paymentForm, setPaymentForm] = useState({
@@ -47,7 +68,7 @@ export default function Rent() {
   const stats = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    
+
     const paidPayments = rentPayments.filter(p => p.status === 'paid');
     const pendingPayments = rentPayments.filter(p => p.status === 'pending' || p.status === 'due');
     const overduePayments = rentPayments.filter(p => {
@@ -140,7 +161,7 @@ export default function Rent() {
         confirmationNumber: paymentForm.confirmationNumber,
         notes: paymentForm.notes
       });
-      
+
       setPaymentForm({
         amount: userProfile?.lease?.monthlyRent || '',
         paymentMethod: 'bank_transfer',
@@ -207,13 +228,12 @@ export default function Rent() {
         </div>
 
         {/* Next Payment Due */}
-        <div className={`rounded-2xl p-5 ${
-          stats.nextDue 
-            ? getDaysUntil(stats.nextDue.dueDate) <= 5 
-              ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white' 
-              : 'bg-gradient-to-br from-amber-400 to-orange-500 text-white'
-            : 'bg-gradient-to-br from-green-500 to-emerald-500 text-white'
-        }`}>
+        <div className={`rounded-2xl p-5 ${stats.nextDue
+          ? getDaysUntil(stats.nextDue.dueDate) <= 5
+            ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white'
+            : 'bg-gradient-to-br from-amber-400 to-orange-500 text-white'
+          : 'bg-gradient-to-br from-green-500 to-emerald-500 text-white'
+          }`}>
           <div className="flex items-center justify-between mb-3">
             <p className={stats.nextDue ? 'text-white/80' : 'text-green-100'}>Next Payment</p>
             <div className="p-2 bg-white/20 rounded-lg">
@@ -311,11 +331,10 @@ export default function Rent() {
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`px-4 py-2 rounded-lg font-medium capitalize transition-colors ${
-                    filterStatus === status
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                  className={`px-4 py-2 rounded-lg font-medium capitalize transition-colors ${filterStatus === status
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
                 >
                   {status}
                 </button>
@@ -335,21 +354,19 @@ export default function Rent() {
               const StatusIcon = statusConfig.icon;
 
               return (
-                <div 
-                  key={payment.id} 
+                <div
+                  key={payment.id}
                   className="p-5 hover:bg-gray-50 transition-colors flex items-center justify-between"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className={`p-3 rounded-xl ${
-                      payment.status === 'paid' ? 'bg-green-100' : 
-                      getStatusConfig(payment.status, payment.dueDate).label === 'Overdue' ? 'bg-red-100' : 
-                      'bg-yellow-100'
-                    }`}>
-                      <StatusIcon className={`h-6 w-6 ${
-                        payment.status === 'paid' ? 'text-green-600' : 
-                        getStatusConfig(payment.status, payment.dueDate).label === 'Overdue' ? 'text-red-600' : 
-                        'text-yellow-600'
-                      }`} />
+                    <div className={`p-3 rounded-xl ${payment.status === 'paid' ? 'bg-green-100' :
+                      getStatusConfig(payment.status, payment.dueDate).label === 'Overdue' ? 'bg-red-100' :
+                        'bg-yellow-100'
+                      }`}>
+                      <StatusIcon className={`h-6 w-6 ${payment.status === 'paid' ? 'text-green-600' :
+                        getStatusConfig(payment.status, payment.dueDate).label === 'Overdue' ? 'text-red-600' :
+                          'text-yellow-600'
+                        }`} />
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900">
@@ -365,11 +382,11 @@ export default function Rent() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
                       <p className="text-sm text-gray-600">
-                        {payment.status === 'paid' 
+                        {payment.status === 'paid'
                           ? `Paid ${formatDate(payment.paidDate)}`
                           : `Due ${formatDate(payment.dueDate)}`
                         }
@@ -397,6 +414,153 @@ export default function Rent() {
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
               >
                 Record First Payment
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Utilities & Bills Section */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mt-8">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Utilities & Bills</h2>
+              <p className="text-gray-600 text-sm mt-1">Track your monthly utility payments and other bills</p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingUtility(null);
+                setUtilityForm({
+                  name: '',
+                  type: 'electricity',
+                  amount: '',
+                  dueDate: '',
+                  isPaid: false,
+                  paidDate: '',
+                  notes: ''
+                });
+                setShowUtilitiesModal(true);
+              }}
+              className="bg-blue-600 text-white px-5 py-2 rounded-xl font-semibold flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Add Bill</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {utilities.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {utilities.map((utility, idx) => {
+                const isOverdue = !utility.isPaid && new Date(utility.dueDate) < new Date();
+                const utilityIcons = {
+                  electricity: Zap,
+                  water: Droplet,
+                  gas: Flame,
+                  internet: Wifi,
+                  cable: Tv,
+                  other: FileText
+                };
+                const Icon = utilityIcons[utility.type] || FileText;
+
+                return (
+                  <div
+                    key={idx}
+                    className={`p-5 rounded-xl border-2 transition-all ${utility.isPaid
+                      ? 'bg-green-50 border-green-200'
+                      : isOverdue
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-yellow-50 border-yellow-200'
+                      }`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-lg ${utility.isPaid
+                          ? 'bg-green-100 text-green-600'
+                          : isOverdue
+                            ? 'bg-red-100 text-red-600'
+                            : 'bg-yellow-100 text-yellow-600'
+                          }`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{utility.name}</h3>
+                          <p className="text-xs text-gray-500 capitalize">{utility.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          onClick={() => {
+                            setEditingUtility(idx);
+                            setUtilityForm({ ...utility });
+                            setShowUtilitiesModal(true);
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setUtilities(prev => prev.filter((_, i) => i !== idx));
+                            toast.success('Bill removed');
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(utility.amount)}</p>
+                      <p className="text-sm text-gray-600">
+                        Due: {formatDate(utility.dueDate)}
+                      </p>
+                      {utility.isPaid && utility.paidDate && (
+                        <p className="text-xs text-green-600">
+                          Paid: {formatDate(utility.paidDate)}
+                        </p>
+                      )}
+                      {isOverdue && (
+                        <p className="text-xs text-red-600 font-semibold">Overdue</p>
+                      )}
+                      <button
+                        onClick={() => {
+                          const updated = [...utilities];
+                          updated[idx].isPaid = !updated[idx].isPaid;
+                          if (updated[idx].isPaid) {
+                            updated[idx].paidDate = new Date().toISOString().split('T')[0];
+                          } else {
+                            updated[idx].paidDate = '';
+                          }
+                          setUtilities(updated);
+                          toast.success(updated[idx].isPaid ? 'Marked as paid' : 'Marked as unpaid');
+                        }}
+                        className={`w-full mt-2 py-2 rounded-lg font-medium text-sm transition-colors ${utility.isPaid
+                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                          }`}
+                      >
+                        {utility.isPaid ? 'Mark as Unpaid' : 'Mark as Paid'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Zap className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No utilities or bills added</h3>
+              <p className="text-gray-600 mb-4">Start tracking your monthly bills</p>
+              <button
+                onClick={() => setShowUtilitiesModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                Add First Bill
               </button>
             </div>
           )}
@@ -502,18 +666,15 @@ export default function Rent() {
                       key={method.id}
                       type="button"
                       onClick={() => setPaymentForm(prev => ({ ...prev, paymentMethod: method.id }))}
-                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center space-y-1 ${
-                        paymentForm.paymentMethod === method.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center space-y-1 ${paymentForm.paymentMethod === method.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
                     >
-                      <method.icon className={`h-5 w-5 ${
-                        paymentForm.paymentMethod === method.id ? 'text-blue-600' : 'text-gray-500'
-                      }`} />
-                      <span className={`text-xs font-medium ${
-                        paymentForm.paymentMethod === method.id ? 'text-blue-700' : 'text-gray-600'
-                      }`}>{method.label}</span>
+                      <method.icon className={`h-5 w-5 ${paymentForm.paymentMethod === method.id ? 'text-blue-600' : 'text-gray-500'
+                        }`} />
+                      <span className={`text-xs font-medium ${paymentForm.paymentMethod === method.id ? 'text-blue-700' : 'text-gray-600'
+                        }`}>{method.label}</span>
                     </button>
                   ))}
                 </div>
@@ -568,6 +729,171 @@ export default function Rent() {
                       <span>Record Payment</span>
                     </>
                   )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Utilities & Bills Modal */}
+      {showUtilitiesModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingUtility !== null ? 'Edit Bill' : 'Add Bill'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowUtilitiesModal(false);
+                    setEditingUtility(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!utilityForm.name || !utilityForm.amount || !utilityForm.dueDate) {
+                  toast.error('Please fill in all required fields');
+                  return;
+                }
+
+                const newUtility = {
+                  ...utilityForm,
+                  amount: parseFloat(utilityForm.amount),
+                  id: editingUtility !== null ? utilities[editingUtility].id : `utility_${Date.now()}`
+                };
+
+                if (editingUtility !== null) {
+                  const updated = [...utilities];
+                  updated[editingUtility] = newUtility;
+                  setUtilities(updated);
+                  toast.success('Bill updated');
+                } else {
+                  setUtilities(prev => [...prev, newUtility]);
+                  toast.success('Bill added');
+                }
+
+                setShowUtilitiesModal(false);
+                setEditingUtility(null);
+                setUtilityForm({
+                  name: '',
+                  type: 'electricity',
+                  amount: '',
+                  dueDate: '',
+                  isPaid: false,
+                  paidDate: '',
+                  notes: ''
+                });
+              }}
+              className="p-6 space-y-5"
+            >
+              {/* Bill Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bill Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={utilityForm.name}
+                  onChange={(e) => setUtilityForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Electric Bill"
+                />
+              </div>
+
+              {/* Bill Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bill Type *
+                </label>
+                <select
+                  required
+                  value={utilityForm.type}
+                  onChange={(e) => setUtilityForm(prev => ({ ...prev, type: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="electricity">Electricity</option>
+                  <option value="water">Water</option>
+                  <option value="gas">Gas</option>
+                  <option value="internet">Internet</option>
+                  <option value="cable">Cable/TV</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Amount *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    value={utilityForm.amount}
+                    onChange={(e) => setUtilityForm(prev => ({ ...prev, amount: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Due Date *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={utilityForm.dueDate}
+                  onChange={(e) => setUtilityForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={utilityForm.notes}
+                  onChange={(e) => setUtilityForm(prev => ({ ...prev, notes: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  rows={2}
+                  placeholder="Any additional notes..."
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUtilitiesModal(false);
+                    setEditingUtility(null);
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                >
+                  {editingUtility !== null ? 'Update Bill' : 'Add Bill'}
                 </button>
               </div>
             </form>

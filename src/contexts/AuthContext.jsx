@@ -36,6 +36,17 @@ export function AuthProvider({ children }) {
   const checkProfileComplete = (profile) => {
     if (!profile) return false;
 
+    // If onboardingComplete flag is set, respect it
+    if (profile.onboardingComplete === true) {
+      return true;
+    }
+
+    // If profileComplete flag is set, respect it
+    if (profile.profileComplete === true) {
+      return true;
+    }
+
+    // Otherwise, check required fields
     const requiredFields = [
       'firstName',
       'lastName',
@@ -79,6 +90,7 @@ export function AuthProvider({ children }) {
         lastName: userData.lastName || '',
         phone: userData.phone || '',
         role: 'family',
+        userType: userData.userType || 'renter', // 'owner' or 'renter'
 
         // Address information (empty for new users)
         address: {
@@ -93,13 +105,30 @@ export function AuthProvider({ children }) {
         // Family members (empty array for new users)
         familyMembers: [],
 
-        // Lease information
+        // Lease information (for renters)
         lease: {
           startDate: null,
           endDate: null,
           monthlyRent: 0,
           securityDeposit: 0,
           landlordId: null
+        },
+
+        // Property information (for owners)
+        property: {
+          address: null,
+          purchaseDate: null,
+          purchasePrice: 0,
+          currentValue: 0,
+          mortgage: {
+            hasMortgage: false,
+            lender: '',
+            loanAmount: 0,
+            monthlyPayment: 0,
+            interestRate: 0,
+            loanStartDate: null,
+            loanEndDate: null
+          }
         },
 
         // User preferences
@@ -320,6 +349,48 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // Update property info (for owners)
+  async function updatePropertyInfo(propertyData) {
+    try {
+      if (!currentUser) throw new Error('No user logged in');
+
+      const updates = {
+        property: {
+          address: propertyData.address || null,
+          purchaseDate: propertyData.purchaseDate ? new Date(propertyData.purchaseDate) : null,
+          purchasePrice: propertyData.purchasePrice || 0,
+          currentValue: propertyData.currentValue || 0,
+          propertyType: propertyData.propertyType || null,
+          bedrooms: propertyData.bedrooms || null,
+          bathrooms: propertyData.bathrooms || null,
+          squareFootage: propertyData.squareFootage || null,
+          yearBuilt: propertyData.yearBuilt || null,
+          mortgage: {
+            hasMortgage: propertyData.mortgage?.hasMortgage || false,
+            lender: propertyData.mortgage?.lender || '',
+            loanAmount: propertyData.mortgage?.loanAmount || 0,
+            monthlyPayment: propertyData.mortgage?.monthlyPayment || 0,
+            interestRate: propertyData.mortgage?.interestRate || 0,
+            loanStartDate: propertyData.mortgage?.loanStartDate ? new Date(propertyData.mortgage.loanStartDate) : null,
+            loanEndDate: propertyData.mortgage?.loanEndDate ? new Date(propertyData.mortgage.loanEndDate) : null,
+            downPayment: propertyData.mortgage?.downPayment || 0
+          }
+        },
+        updatedAt: new Date()
+      };
+
+      const updatedProfile = await userService.updateUserProfile(currentUser.uid, updates);
+      setUserProfile(updatedProfile);
+
+      toast.success('Property information updated!');
+      return updatedProfile;
+    } catch (error) {
+      console.error('Error updating property info:', error);
+      toast.error('Failed to update property information');
+      throw error;
+    }
+  }
+
   // Update lease information
   async function updateLeaseInfo(leaseData) {
     try {
@@ -328,7 +399,16 @@ export function AuthProvider({ children }) {
       const updatedProfile = await userService.updateUserProfile(currentUser.uid, {
         lease: {
           ...userProfile?.lease,
-          ...leaseData
+          monthlyRent: leaseData.monthlyRent || 0,
+          startDate: leaseData.startDate || null,
+          endDate: leaseData.endDate || null,
+          securityDeposit: leaseData.securityDeposit || 0,
+          landlordName: leaseData.landlordName || null,
+          landlordPhone: leaseData.landlordPhone || null,
+          landlordEmail: leaseData.landlordEmail || null,
+          landlordId: leaseData.landlordId || null,
+          utilitiesIncluded: leaseData.utilitiesIncluded || false,
+          utilitiesCost: leaseData.utilitiesCost || 0
         },
         updatedAt: new Date()
       });
@@ -506,6 +586,7 @@ export function AuthProvider({ children }) {
     addFamilyMember,
     removeFamilyMember,
     updateLeaseInfo,
+    updatePropertyInfo,
     uploadProfilePhoto,
     resetPassword,
     updateUserEmail,

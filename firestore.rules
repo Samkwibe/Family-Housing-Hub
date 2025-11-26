@@ -49,7 +49,8 @@ service cloud.firestore {
     
     // Messages - users can read messages where they are sender OR receiver
     match /messages/{docId} {
-      // Allow read if user is sender or receiver
+      // Allow read if user is sender or receiver (works for both get and list queries)
+      // For queries, Firestore will filter results based on this rule
       allow read: if isAuthenticated() && 
         (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
       // Allow create if user is the sender
@@ -96,11 +97,35 @@ service cloud.firestore {
       allow update, delete: if isDocOwner();
     }
     
-    match /budgets/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
+        match /budgets/{docId} {
+          allow read: if isAuthenticated();
+          allow create: if isCreatingOwn();
+          allow update, delete: if isDocOwner();
+        }
+        
+        match /financialGoals/{docId} {
+          allow read: if isAuthenticated();
+          allow create: if isCreatingOwn();
+          allow update, delete: if isDocOwner();
+        }
+        
+        match /bills/{docId} {
+          allow read: if isAuthenticated();
+          allow create: if isCreatingOwn();
+          allow update, delete: if isDocOwner();
+        }
+        
+        match /accounts/{docId} {
+          allow read: if isAuthenticated();
+          allow create: if isCreatingOwn();
+          allow update, delete: if isDocOwner();
+        }
+        
+        match /recurringTransactions/{docId} {
+          allow read: if isAuthenticated();
+          allow create: if isCreatingOwn();
+          allow update, delete: if isDocOwner();
+        }
     
     match /events/{docId} {
       allow read: if isAuthenticated();

@@ -33,6 +33,7 @@ const AIAssistant = lazy(() => import('./pages/AIAssistant'));
 const ShoppingMeals = lazy(() => import('./pages/ShoppingMeals'));
 const FamilySafety = lazy(() => import('./pages/FamilySafety'));
 const Security = lazy(() => import('./pages/Security'));
+const NearbyPlaces = lazy(() => import('./pages/NearbyPlaces'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Protected Route with Onboarding Check
@@ -242,6 +243,14 @@ const AppRouter = () => {
           <ProtectedRoute>
             <Layout>
               <Security />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/map" element={
+          <ProtectedRoute>
+            <Layout>
+              <NearbyPlaces />
             </Layout>
           </ProtectedRoute>
         } />

@@ -539,33 +539,82 @@ export const documentService = {
 // ============================================================================
 
 export const messageService = {
-  // Get all messages for a user
+  // Get all messages for a user (where user is sender or receiver)
   async getUserMessages(userId) {
     try {
       const cacheKey = `messages_${userId}`;
       const cached = getCachedData(cacheKey);
       if (cached) return cached;
 
-      const q = query(
+      // Firestore doesn't support OR queries directly, so we need to query both
+      // Query messages where user is the sender
+      const sentQuery = query(
         collection(db, 'messages'),
-        where('userId', '==', userId),
+        where('senderId', '==', userId),
         orderBy('createdAt', 'desc')
       );
 
-      const snapshot = await getDocs(q);
-      const messages = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        readAt: doc.data().readAt?.toDate(),
-        repliedAt: doc.data().repliedAt?.toDate()
-      }));
+      // Query messages where user is the receiver
+      const receivedQuery = query(
+        collection(db, 'messages'),
+        where('receiverId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+
+      // Execute both queries in parallel
+      const [sentSnapshot, receivedSnapshot] = await Promise.all([
+        getDocs(sentQuery).catch((error) => {
+          console.warn('Error fetching sent messages:', error);
+          // If it's an index error, try without orderBy
+          if (error.code === 'failed-precondition') {
+            return getDocs(query(
+              collection(db, 'messages'),
+              where('senderId', '==', userId)
+            )).catch(() => ({ docs: [] }));
+          }
+          return { docs: [] };
+        }),
+        getDocs(receivedQuery).catch((error) => {
+          console.warn('Error fetching received messages:', error);
+          // If it's an index error, try without orderBy
+          if (error.code === 'failed-precondition') {
+            return getDocs(query(
+              collection(db, 'messages'),
+              where('receiverId', '==', userId)
+            )).catch(() => ({ docs: [] }));
+          }
+          return { docs: [] };
+        })
+      ]);
+
+      // Combine results and remove duplicates
+      const messageMap = new Map();
+      
+      [...sentSnapshot.docs, ...receivedSnapshot.docs].forEach(doc => {
+        if (!messageMap.has(doc.id)) {
+          messageMap.set(doc.id, {
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate(),
+            readAt: doc.data().readAt?.toDate(),
+            repliedAt: doc.data().repliedAt?.toDate()
+          });
+        }
+      });
+
+      // Sort by creation date (most recent first)
+      const messages = Array.from(messageMap.values()).sort((a, b) => {
+        const aTime = a.createdAt?.getTime() || 0;
+        const bTime = b.createdAt?.getTime() || 0;
+        return bTime - aTime;
+      });
 
       setCachedData(cacheKey, messages);
       return messages;
     } catch (error) {
       console.error('Error getting messages:', error);
-      throw new FirebaseServiceError('Failed to load messages', 'MESSAGES_LOAD_FAILED');
+      // Return empty array instead of throwing to prevent app crashes
+      return [];
     }
   },
 

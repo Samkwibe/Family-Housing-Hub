@@ -19,7 +19,12 @@ import {
   Zap,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Building2,
+  Key,
+  TrendingDown,
+  BarChart3,
+  Wallet
 } from 'lucide-react';
 
 // Safe data processing with useMemo for performance
@@ -27,6 +32,11 @@ export default function Dashboard() {
   const { maintenanceRequests = [], rentPayments = [], documents = [], messages = [], loading } = useFamily();
   const { userProfile } = useAuth();
   const navigate = useNavigate();
+  
+  // Determine user type (owner or renter)
+  const userType = userProfile?.userType || 'renter';
+  const isOwner = userType === 'owner';
+  const isRenter = userType === 'renter';
 
   // Memoized calculations for better performance
   const dashboardData = useMemo(() => {
@@ -62,7 +72,8 @@ export default function Dashboard() {
         priority: request.priority,
         icon: Wrench
       })),
-      ...rentPayments.slice(0, 2).map(payment => ({
+      // Only include rent payments for renters
+      ...(isRenter ? rentPayments.slice(0, 2).map(payment => ({
         id: payment.id,
         type: 'rent',
         title: `Rent ${payment.status === 'paid' ? 'Paid' : 'Due'}`,
@@ -70,7 +81,7 @@ export default function Dashboard() {
         time: payment.paidDate || payment.dueDate || new Date(),
         status: payment.status || 'pending',
         icon: DollarSign
-      })),
+      })) : []),
       ...messages.slice(0, 2).map(message => ({
         id: message.id,
         type: 'message',
@@ -95,8 +106,61 @@ export default function Dashboard() {
 
   const { pendingMaintenance, urgentMaintenance, unreadMessages, nextRentDue, expiringDocuments, recentActivities, totalDocuments } = dashboardData;
 
-  // Stats with real data
-  const stats = [
+  // Owner-specific stats
+  const ownerStats = useMemo(() => {
+    const property = userProfile?.property || {};
+    const mortgage = property?.mortgage || {};
+    const propertyValue = property?.currentValue || 0;
+    const mortgageBalance = mortgage?.loanAmount || 0;
+    const monthlyMortgage = mortgage?.monthlyPayment || 0;
+    const equity = propertyValue - mortgageBalance;
+
+    return [
+      {
+        title: 'Property Value',
+        value: `$${(propertyValue / 1000).toFixed(0)}k`,
+        subtitle: 'Current estimated value',
+        icon: Home,
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-50 border-blue-200',
+        link: '/profile',
+        status: 'active'
+      },
+      {
+        title: 'Mortgage Balance',
+        value: `$${(mortgageBalance / 1000).toFixed(0)}k`,
+        subtitle: monthlyMortgage > 0 ? `$${monthlyMortgage}/mo` : 'No mortgage',
+        icon: Key,
+        color: 'text-purple-600',
+        bgColor: 'bg-purple-50 border-purple-200',
+        link: '/profile',
+        status: mortgageBalance > 0 ? 'active' : 'paid'
+      },
+      {
+        title: 'Home Equity',
+        value: `$${(equity / 1000).toFixed(0)}k`,
+        subtitle: equity > 0 ? 'Positive equity' : 'Negative equity',
+        icon: TrendingUp,
+        color: equity > 0 ? 'text-green-600' : 'text-red-600',
+        bgColor: equity > 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200',
+        link: '/profile',
+        status: equity > 0 ? 'positive' : 'negative'
+      },
+      {
+        title: 'Maintenance',
+        value: pendingMaintenance,
+        subtitle: `${urgentMaintenance} urgent`,
+        icon: Wrench,
+        color: 'text-orange-600',
+        bgColor: urgentMaintenance > 0 ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200',
+        link: '/maintenance',
+        status: urgentMaintenance > 0 ? 'urgent' : pendingMaintenance > 0 ? 'pending' : 'clear'
+      }
+    ];
+  }, [userProfile?.property, pendingMaintenance, urgentMaintenance]);
+
+  // Renter stats (existing)
+  const renterStats = [
     {
       title: 'Rent Status',
       value: nextRentDue ? `$${nextRentDue.amount || '0'}` : 'Paid',
@@ -141,7 +205,45 @@ export default function Dashboard() {
     }
   ];
 
-  const quickActions = [
+  // Use appropriate stats based on user type
+  const stats = isOwner ? ownerStats : renterStats;
+
+  // Owner quick actions
+  const ownerQuickActions = [
+    {
+      title: 'Property Management',
+      description: 'Manage your property',
+      icon: Building2,
+      link: '/profile',
+      color: 'bg-blue-500 hover:bg-blue-600'
+    },
+    {
+      title: 'View Maintenance',
+      description: 'Track maintenance requests',
+      icon: Wrench,
+      link: '/maintenance',
+      color: 'bg-orange-500 hover:bg-orange-600',
+      badge: urgentMaintenance > 0 ? `${urgentMaintenance} urgent` : null
+    },
+    {
+      title: 'Financial Overview',
+      description: 'View budget & expenses',
+      icon: BarChart3,
+      link: '/budget',
+      color: 'bg-green-500 hover:bg-green-600'
+    },
+    {
+      title: 'Messages',
+      description: 'View messages',
+      icon: MessageCircle,
+      link: '/messages',
+      color: 'bg-red-500 hover:bg-red-600',
+      badge: unreadMessages > 0 ? `${unreadMessages} new` : null
+    }
+  ];
+
+  // Renter quick actions
+  const renterQuickActions = [
     {
       title: 'Pay Rent',
       description: 'Make a rent payment',
@@ -173,6 +275,9 @@ export default function Dashboard() {
       badge: unreadMessages > 0 ? `${unreadMessages} new` : null
     }
   ];
+
+  // Use appropriate quick actions based on user type
+  const quickActions = isOwner ? ownerQuickActions : renterQuickActions;
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -206,13 +311,17 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6">
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white relative overflow-hidden">
+      <div className={`bg-gradient-to-r rounded-2xl p-6 text-white relative overflow-hidden ${
+        isOwner 
+          ? 'from-emerald-600 to-teal-600' 
+          : 'from-blue-600 to-purple-600'
+      }`}>
         <div className="relative z-10">
           <h1 className="text-3xl font-bold mb-2">
             Welcome back, {userProfile?.firstName || 'Family'}! 👋
           </h1>
-          <p className="text-blue-100 text-lg">
-            {new Date().toLocaleDateString('en-US', { 
+          <p className="text-white/80 text-lg">
+            {isOwner ? 'Property Owner Dashboard' : 'Renter Dashboard'} • {new Date().toLocaleDateString('en-US', { 
               weekday: 'long', 
               year: 'numeric', 
               month: 'long', 
@@ -221,7 +330,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="absolute right-6 top-6 opacity-20">
-          <Home className="h-24 w-24" />
+          {isOwner ? <Building2 className="h-24 w-24" /> : <Home className="h-24 w-24" />}
         </div>
       </div>
 
@@ -303,76 +412,152 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Rent Overview - Real Data */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Rent Overview</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Next Payment Card */}
-              <div className={`p-6 rounded-xl border-2 ${
-                nextRentDue ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'
-              }`}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">Next Payment</h3>
-                  <DollarSign className={`h-5 w-5 ${nextRentDue ? 'text-orange-600' : 'text-green-600'}`} />
+          {/* Rent Overview - Only for Renters */}
+          {isRenter && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Rent Overview</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Next Payment Card */}
+                <div className={`p-6 rounded-xl border-2 ${
+                  nextRentDue ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'
+                }`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-900">Next Payment</h3>
+                    <DollarSign className={`h-5 w-5 ${nextRentDue ? 'text-orange-600' : 'text-green-600'}`} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-gray-900 mb-2">
+                      {nextRentDue ? `$${nextRentDue.amount || '0'}` : 'All Paid'}
+                    </p>
+                    <p className={`text-sm font-medium ${
+                      nextRentDue ? 'text-orange-600' : 'text-green-600'
+                    }`}>
+                      {nextRentDue ? 
+                        `Due ${new Date(nextRentDue.dueDate).toLocaleDateString()}` : 
+                        'No pending payments'
+                      }
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/rent')}
+                    className={`w-full mt-4 py-2 rounded-lg font-semibold transition-colors ${
+                      nextRentDue 
+                        ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                  >
+                    {nextRentDue ? 'Pay Now' : 'View History'}
+                  </button>
                 </div>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-gray-900 mb-2">
-                    {nextRentDue ? `$${nextRentDue.amount || '0'}` : 'All Paid'}
-                  </p>
-                  <p className={`text-sm font-medium ${
-                    nextRentDue ? 'text-orange-600' : 'text-green-600'
-                  }`}>
-                    {nextRentDue ? 
-                      `Due ${new Date(nextRentDue.dueDate).toLocaleDateString()}` : 
-                      'No pending payments'
-                    }
-                  </p>
-                </div>
-                <button
-                  onClick={() => navigate('/rent')}
-                  className={`w-full mt-4 py-2 rounded-lg font-semibold transition-colors ${
-                    nextRentDue 
-                      ? 'bg-orange-600 hover:bg-orange-700 text-white' 
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  {nextRentDue ? 'Pay Now' : 'View History'}
-                </button>
-              </div>
 
-              {/* Payment Summary */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-semibold text-gray-900">Total Paid This Year</p>
-                    <p className="text-sm text-gray-600">{new Date().getFullYear()}</p>
+                {/* Payment Summary */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-semibold text-gray-900">Total Paid This Year</p>
+                      <p className="text-sm text-gray-600">{new Date().getFullYear()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-gray-900">
+                        ${rentPayments
+                          .filter(p => p.status === 'paid')
+                          .reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0)
+                          .toLocaleString()}
+                      </p>
+                      <p className="text-sm text-green-600">On track</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-gray-900">
-                      ${rentPayments
-                        .filter(p => p.status === 'paid')
-                        .reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0)
-                        .toLocaleString()}
-                    </p>
-                    <p className="text-sm text-green-600">On track</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                  <div>
-                    <p className="font-semibold text-gray-900">Payment History</p>
-                    <p className="text-sm text-gray-600">Last 12 months</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-gray-900">
-                      {rentPayments.filter(p => p.status === 'paid').length}
-                    </p>
-                    <p className="text-sm text-blue-600">Payments</p>
+                  
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                    <div>
+                      <p className="font-semibold text-gray-900">Payment History</p>
+                      <p className="text-sm text-gray-600">Last 12 months</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-gray-900">
+                        {rentPayments.filter(p => p.status === 'paid').length}
+                      </p>
+                      <p className="text-sm text-blue-600">Payments</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Property Overview - Only for Owners */}
+          {isOwner && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Property Overview</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Property Value Card */}
+                <div className="p-6 rounded-xl border-2 bg-blue-50 border-blue-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-900">Property Value</h3>
+                    <Home className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-gray-900 mb-2">
+                      ${((userProfile?.property?.currentValue || 0) / 1000).toFixed(0)}k
+                    </p>
+                    <p className="text-sm font-medium text-blue-600">
+                      Current estimated value
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/profile')}
+                    className="w-full mt-4 py-2 rounded-lg font-semibold transition-colors bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    View Details
+                  </button>
+                </div>
+
+                {/* Mortgage Summary */}
+                <div className="space-y-4">
+                  {userProfile?.property?.mortgage?.hasMortgage ? (
+                    <>
+                      <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                        <div>
+                          <p className="font-semibold text-gray-900">Mortgage Balance</p>
+                          <p className="text-sm text-gray-600">Remaining loan</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-gray-900">
+                            ${((userProfile?.property?.mortgage?.loanAmount || 0) / 1000).toFixed(0)}k
+                          </p>
+                          <p className="text-sm text-purple-600">Outstanding</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                        <div>
+                          <p className="font-semibold text-gray-900">Monthly Payment</p>
+                          <p className="text-sm text-gray-600">Mortgage payment</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-gray-900">
+                            ${userProfile?.property?.mortgage?.monthlyPayment || 0}
+                          </p>
+                          <p className="text-sm text-green-600">Per month</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                      <div>
+                        <p className="font-semibold text-gray-900">Mortgage Status</p>
+                        <p className="text-sm text-gray-600">No active mortgage</p>
+                      </div>
+                      <div className="text-right">
+                        <CheckCircle className="h-8 w-8 text-green-600" />
+                        <p className="text-sm text-green-600 mt-1">Owned</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Right Sidebar */}
@@ -423,7 +608,12 @@ export default function Dashboard() {
                 <div className="text-center py-4">
                   <Calendar className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                   <p className="text-sm text-gray-500">No recent activity</p>
-                  <p className="text-xs text-gray-400 mt-1">Get started by paying rent or submitting a request</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {isOwner 
+                      ? 'Get started by managing your property or viewing maintenance requests'
+                      : 'Get started by paying rent or submitting a request'
+                    }
+                  </p>
                 </div>
               )}
             </div>

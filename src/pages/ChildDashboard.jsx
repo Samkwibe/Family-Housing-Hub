@@ -1,1676 +1,555 @@
-// src/pages/ChildDashboard.jsx - Complete Child Dashboard with All Features
-import React, { useState, useEffect } from 'react';
+// src/pages/ChildDashboard.jsx - Amazing Child Dashboard
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { childrenService, savingsService } from '../services/firebaseService';
 import {
-  childTasksService,
-  childLearningService,
-  childChoresService,
-  childWalletService,
-  childBehaviorService,
-  childRewardsService,
-  childScreenTimeService,
-  childSafetyService,
-  childGamesService,
-  messageService,
-  uploadService
-} from '../services/firebaseService';
-import {
-  CheckCircle,
-  Clock,
-  BookOpen,
-  Home,
-  Wallet,
-  MessageCircle,
-  Heart,
-  Award,
-  Calendar,
-  Smartphone,
-  Shield,
-  Gamepad2,
+  PiggyBank,
+  Target,
   Star,
-  Navigation,
-  Settings,
-  Plus,
-  X,
-  Upload,
-  MapPin,
-  AlertTriangle,
-  Send,
-  Phone,
-  Mic,
-  DollarSign,
-  TrendingUp,
-  Smile,
-  Frown,
-  Meh,
   Trophy,
   Gift,
-  Lock,
-  Unlock,
+  Sparkles,
+  TrendingUp,
+  DollarSign,
+  Award,
+  Rocket,
+  Heart,
   Zap,
-  ChevronLeft,
-  ChevronRight,
-  User,
-  Mail,
-  Camera,
-  LogOut,
-  Bell,
-  Moon,
+  Calendar,
+  CheckCircle,
+  Coins,
+  Gem,
+  Crown,
+  Rainbow,
   Sun,
-  Eye,
-  EyeOff,
-  Save,
-  Edit3,
-  Trash2,
-  Palette,
-  Monitor
+  Moon,
+  Cloud,
+  Flower2,
+  PartyPopper
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ChildDashboard() {
-  const { currentUser, userProfile, logout, updateUserProfile, uploadProfilePhoto } = useAuth();
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('tasks');
+  const { currentUser, userProfile } = useAuth();
+  const [childData, setChildData] = useState(null);
+  const [savingsGoals, setSavingsGoals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedGoal, setSelectedGoal] = useState(null);
+  const [celebration, setCelebration] = useState(false);
 
-  // State for all features
-  const [tasks, setTasks] = useState([]);
-  const [homework, setHomework] = useState([]);
-  const [chores, setChores] = useState([]);
-  const [wallet, setWallet] = useState(null);
-  const [behavior, setBehavior] = useState([]);
-  const [rewards, setRewards] = useState([]);
-  const [screenTimeSettings, setScreenTimeSettings] = useState(null);
-  const [games, setGames] = useState([]);
-  const [messages, setMessages] = useState([]);
+  // Fun colors and themes
+  const themes = [
+    { name: 'Rainbow', colors: ['from-pink-500', 'via-purple-500', 'to-blue-500'], icon: Rainbow },
+    { name: 'Sunshine', colors: ['from-yellow-400', 'to-orange-500'], icon: Sun },
+    { name: 'Ocean', colors: ['from-cyan-400', 'to-blue-600'], icon: Cloud },
+    { name: 'Garden', colors: ['from-green-400', 'to-emerald-600'], icon: Flower2 }
+  ];
 
-  // Modal states
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  const [showHomeworkModal, setShowHomeworkModal] = useState(false);
-  const [showChoreModal, setShowChoreModal] = useState(false);
-  const [showMessageModal, setShowMessageModal] = useState(false);
-  const [showRewardModal, setShowRewardModal] = useState(false);
-  const [showMoneyRequestModal, setShowMoneyRequestModal] = useState(false);
-  const [selectedHomework, setSelectedHomework] = useState(null);
-  const [homeworkFiles, setHomeworkFiles] = useState([]);
-  const [recordingVoice, setRecordingVoice] = useState(false);
-  const [voiceNote, setVoiceNote] = useState(null);
+  const [currentTheme, setCurrentTheme] = useState(themes[0]);
 
-  // Check if user is a child
-  const isChild = userProfile?.role === 'child';
-  const parentId = userProfile?.parentId || null;
-
+  // Load child data
   useEffect(() => {
-    if (currentUser && isChild) {
-      loadAllData();
-    } else {
-      setLoading(false);
+    if (currentUser) {
+      loadChildData();
     }
-  }, [currentUser, isChild]);
+  }, [currentUser]);
 
-  const loadAllData = async () => {
+  const loadChildData = async () => {
     setLoading(true);
     try {
-      // Load all data in parallel
-      const [
-        tasksData,
-        homeworkData,
-        choresData,
-        walletData,
-        behaviorData,
-        rewardsData,
-        screenTimeData,
-        gamesData,
-        messagesData
-      ] = await Promise.all([
-        childTasksService.getChildTasks(currentUser.uid, parentId),
-        childLearningService.getChildHomework(currentUser.uid),
-        childChoresService.getChildChores(currentUser.uid),
-        childWalletService.getChildWallet(currentUser.uid, parentId),
-        childBehaviorService.getChildBehavior(currentUser.uid),
-        childRewardsService.getChildRewards(currentUser.uid),
-        childScreenTimeService.getScreenTimeSettings(currentUser.uid, parentId),
-        childGamesService.getChildGames(currentUser.uid),
-        messageService.getUserMessages(currentUser.uid)
-      ]);
-
-      setTasks(tasksData);
-      setHomework(homeworkData);
-      setChores(choresData);
-      setWallet(walletData);
-      setBehavior(behaviorData);
-      setRewards(rewardsData);
-      setScreenTimeSettings(screenTimeData);
-      setGames(gamesData);
-      setMessages(messagesData);
+      // Get all children and find the one matching current user or first child
+      const children = await childrenService.getChildren(currentUser.uid);
+      const child = children.length > 0 ? children[0] : null;
+      
+      if (child) {
+        setChildData(child);
+        // Get savings goals for this child
+        const goals = await savingsService.getUserSavings(currentUser.uid);
+        const childGoals = goals.filter(g => g.childId === child.id);
+        setSavingsGoals(childGoals);
+      }
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Failed to load dashboard data');
+      console.error('Error loading child data:', error);
+      toast.error('Failed to load your dashboard');
     } finally {
       setLoading(false);
     }
   };
 
-  // Task handlers
-  const handleCompleteTask = async (taskId) => {
-    try {
-      await childTasksService.completeTask(taskId, currentUser.uid);
-      toast.success('Task marked as completed!');
-      loadAllData();
-    } catch (error) {
-      toast.error('Failed to complete task');
-    }
-  };
-
-  // Chore handlers
-  const handleCompleteChore = async (choreId) => {
-    try {
-      await childChoresService.completeChore(choreId, currentUser.uid);
-      toast.success('Chore completed! Great job!');
-      loadAllData();
-    } catch (error) {
-      toast.error('Failed to complete chore');
-    }
-  };
-
-  // Message handlers
-  const handleSendMessage = async (message) => {
-    if (!parentId) {
-      toast.error('Parent account not linked. Please contact support.');
-      return;
-    }
+  // Calculate stats
+  const stats = useMemo(() => {
+    const totalSaved = savingsGoals.reduce((sum, g) => sum + (g.currentAmount || 0), 0);
+    const totalTarget = savingsGoals.reduce((sum, g) => sum + (g.targetAmount || 0), 0);
+    const activeGoals = savingsGoals.filter(g => g.status === 'active').length;
+    const completedGoals = savingsGoals.filter(g => g.status === 'completed').length;
+    const progress = totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
     
-    try {
-      await messageService.sendChildToParentMessage(currentUser.uid, parentId, {
-        message,
-        subject: 'Message from ' + (userProfile?.firstName || 'Child'),
-        priority: 'normal'
-      });
-      toast.success('Message sent to parent!');
-      setShowMessageModal(false);
-      loadAllData();
-    } catch (error) {
-      console.error('Message send error:', error);
-      toast.error(error.message || 'Failed to send message. Please try again.');
+    return { totalSaved, totalTarget, activeGoals, completedGoals, progress };
+  }, [savingsGoals]);
+
+  // Calculate age
+  const calculateAge = (dateOfBirth) => {
+    if (!dateOfBirth) return null;
+    const today = new Date();
+    const birth = new Date(dateOfBirth);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
     }
+    return age;
   };
 
-  // SOS handler
-  const handleSOS = async () => {
-    try {
-      await childSafetyService.sendSOS(currentUser.uid, parentId, null);
-      toast.success('SOS alert sent to parent!', { duration: 5000 });
-    } catch (error) {
-      toast.error('Failed to send SOS');
-    }
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount || 0);
   };
 
-  // Location share handler
-  const handleShareLocation = async () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            await childSafetyService.shareLocation(currentUser.uid, parentId, {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            });
-            toast.success('Location shared with parent!');
-          } catch (error) {
-            toast.error('Failed to share location');
-          }
-        },
-        () => toast.error('Unable to get location')
-      );
-    } else {
-      toast.error('Location not supported');
-    }
+  // Get achievements
+  const achievements = useMemo(() => {
+    const achieved = [];
+    
+    if (stats.totalSaved >= 100) achieved.push({ name: 'First Hundred', icon: Coins, color: 'text-yellow-600' });
+    if (stats.totalSaved >= 500) achieved.push({ name: 'Half Grand', icon: Gem, color: 'text-purple-600' });
+    if (stats.completedGoals >= 1) achieved.push({ name: 'Goal Master', icon: Target, color: 'text-green-600' });
+    if (stats.completedGoals >= 3) achieved.push({ name: 'Super Saver', icon: Trophy, color: 'text-blue-600' });
+    if (stats.activeGoals >= 5) achieved.push({ name: 'Multi-Goal', icon: Star, color: 'text-pink-600' });
+    if (stats.progress >= 50) achieved.push({ name: 'Halfway Hero', icon: Award, color: 'text-orange-600' });
+    if (stats.progress >= 100) achieved.push({ name: 'Champion', icon: Crown, color: 'text-indigo-600' });
+    
+    return achieved;
+  }, [stats]);
+
+  // Get motivational message
+  const getMotivationalMessage = () => {
+    const messages = [
+      "You're doing amazing! Keep saving! 🌟",
+      "Every dollar counts! You're a superstar! ⭐",
+      "Look at you go! You're crushing your goals! 🚀",
+      "You're building an awesome future! Keep it up! 💪",
+      "Wow! You're a savings champion! 🏆",
+      "Amazing progress! You're unstoppable! 🌈"
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
   };
 
-  // Reward redemption
-  const handleRedeemReward = async (rewardId) => {
-    try {
-      await childRewardsService.redeemReward(rewardId, currentUser.uid);
-      toast.success('Reward redemption requested! Waiting for parent approval.');
-      loadAllData();
-    } catch (error) {
-      toast.error(error.message || 'Failed to redeem reward');
+  // Check for completed goals to celebrate
+  useEffect(() => {
+    const justCompleted = savingsGoals.filter(g => {
+      const progress = g.targetAmount > 0 ? (g.currentAmount / g.targetAmount) * 100 : 0;
+      return progress >= 100 && g.status !== 'completed';
+    });
+    
+    if (justCompleted.length > 0) {
+      setCelebration(true);
+      setTimeout(() => setCelebration(false), 5000);
     }
-  };
+  }, [savingsGoals]);
 
-  // Mood entry
-  const handleAddMood = async (mood) => {
-    try {
-      await childBehaviorService.addBehaviorNote(currentUser.uid, currentUser.uid, {
-        type: 'mood',
-        title: `Mood: ${mood}`,
-        mood,
-        points: 0
-      });
-      toast.success('Mood recorded!');
-      loadAllData();
-    } catch (error) {
-      toast.error('Failed to record mood');
-    }
-  };
+  // Generate emoji positions once
+  const emojiPositions = useMemo(() => {
+    return Array.from({ length: 20 }, (_, i) => ({
+      left: `${(i * 5) % 100}%`,
+      top: `${(i * 7) % 100}%`,
+      delay: i * 0.1,
+      emoji: ['🎉', '🎊', '⭐', '🌟', '✨', '🎈', '🏆', '💫'][i % 8]
+    }));
+  }, []);
 
-  // Homework upload handler
-  const handleUploadHomework = async (homeworkId) => {
-    try {
-      if (homeworkFiles.length === 0) {
-        toast.error('Please select a file to upload');
-        return;
-      }
-
-      // Upload files
-      const uploadedFiles = [];
-      for (const file of homeworkFiles) {
-        const uploadResult = await uploadService.uploadFile(
-          `child-homework/${currentUser.uid}/${homeworkId}`,
-          file
-        );
-        uploadedFiles.push({
-          name: file.name,
-          url: uploadResult.url,
-          type: file.type,
-          size: file.size
-        });
-      }
-
-      // Submit homework
-      await childLearningService.submitHomework(homeworkId, currentUser.uid, uploadedFiles);
-      toast.success('Homework submitted successfully!');
-      setShowHomeworkModal(false);
-      setSelectedHomework(null);
-      setHomeworkFiles([]);
-      loadAllData();
-    } catch (error) {
-      console.error('Error uploading homework:', error);
-      toast.error(error.message || 'Failed to upload homework');
-    }
-  };
-
-  // Money request handler
-  const handleRequestMoney = async (amount, reason) => {
-    if (!parentId) {
-      toast.error('Parent account not linked');
-      return;
-    }
-
-    try {
-      await childWalletService.requestMoney(currentUser.uid, parentId, amount, reason);
-      toast.success('Money request sent to parent!');
-      setShowMoneyRequestModal(false);
-      loadAllData();
-    } catch (error) {
-      console.error('Error requesting money:', error);
-      toast.error(error.message || 'Failed to request money');
-    }
-  };
-
-  // Voice note handler
-  const handleStartVoiceRecording = () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast.error('Voice recording not supported on this device');
-      return;
-    }
-
-    setRecordingVoice(true);
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(stream => {
-        const mediaRecorder = new MediaRecorder(stream);
-        const chunks = [];
-
-        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-        mediaRecorder.onstop = async () => {
-          const blob = new Blob(chunks, { type: 'audio/webm' });
-          setVoiceNote(blob);
-          setRecordingVoice(false);
-          stream.getTracks().forEach(track => track.stop());
-          toast.success('Voice note recorded!');
-        };
-
-        mediaRecorder.start();
-        setTimeout(() => {
-          if (mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-          }
-        }, 30000); // 30 second max
-      })
-      .catch(error => {
-        console.error('Error accessing microphone:', error);
-        toast.error('Failed to access microphone');
-        setRecordingVoice(false);
-      });
-  };
-
-  const handleSendVoiceNote = async () => {
-    if (!voiceNote || !parentId) {
-      toast.error('No voice note recorded');
-      return;
-    }
-
-    try {
-      // Upload voice note
-      const uploadResult = await uploadService.uploadFile(
-        `child-voice-notes/${currentUser.uid}`,
-        voiceNote,
-        10 * 1024 * 1024 // 10MB max for voice
-      );
-
-      // Send message with voice note
-      await messageService.sendChildToParentMessage(currentUser.uid, parentId, {
-        message: 'Voice message',
-        subject: 'Voice Note from ' + (userProfile?.firstName || 'Child'),
-        priority: 'normal',
-        voiceNote: uploadResult.url
-      });
-
-      toast.success('Voice note sent to parent!');
-      setVoiceNote(null);
-      setShowMessageModal(false);
-      loadAllData();
-    } catch (error) {
-      console.error('Error sending voice note:', error);
-      toast.error('Failed to send voice note');
-    }
-  };
-
-  if (!isChild) {
-    return (
-      <div className="p-6 text-center">
-        <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Child Dashboard Only</h2>
-        <p className="text-gray-600">This dashboard is only available for child accounts.</p>
-      </div>
-    );
-  }
+  // Floating emoji component
+  const FloatingEmoji = ({ emoji, delay, left, top }) => (
+    <div
+      className="absolute text-4xl animate-bounce pointer-events-none"
+      style={{
+        left,
+        top,
+        animationDelay: `${delay}s`,
+        animationDuration: '2s'
+      }}
+    >
+      {emoji}
+    </div>
+  );
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-64">
+      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
+          <div className="w-20 h-20 border-8 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-2xl font-bold text-purple-600">Loading your awesome dashboard...</p>
         </div>
       </div>
     );
   }
 
-  const tabs = [
-    { id: 'tasks', label: 'Tasks', icon: CheckCircle },
-    { id: 'school', label: 'School', icon: BookOpen },
-    { id: 'chores', label: 'Chores', icon: Home },
-    { id: 'wallet', label: 'Wallet', icon: Wallet },
-    { id: 'messages', label: 'Messages', icon: MessageCircle },
-    { id: 'health', label: 'Health', icon: Heart },
-    { id: 'behavior', label: 'Behavior', icon: Award },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'screentime', label: 'Screen Time', icon: Smartphone },
-    { id: 'safety', label: 'Safety', icon: Shield },
-    { id: 'games', label: 'Games', icon: Gamepad2 },
-    { id: 'rewards', label: 'Rewards', icon: Star },
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'settings', label: 'Settings', icon: Settings }
-  ];
+  if (!childData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl p-12 text-center max-w-md shadow-2xl">
+          <Rocket className="h-20 w-20 text-purple-500 mx-auto mb-6 animate-bounce" />
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome! 🎉</h2>
+          <p className="text-lg text-gray-600 mb-6">Your dashboard is being set up. Ask a parent to add your profile!</p>
+        </div>
+      </div>
+    );
+  }
+
+  const age = calculateAge(childData.dateOfBirth);
+  const childName = childData.name || 'Super Star';
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+      {/* Celebration Animation */}
+      {celebration && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none overflow-hidden">
+          <div className="absolute inset-0">
+            {emojiPositions.map((pos, i) => (
+              <FloatingEmoji
+                key={i}
+                emoji={pos.emoji}
+                delay={pos.delay}
+                left={pos.left}
+                top={pos.top}
+              />
+            ))}
+          </div>
+          <div className="text-center relative z-10">
+            <PartyPopper className="h-32 w-32 text-yellow-400 animate-bounce mx-auto mb-4" />
+            <h2 className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 animate-pulse">
+              🎉 CONGRATULATIONS! 🎉
+            </h2>
+            <p className="text-3xl text-purple-600 font-bold mt-4 animate-pulse">You reached a goal!</p>
+            <p className="text-2xl text-pink-600 font-semibold mt-2">You're amazing! 🌟</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-white">
-        <h1 className="text-3xl font-bold mb-2">
-          Welcome, {userProfile?.firstName || 'Kid'}! 👋
-        </h1>
-        <p className="text-purple-100">Your personal dashboard</p>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <CheckCircle className="h-5 w-5 text-blue-600" />
-            <span className="text-2xl font-bold text-blue-600">
-              {tasks.filter(t => t.status === 'completed').length}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600">Tasks Done</p>
+      <div className={`bg-gradient-to-r ${currentTheme.colors.join(' ')} text-white p-8 rounded-b-3xl shadow-xl relative overflow-hidden`}>
+        <div className="absolute top-0 right-0 opacity-20">
+          <Sparkles className="h-64 w-64 text-white" />
         </div>
-        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <Star className="h-5 w-5 text-green-600" />
-            <span className="text-2xl font-bold text-green-600">
-              {wallet?.points || 0}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600">Points</p>
-        </div>
-        <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <Home className="h-5 w-5 text-yellow-600" />
-            <span className="text-2xl font-bold text-yellow-600">
-              {chores.filter(c => c.status === 'completed').length}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600">Chores Done</p>
-        </div>
-        <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <Trophy className="h-5 w-5 text-purple-600" />
-            <span className="text-2xl font-bold text-purple-600">
-              {rewards.filter(r => r.status === 'redeemed').length}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600">Rewards</p>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-white rounded-xl border border-gray-200 p-2">
-        <div className="flex flex-wrap gap-2">
-          {tabs.map(tab => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        {/* Tasks Tab */}
-        {activeTab === 'tasks' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">My Tasks</h2>
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-5xl font-bold mb-2">
+                Hi {childName}! 👋
+              </h1>
+              <p className="text-xl text-white/90">
+                {age !== null ? `${age} years old` : 'Awesome kid'} • {getMotivationalMessage()}
+              </p>
             </div>
-            {tasks.length === 0 ? (
-              <div className="text-center py-8">
-                <CheckCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No tasks assigned yet!</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {tasks.map(task => (
-                  <div
-                    key={task.id}
-                    className="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-colors"
+            <div className="flex gap-2">
+              {themes.map((theme, idx) => {
+                const ThemeIcon = theme.icon;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentTheme(theme)}
+                    className={`p-3 rounded-xl bg-white/20 hover:bg-white/30 transition-all ${
+                      currentTheme.name === theme.name ? 'bg-white/30 scale-110' : ''
+                    }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-1">{task.title}</h3>
-                        {task.description && (
-                          <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-                        )}
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          {task.deadline && (
-                            <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>
+                    <ThemeIcon className="h-6 w-6" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Total Savings Card */}
+          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border-2 border-white/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white/80 text-lg mb-2">Your Total Savings</p>
+                <p className="text-5xl font-bold">{formatCurrency(stats.totalSaved)}</p>
+                <p className="text-white/70 mt-2">
+                  {stats.activeGoals} active goal{stats.activeGoals !== 1 ? 's' : ''} • {stats.completedGoals} completed! 🎉
+                </p>
+              </div>
+              <div className="p-6 bg-white/30 rounded-full">
+                <PiggyBank className="h-16 w-16 text-white" />
+              </div>
+            </div>
+            
+            {/* Progress Bar */}
+            {stats.totalTarget > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between text-white/90 mb-2">
+                  <span className="font-semibold">Overall Progress</span>
+                  <span className="font-bold text-xl">{stats.progress.toFixed(0)}%</span>
+                </div>
+                <div className="h-6 bg-white/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-yellow-300 to-pink-300 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                    style={{ width: `${Math.min(stats.progress, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-pink-200 hover:scale-110 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-3 bg-pink-100 rounded-xl group-hover:bg-pink-200 transition-colors">
+                <Target className="h-6 w-6 text-pink-600 group-hover:scale-125 transition-transform" />
+              </div>
+              <Sparkles className="h-5 w-5 text-pink-400 animate-pulse" />
+            </div>
+            <p className="text-3xl font-bold text-pink-600 group-hover:text-pink-700">{stats.activeGoals}</p>
+            <p className="text-sm text-gray-600 mt-1">Active Goals</p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-green-200 hover:scale-110 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-3 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors">
+                <Trophy className="h-6 w-6 text-green-600 group-hover:scale-125 transition-transform" />
+              </div>
+              <Star className="h-5 w-5 text-green-400 animate-pulse" />
+            </div>
+            <p className="text-3xl font-bold text-green-600 group-hover:text-green-700">{stats.completedGoals}</p>
+            <p className="text-sm text-gray-600 mt-1">Completed!</p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200 hover:scale-110 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-3 bg-blue-100 rounded-xl group-hover:bg-blue-200 transition-colors">
+                <TrendingUp className="h-6 w-6 text-blue-600 group-hover:scale-125 transition-transform" />
+              </div>
+              <Rocket className="h-5 w-5 text-blue-400 animate-pulse" />
+            </div>
+            <p className="text-3xl font-bold text-blue-600 group-hover:text-blue-700">{formatCurrency(stats.totalSaved)}</p>
+            <p className="text-sm text-gray-600 mt-1">Total Saved</p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-200 hover:scale-110 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-3 bg-purple-100 rounded-xl group-hover:bg-purple-200 transition-colors">
+                <Award className="h-6 w-6 text-purple-600 group-hover:scale-125 transition-transform" />
+              </div>
+              <Crown className="h-5 w-5 text-purple-400 animate-pulse" />
+            </div>
+            <p className="text-3xl font-bold text-purple-600 group-hover:text-purple-700">{achievements.length}</p>
+            <p className="text-sm text-gray-600 mt-1">Achievements</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Savings Goals */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-3xl p-6 shadow-xl border-2 border-purple-100">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl">
+                    <Target className="h-8 w-8 text-purple-600" />
+                  </div>
+                  My Savings Goals
+                </h2>
+              </div>
+
+              {savingsGoals.length > 0 ? (
+                <div className="space-y-4">
+                  {savingsGoals.map((goal) => {
+                    const progress = goal.targetAmount > 0 
+                      ? Math.min((goal.currentAmount / goal.targetAmount) * 100, 100) 
+                      : 0;
+                    const isCompleted = progress >= 100;
+                    const remaining = Math.max(0, goal.targetAmount - goal.currentAmount);
+
+                    // Get category icon and color
+                    const categoryColors = {
+                      education: { bg: 'bg-blue-100', text: 'text-blue-600', icon: '🎓' },
+                      health: { bg: 'bg-red-100', text: 'text-red-600', icon: '❤️' },
+                      clothes: { bg: 'bg-purple-100', text: 'text-purple-600', icon: '👕' },
+                      technology: { bg: 'bg-gray-100', text: 'text-gray-600', icon: '💻' },
+                      gifts: { bg: 'bg-pink-100', text: 'text-pink-600', icon: '🎁' },
+                      activities: { bg: 'bg-yellow-100', text: 'text-yellow-600', icon: '⭐' },
+                      travel: { bg: 'bg-cyan-100', text: 'text-cyan-600', icon: '✈️' },
+                      future: { bg: 'bg-green-100', text: 'text-green-600', icon: '🌱' }
+                    };
+
+                    const category = categoryColors[goal.category] || categoryColors.future;
+
+                    return (
+                      <div
+                        key={goal.id}
+                        onClick={() => setSelectedGoal(goal)}
+                        className={`border-2 rounded-2xl p-6 cursor-pointer hover:shadow-2xl hover:scale-105 transition-all duration-300 ${
+                          isCompleted 
+                            ? 'border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100' 
+                            : 'border-purple-200 bg-white hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-4">
+                            <div className={`text-4xl ${category.bg} p-4 rounded-xl`}>
+                              {category.icon}
+                            </div>
+                            <div>
+                              <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                                {goal.goalName}
+                                {isCompleted && (
+                                  <span className="text-2xl">🎉</span>
+                                )}
+                              </h3>
+                              <p className="text-sm text-gray-500 capitalize mt-1">{goal.category}</p>
+                            </div>
+                          </div>
+                          {isCompleted && (
+                            <div className="p-2 bg-green-100 rounded-full">
+                              <CheckCircle className="h-6 w-6 text-green-600" />
+                            </div>
                           )}
-                          {task.reward && (
-                            <span className="text-green-600">🎁 {task.reward}</span>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="font-bold text-gray-900">
+                              {formatCurrency(goal.currentAmount)} of {formatCurrency(goal.targetAmount)}
+                            </span>
+                            <span className={`font-bold text-lg ${isCompleted ? 'text-green-600' : 'text-purple-600'}`}>
+                              {progress.toFixed(0)}%
+                            </span>
+                          </div>
+                          <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-1000 ${
+                                isCompleted
+                                  ? 'bg-gradient-to-r from-green-400 to-emerald-500'
+                                  : 'bg-gradient-to-r from-purple-400 to-pink-400'
+                              }`}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Goal Details */}
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-4 text-gray-600">
+                            {goal.dueDate && (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                {new Date(goal.dueDate).toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            )}
+                          </div>
+                          {!isCompleted && (
+                            <span className="font-bold text-purple-600">
+                              {formatCurrency(remaining)} to go! 💪
+                            </span>
                           )}
-                          {task.points > 0 && (
-                            <span className="text-blue-600">⭐ {task.points} points</span>
+                          {isCompleted && (
+                            <span className="font-bold text-green-600 flex items-center gap-1">
+                              <Trophy className="h-4 w-4" />
+                              Goal Achieved!
+                            </span>
                           )}
                         </div>
                       </div>
-                      {task.status === 'pending' && (
-                        <button
-                          onClick={() => handleCompleteTask(task.id)}
-                          className="ml-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          Complete
-                        </button>
-                      )}
-                      {task.status === 'completed' && (
-                        <span className="ml-4 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-sm">
-                          Waiting for approval
-                        </span>
-                      )}
-                      {task.status === 'approved' && (
-                        <span className="ml-4 px-3 py-1 bg-green-100 text-green-800 rounded-lg text-sm">
-                          ✓ Approved
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* School Tab */}
-        {activeTab === 'school' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">School & Learning</h2>
-            </div>
-            {homework.length === 0 ? (
-              <div className="text-center py-8">
-                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No homework assigned!</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {homework.map(hw => (
-                  <div
-                    key={hw.id}
-                    className="border-2 border-gray-200 rounded-xl p-4"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-1">{hw.title}</h3>
-                        <p className="text-sm text-gray-600 mb-2">Subject: {hw.subject}</p>
-                        {hw.dueDate && (
-                          <p className="text-sm text-gray-500">
-                            Due: {new Date(hw.dueDate).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                      {hw.status === 'assigned' && (
-                        <button
-                          onClick={() => {
-                            setSelectedHomework(hw);
-                            setShowHomeworkModal(true);
-                          }}
-                          className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                        >
-                          Upload Work
-                        </button>
-                      )}
-                      {hw.status === 'submitted' && (
-                        <span className="ml-4 px-3 py-1 bg-green-100 text-green-800 rounded-lg text-sm">
-                          Submitted
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Chores Tab */}
-        {activeTab === 'chores' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">My Chores</h2>
-            </div>
-            {chores.length === 0 ? (
-              <div className="text-center py-8">
-                <Home className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No chores assigned!</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {chores.map(chore => (
-                  <div
-                    key={chore.id}
-                    className="border-2 border-gray-200 rounded-xl p-4"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-1">{chore.title}</h3>
-                        {chore.streak > 0 && (
-                          <p className="text-sm text-blue-600 mb-2">
-                            🔥 {chore.streak} day streak!
-                          </p>
-                        )}
-                        {chore.points > 0 && (
-                          <p className="text-sm text-green-600">⭐ {chore.points} points</p>
-                        )}
-                      </div>
-                      {chore.status === 'pending' && (
-                        <button
-                          onClick={() => handleCompleteChore(chore.id)}
-                          className="ml-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                        >
-                          Done!
-                        </button>
-                      )}
-                      {chore.status === 'completed' && (
-                        <span className="ml-4 px-3 py-1 bg-green-100 text-green-800 rounded-lg text-sm">
-                          ✓ Completed
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Wallet Tab */}
-        {activeTab === 'wallet' && wallet && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">My Wallet</h2>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 text-center">
-                <Star className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                <p className="text-3xl font-bold text-blue-600">{wallet.points || 0}</p>
-                <p className="text-sm text-gray-600 mt-1">Points</p>
-              </div>
-              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center">
-                <DollarSign className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <p className="text-3xl font-bold text-green-600">
-                  ${(wallet.balance || 0).toFixed(2)}
-                </p>
-                <p className="text-sm text-gray-600 mt-1">Money</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowMoneyRequestModal(true)}
-              className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
-            >
-              Request Money from Parent
-            </button>
-          </div>
-        )}
-
-        {/* Messages Tab */}
-        {activeTab === 'messages' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Messages</h2>
-              <button
-                onClick={() => setShowMessageModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                <Send className="h-4 w-4 inline mr-2" />
-                Send Message
-              </button>
-            </div>
-            <div className="space-y-3">
-              {messages.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">No messages yet</p>
+                    );
+                  })}
                 </div>
               ) : (
-                messages.map(msg => (
-                  <div key={msg.id} className="border-2 border-gray-200 rounded-xl p-4">
-                    <p className="text-gray-900 mb-2">{msg.message}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(msg.createdAt).toLocaleString()}
+                <div className="text-center py-12 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl">
+                  <Target className="h-16 w-16 text-purple-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">No goals yet!</h3>
+                  <p className="text-gray-600">Ask a parent to help you set up your first savings goal! 🎯</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Achievements & Fun Stuff */}
+          <div className="space-y-6">
+            {/* Achievements */}
+            <div className="bg-white rounded-3xl p-6 shadow-xl border-2 border-yellow-100">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2 mb-4">
+                <Trophy className="h-6 w-6 text-yellow-500" />
+                Achievements
+              </h2>
+              {achievements.length > 0 ? (
+                <div className="space-y-3">
+                  {achievements.map((achievement, idx) => {
+                    const Icon = achievement.icon;
+                    return (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-200"
+                      >
+                        <div className="p-2 bg-yellow-100 rounded-lg">
+                          <Icon className={`h-5 w-5 ${achievement.color}`} />
+                        </div>
+                        <span className="font-semibold text-gray-900">{achievement.name}</span>
+                        <Star className="h-4 w-4 text-yellow-400 ml-auto" />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Star className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">Keep saving to unlock achievements! 🌟</p>
+                </div>
+              )}
+            </div>
+
+            {/* Fun Facts */}
+            <div className="bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 rounded-3xl p-6 shadow-xl border-2 border-purple-200">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2 mb-4">
+                <Sparkles className="h-6 w-6 text-purple-600" />
+                Fun Facts
+              </h2>
+              <div className="space-y-4">
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4">
+                  <p className="text-sm font-semibold text-gray-900 mb-1">💰 Your Savings Power</p>
+                  <p className="text-xs text-gray-600">
+                    You've saved {formatCurrency(stats.totalSaved)}! That's amazing! 🎉
+                  </p>
+                </div>
+                {stats.totalTarget > 0 && (
+                  <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4">
+                    <p className="text-sm font-semibold text-gray-900 mb-1">🎯 Progress</p>
+                    <p className="text-xs text-gray-600">
+                      You're {stats.progress.toFixed(0)}% of the way to all your goals!
                     </p>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Health Tab */}
-        {activeTab === 'health' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Health & Well-Being</h2>
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <button
-                onClick={() => handleAddMood('happy')}
-                className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl hover:bg-yellow-100 transition-colors"
-              >
-                <Smile className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-                <p className="text-sm font-medium">Happy</p>
-              </button>
-              <button
-                onClick={() => handleAddMood('okay')}
-                className="p-4 bg-blue-50 border-2 border-blue-200 rounded-xl hover:bg-blue-100 transition-colors"
-              >
-                <Meh className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                <p className="text-sm font-medium">Okay</p>
-              </button>
-              <button
-                onClick={() => handleAddMood('sad')}
-                className="p-4 bg-gray-50 border-2 border-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <Frown className="h-8 w-8 text-gray-600 mx-auto mb-2" />
-                <p className="text-sm font-medium">Sad</p>
-              </button>
-            </div>
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">How I Feel Today</h3>
-              <p className="text-sm text-gray-600">Tap a mood above to record how you're feeling!</p>
-            </div>
-          </div>
-        )}
-
-        {/* Behavior Tab */}
-        {activeTab === 'behavior' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Behavior & Achievements</h2>
-            {behavior.length === 0 ? (
-              <div className="text-center py-8">
-                <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No behavior notes yet</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {behavior.map(beh => (
-                  <div key={beh.id} className="border-2 border-gray-200 rounded-xl p-4">
-                    <h3 className="font-semibold text-gray-900 mb-1">{beh.title}</h3>
-                    {beh.description && (
-                      <p className="text-sm text-gray-600 mb-2">{beh.description}</p>
-                    )}
-                    {beh.points > 0 && (
-                      <p className="text-sm text-green-600">⭐ +{beh.points} points</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Calendar Tab */}
-        {activeTab === 'calendar' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Family Calendar</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              View-only: You can see events your parent added, but cannot edit them.
-            </p>
-            {parentId ? (
-              <CalendarView parentId={parentId} />
-            ) : (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No parent linked. Calendar events will appear here once linked.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Screen Time Tab */}
-        {activeTab === 'screentime' && screenTimeSettings && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Screen Time</h2>
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900">Daily Limit</h3>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {screenTimeSettings.dailyLimit || 120} minutes
+                )}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4">
+                  <p className="text-sm font-semibold text-gray-900 mb-1">⭐ You're Awesome!</p>
+                  <p className="text-xs text-gray-600">
+                    Saving money is a superpower! Keep it up! 🚀
                   </p>
                 </div>
-                <Smartphone className="h-8 w-8 text-blue-600" />
               </div>
-              {screenTimeSettings.focusModeEnabled && (
-                <div className="mt-4 p-3 bg-yellow-100 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    🔒 Focus Mode is ON - Some features are locked
-                  </p>
-                </div>
-              )}
             </div>
-          </div>
-        )}
 
-        {/* Safety Tab */}
-        {activeTab === 'safety' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Safety & Emergency</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                onClick={handleSOS}
-                className="p-6 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors text-center"
-              >
-                <AlertTriangle className="h-12 w-12 mx-auto mb-3" />
-                <p className="text-xl font-bold">SOS Button</p>
-                <p className="text-sm mt-2">Tap to alert parent</p>
-              </button>
-              <button
-                onClick={handleShareLocation}
-                className="p-6 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-center"
-              >
-                <MapPin className="h-12 w-12 mx-auto mb-3" />
-                <p className="text-xl font-bold">Share Location</p>
-                <p className="text-sm mt-2">Send my location to parent</p>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Games Tab */}
-        {activeTab === 'games' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Approved Games</h2>
-            {games.length === 0 ? (
-              <div className="text-center py-8">
-                <Gamepad2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No games approved yet</p>
-                <p className="text-sm text-gray-500 mt-2">Ask your parent to approve games!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {games.map(game => (
-                  <div
-                    key={game.id}
-                    className="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-colors"
-                  >
-                    <Gamepad2 className="h-8 w-8 text-blue-600 mb-2" />
-                    <h3 className="font-semibold text-gray-900">{game.name}</h3>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Rewards Tab */}
-        {activeTab === 'rewards' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Rewards & Achievements</h2>
-            {rewards.length === 0 ? (
-              <div className="text-center py-8">
-                <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No rewards available yet</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {rewards.map(reward => (
-                  <div
-                    key={reward.id}
-                    className="border-2 border-gray-200 rounded-xl p-4"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-1">{reward.name}</h3>
-                        {reward.description && (
-                          <p className="text-sm text-gray-600 mb-2">{reward.description}</p>
-                        )}
-                        <p className="text-sm text-blue-600">
-                          Cost: {reward.cost} {reward.costType === 'points' ? 'points' : 'dollars'}
-                        </p>
-                      </div>
-                      {reward.status === 'available' && (
-                        <button
-                          onClick={() => handleRedeemReward(reward.id)}
-                          className="ml-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                        >
-                          Redeem
-                        </button>
-                      )}
-                      {reward.status === 'pending_approval' && (
-                        <span className="ml-4 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-sm">
-                          Pending
-                        </span>
-                      )}
-                      {reward.status === 'redeemed' && (
-                        <span className="ml-4 px-3 py-1 bg-green-100 text-green-800 rounded-lg text-sm">
-                          ✓ Redeemed
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Profile Tab */}
-        {activeTab === 'profile' && (
-          <ChildProfileView 
-            userProfile={userProfile}
-            currentUser={currentUser}
-            updateUserProfile={updateUserProfile}
-            uploadProfilePhoto={uploadProfilePhoto}
-          />
-        )}
-
-        {/* Settings Tab */}
-        {activeTab === 'settings' && (
-          <ChildSettingsView 
-            userProfile={userProfile}
-            logout={logout}
-            navigate={navigate}
-          />
-        )}
-      </div>
-
-      {/* Message Modal */}
-      {showMessageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Send Message to Parent</h3>
-              <button
-                onClick={() => setShowMessageModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <textarea
-              placeholder="Type your message..."
-              className="w-full border-2 border-gray-200 rounded-lg p-3 mb-4 min-h-32"
-              id="messageInput"
-            />
-            {voiceNote && (
-              <div className="mb-4 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Mic className="h-5 w-5 text-blue-600" />
-                  <span className="text-sm text-gray-700">Voice note recorded</span>
-                </div>
-                <button
-                  onClick={() => setVoiceNote(null)}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            )}
-            <div className="flex space-x-2 mb-4">
-              <button
-                onClick={recordingVoice ? () => setRecordingVoice(false) : handleStartVoiceRecording}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  recordingVoice
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                <Mic className="h-4 w-4 inline mr-2" />
-                {recordingVoice ? 'Stop Recording' : 'Record Voice'}
-              </button>
-              {voiceNote && (
-                <button
-                  onClick={handleSendVoiceNote}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
-                >
-                  Send Voice Note
-                </button>
-              )}
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => {
-                  const input = document.getElementById('messageInput');
-                  if (input.value.trim()) {
-                    handleSendMessage(input.value);
-                    input.value = '';
-                  }
-                }}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Send
-              </button>
-              <button
-                onClick={() => {
-                  setShowMessageModal(false);
-                  setVoiceNote(null);
-                }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Homework Upload Modal */}
-      {showHomeworkModal && selectedHomework && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Upload Homework</h3>
-              <button
-                onClick={() => {
-                  setShowHomeworkModal(false);
-                  setSelectedHomework(null);
-                  setHomeworkFiles([]);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">
-                <strong>{selectedHomework.title}</strong> - {selectedHomework.subject}
+            {/* Motivational Quote */}
+            <div className="bg-gradient-to-br from-blue-100 to-purple-100 rounded-3xl p-6 shadow-xl border-2 border-blue-200 text-center">
+              <Heart className="h-8 w-8 text-pink-500 mx-auto mb-3" />
+              <p className="text-lg font-bold text-gray-900 mb-2">
+                "Every great journey starts with a single step!"
               </p>
-              <input
-                type="file"
-                multiple
-                accept="image/*,.pdf,.doc,.docx"
-                onChange={(e) => setHomeworkFiles(Array.from(e.target.files))}
-                className="w-full border-2 border-gray-200 rounded-lg p-2"
-              />
-              {homeworkFiles.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {homeworkFiles.map((file, idx) => (
-                    <div key={idx} className="text-sm text-gray-600 flex items-center justify-between">
-                      <span>{file.name}</span>
-                      <button
-                        onClick={() => setHomeworkFiles(files => files.filter((_, i) => i !== idx))}
-                        className="text-red-600"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => handleUploadHomework(selectedHomework.id)}
-                disabled={homeworkFiles.length === 0}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Upload & Submit
-              </button>
-              <button
-                onClick={() => {
-                  setShowHomeworkModal(false);
-                  setSelectedHomework(null);
-                  setHomeworkFiles([]);
-                }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                Cancel
-              </button>
+              <p className="text-sm text-gray-600">
+                You're doing amazing! Keep saving and reaching for your dreams! 🌈
+              </p>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Money Request Modal */}
-      {showMoneyRequestModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Request Money</h3>
-              <button
-                onClick={() => setShowMoneyRequestModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount ($)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  id="moneyAmount"
-                  className="w-full border-2 border-gray-200 rounded-lg p-3"
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason (Optional)
-                </label>
-                <textarea
-                  id="moneyReason"
-                  className="w-full border-2 border-gray-200 rounded-lg p-3 min-h-24"
-                  placeholder="Why do you need this money?"
-                />
-              </div>
-            </div>
-            <div className="flex space-x-3 mt-6">
-              <button
-                onClick={() => {
-                  const amount = document.getElementById('moneyAmount').value;
-                  const reason = document.getElementById('moneyReason').value;
-                  if (amount && parseFloat(amount) > 0) {
-                    handleRequestMoney(amount, reason);
-                    document.getElementById('moneyAmount').value = '';
-                    document.getElementById('moneyReason').value = '';
-                  } else {
-                    toast.error('Please enter a valid amount');
-                  }
-                }}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                Send Request
-              </button>
-              <button
-                onClick={() => setShowMoneyRequestModal(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Child Profile View Component
-function ChildProfileView({ userProfile, currentUser, updateUserProfile, uploadProfilePhoto }) {
-  const [editMode, setEditMode] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: userProfile?.firstName || '',
-    lastName: userProfile?.lastName || '',
-    phone: userProfile?.phone || ''
-  });
-
-  const handlePhotoChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Photo must be less than 5MB');
-      return;
-    }
-
-    setPhotoPreview(URL.createObjectURL(file));
-    setLoading(true);
-    try {
-      await uploadProfilePhoto(file);
-      toast.success('Profile photo updated!');
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast.error('Failed to upload photo');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      await updateUserProfile(formData);
-      setEditMode(false);
-      toast.success('Profile updated!');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-gray-900">My Profile</h2>
-        {!editMode ? (
-          <button
-            onClick={() => setEditMode(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-          >
-            <Edit3 className="h-4 w-4" />
-            <span>Edit</span>
-          </button>
-        ) : (
-          <div className="flex space-x-2">
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2 disabled:opacity-50"
-            >
-              <Save className="h-4 w-4" />
-              <span>Save</span>
-            </button>
-            <button
-              onClick={() => {
-                setEditMode(false);
-                setFormData({
-                  firstName: userProfile?.firstName || '',
-                  lastName: userProfile?.lastName || '',
-                  phone: userProfile?.phone || ''
-                });
-              }}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Profile Photo */}
-      <div className="flex flex-col items-center mb-6">
-        <div className="relative">
-          {photoPreview || userProfile?.photoURL ? (
-            <img
-              src={photoPreview || userProfile?.photoURL}
-              alt="Profile"
-              className="h-32 w-32 rounded-full object-cover border-4 border-blue-200"
-            />
-          ) : (
-            <div className="h-32 w-32 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center border-4 border-blue-200">
-              <span className="text-4xl font-bold text-white">
-                {userProfile?.firstName?.[0]}{userProfile?.lastName?.[0]}
-              </span>
-            </div>
-          )}
-          {editMode && (
-            <label className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full cursor-pointer hover:bg-blue-700">
-              <Camera className="h-5 w-5" />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="hidden"
-              />
-            </label>
-          )}
-        </div>
-        <p className="text-sm text-gray-600 mt-2">{userProfile?.email}</p>
-      </div>
-
-      {/* Profile Information */}
-      <div className="space-y-4">
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-          {editMode ? (
-            <input
-              type="text"
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              className="w-full border-2 border-gray-200 rounded-lg p-2"
-            />
-          ) : (
-            <p className="text-gray-900 font-medium">{userProfile?.firstName || 'Not set'}</p>
-          )}
-        </div>
-
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-          {editMode ? (
-            <input
-              type="text"
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              className="w-full border-2 border-gray-200 rounded-lg p-2"
-            />
-          ) : (
-            <p className="text-gray-900 font-medium">{userProfile?.lastName || 'Not set'}</p>
-          )}
-        </div>
-
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-          <p className="text-gray-900 font-medium">{userProfile?.email || 'Not set'}</p>
-          <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
-        </div>
-
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-          {editMode ? (
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full border-2 border-gray-200 rounded-lg p-2"
-              placeholder="(123) 456-7890"
-            />
-          ) : (
-            <p className="text-gray-900 font-medium">{userProfile?.phone || 'Not set'}</p>
-          )}
-        </div>
-
-        {/* Account Info */}
-        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-4 mt-6">
-          <h3 className="font-semibold text-gray-900 mb-3">Account Information</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Account Type:</span>
-              <span className="font-medium text-gray-900">Child Account</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Member Since:</span>
-              <span className="font-medium text-gray-900">
-                {userProfile?.createdAt ? new Date(userProfile.createdAt).toLocaleDateString() : 'N/A'}
-              </span>
-            </div>
-            {userProfile?.parentId && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Linked to Parent:</span>
-                <span className="font-medium text-green-600">✓ Yes</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Child Settings View Component
-function ChildSettingsView({ userProfile, logout, navigate }) {
-  const [notifications, setNotifications] = useState({
-    taskReminders: true,
-    messageAlerts: true,
-    rewardUpdates: true,
-    homeworkDeadlines: true
-  });
-  const [theme, setTheme] = useState('light');
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const Toggle = ({ enabled, onChange, label }) => (
-    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
-      <span className="text-gray-900 font-medium">{label}</span>
-      <button
-        onClick={() => onChange(!enabled)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          enabled ? 'bg-blue-600' : 'bg-gray-300'
-        }`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            enabled ? 'translate-x-6' : 'translate-x-1'
-          }`}
-        />
-      </button>
-    </div>
-  );
-
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Settings</h2>
-
-      {/* Notifications */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-          <Bell className="h-5 w-5 mr-2 text-blue-600" />
-          Notifications
-        </h3>
-        <div className="space-y-3">
-          <Toggle
-            enabled={notifications.taskReminders}
-            onChange={(val) => setNotifications({ ...notifications, taskReminders: val })}
-            label="Task Reminders"
-          />
-          <Toggle
-            enabled={notifications.messageAlerts}
-            onChange={(val) => setNotifications({ ...notifications, messageAlerts: val })}
-            label="Message Alerts"
-          />
-          <Toggle
-            enabled={notifications.rewardUpdates}
-            onChange={(val) => setNotifications({ ...notifications, rewardUpdates: val })}
-            label="Reward Updates"
-          />
-          <Toggle
-            enabled={notifications.homeworkDeadlines}
-            onChange={(val) => setNotifications({ ...notifications, homeworkDeadlines: val })}
-            label="Homework Deadlines"
-          />
-        </div>
-      </div>
-
-      {/* Appearance */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-          <Palette className="h-5 w-5 mr-2 text-purple-600" />
-          Appearance
-        </h3>
-        <div className="grid grid-cols-3 gap-3">
-          <button
-            onClick={() => setTheme('light')}
-            className={`p-4 rounded-xl border-2 transition-all ${
-              theme === 'light'
-                ? 'border-blue-600 bg-blue-50'
-                : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
-          >
-            <Sun className="h-6 w-6 mx-auto mb-2 text-yellow-600" />
-            <p className="text-sm font-medium">Light</p>
-          </button>
-          <button
-            onClick={() => setTheme('dark')}
-            className={`p-4 rounded-xl border-2 transition-all ${
-              theme === 'dark'
-                ? 'border-blue-600 bg-blue-50'
-                : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
-          >
-            <Moon className="h-6 w-6 mx-auto mb-2 text-indigo-600" />
-            <p className="text-sm font-medium">Dark</p>
-          </button>
-          <button
-            onClick={() => setTheme('auto')}
-            className={`p-4 rounded-xl border-2 transition-all ${
-              theme === 'auto'
-                ? 'border-blue-600 bg-blue-50'
-                : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
-          >
-            <Monitor className="h-6 w-6 mx-auto mb-2 text-gray-600" />
-            <p className="text-sm font-medium">Auto</p>
-          </button>
-        </div>
-      </div>
-
-      {/* Account Actions */}
-      <div className="space-y-4 pt-6 border-t border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Account</h3>
-        
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="w-full flex items-center justify-between p-4 bg-red-50 border-2 border-red-200 rounded-xl hover:bg-red-100 transition-colors"
-        >
-          <div className="flex items-center space-x-3">
-            <LogOut className="h-5 w-5 text-red-600" />
-            <span className="font-medium text-red-600">Sign Out</span>
-          </div>
-          <ChevronRight className="h-5 w-5 text-red-600" />
-        </button>
-      </div>
-
-      {/* Logout Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Sign Out?</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to sign out of your account?</p>
-            <div className="flex space-x-3">
-              <button
-                onClick={handleLogout}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                Yes, Sign Out
-              </button>
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Calendar View Component (Read-only for children)
-function CalendarView({ parentId }) {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  useEffect(() => {
-    loadParentEvents();
-  }, [parentId, currentDate]);
-
-  const loadParentEvents = async () => {
-    setLoading(true);
-    try {
-      const { collection, query, where, getDocs } = await import('firebase/firestore');
-      const { db } = await import('../firebase/config');
-      
-      const q = query(
-        collection(db, 'events'),
-        where('userId', '==', parentId)
-      );
-      
-      const snapshot = await getDocs(q);
-      const eventsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        date: doc.data().date?.toDate(),
-        createdAt: doc.data().createdAt?.toDate()
-      }));
-
-      setEvents(eventsData);
-    } catch (error) {
-      console.error('Error loading calendar events:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getDaysInMonth = (date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay();
-
-    const days = [];
-    const prevMonthDays = new Date(year, month, 0).getDate();
-    for (let i = startingDay - 1; i >= 0; i--) {
-      days.push({ day: prevMonthDays - i, isCurrentMonth: false });
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push({ day: i, isCurrentMonth: true, date: new Date(year, month, i) });
-    }
-    const remainingDays = 42 - days.length;
-    for (let i = 1; i <= remainingDays; i++) {
-      days.push({ day: i, isCurrentMonth: false });
-    }
-    return days;
-  };
-
-  const getEventsForDate = (date) => {
-    if (!date) return [];
-    return events.filter(event => {
-      const eventDate = event.date;
-      if (!eventDate) return false;
-      return eventDate.toDateString() === date.toDateString();
-    });
-  };
-
-  const calendarDays = getDaysInMonth(currentDate);
-  const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-  if (loading) {
-    return (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading calendar...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Calendar Header */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
-          className="p-2 hover:bg-gray-100 rounded-lg"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <h3 className="text-lg font-bold text-gray-900">{monthName}</h3>
-        <button
-          onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
-          className="p-2 hover:bg-gray-100 rounded-lg"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-2">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
-            {day}
-          </div>
-        ))}
-        {calendarDays.map((day, idx) => {
-          const dayEvents = day.isCurrentMonth && day.date ? getEventsForDate(day.date) : [];
-          return (
-            <div
-              key={idx}
-              className={`min-h-20 p-1 border border-gray-200 rounded-lg ${
-                day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-              }`}
-            >
-              <div className={`text-sm font-medium mb-1 ${
-                day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-              }`}>
-                {day.day}
-              </div>
-              {dayEvents.slice(0, 2).map(event => (
-                <div
-                  key={event.id}
-                  className="text-xs bg-blue-100 text-blue-700 rounded px-1 py-0.5 mb-1 truncate"
-                  title={event.title}
-                >
-                  {event.title}
-                </div>
-              ))}
-              {dayEvents.length > 2 && (
-                <div className="text-xs text-gray-500">+{dayEvents.length - 2} more</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Today's Events */}
-      <div className="mt-6">
-        <h4 className="font-semibold text-gray-900 mb-3">Today's Events</h4>
-        {getEventsForDate(new Date()).length === 0 ? (
-          <p className="text-sm text-gray-500">No events today</p>
-        ) : (
-          <div className="space-y-2">
-            {getEventsForDate(new Date()).map(event => (
-              <div key={event.id} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <h5 className="font-medium text-gray-900">{event.title}</h5>
-                {event.startTime && (
-                  <p className="text-sm text-gray-600">Time: {event.startTime}</p>
-                )}
-                {event.location && (
-                  <p className="text-sm text-gray-600">Location: {event.location}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

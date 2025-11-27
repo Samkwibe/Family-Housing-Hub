@@ -9,6 +9,7 @@ import Documents from '../pages/Documents'
 import Messages from '../pages/Messages'
 import Landlord from '../pages/Landlord'
 import Profile from '../pages/Profile'
+import ChildDashboard from '../pages/ChildDashboard'
 import ProtectedRoute from '../components/ProtectedRoute'
 import Layout from '../components/Layout'
 
@@ -64,6 +65,11 @@ export default function AppRouter() {
           <Layout>
             <Profile />
           </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/child-dashboard" element={
+        <ProtectedRoute>
+          <ChildDashboard />
         </ProtectedRoute>
       } />
     </Routes>

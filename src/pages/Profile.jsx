@@ -447,22 +447,25 @@ export default function Profile() {
               {familyMembers.length}
             </span>
           </h3>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowInviteMember(true)}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-colors flex items-center space-x-2"
-            >
-              <Mail className="h-4 w-4" />
-              <span>Invite Member</span>
-            </button>
-            <button
-              onClick={() => setShowAddMember(!showAddMember)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center space-x-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Member</span>
-            </button>
-          </div>
+          {/* Only parents can add/remove family members */}
+          {userProfile?.role !== 'child' && (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowInviteMember(true)}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-colors flex items-center space-x-2"
+              >
+                <Mail className="h-4 w-4" />
+                <span>Invite Member</span>
+              </button>
+              <button
+                onClick={() => setShowAddMember(!showAddMember)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Member</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Add Member Form */}
@@ -654,12 +657,15 @@ export default function Profile() {
                       <p className="text-sm text-gray-500 capitalize">{member.relationship}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleRemoveMember(member.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {/* Only parents can remove family members */}
+                  {userProfile?.role !== 'child' && (
+                    <button
+                      onClick={() => handleRemoveMember(member.id)}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2 text-sm">
                   {member.age && (

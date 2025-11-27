@@ -240,6 +240,34 @@ export const userService = {
     }
   },
 
+  // Get user by email
+  async getUserByEmail(email) {
+    try {
+      const q = query(
+        collection(db, 'users'),
+        where('email', '==', email.toLowerCase())
+      );
+
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        return null;
+      }
+
+      const userDoc = snapshot.docs[0];
+      const data = {
+        id: userDoc.id,
+        ...userDoc.data(),
+        createdAt: userDoc.data().createdAt?.toDate(),
+        updatedAt: userDoc.data().updatedAt?.toDate(),
+        lastLogin: userDoc.data().lastLogin?.toDate()
+      };
+      return data;
+    } catch (error) {
+      console.error('Error getting user by email:', error);
+      throw new FirebaseServiceError('Failed to find user by email', 'USER_FIND_FAILED');
+    }
+  },
+
   // Get child accounts by parent ID
   async getChildrenByParent(parentId) {
     try {

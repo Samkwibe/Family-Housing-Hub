@@ -82,6 +82,27 @@ export function AuthProvider({ children }) {
         photoURL: userData.photoURL || null
       });
 
+      // Determine if this is a child account
+      const isChild = userData.role === 'child';
+      let parentData = null;
+      let parentId = null;
+
+      // If child account and parent email provided, find and copy parent data
+      if (isChild && userData.parentEmail) {
+        try {
+          parentData = await userService.getUserByEmail(userData.parentEmail);
+          if (parentData) {
+            parentId = parentData.uid || parentData.id;
+            toast.success('Parent account found! Linking your account...');
+          } else {
+            toast.warning('Parent email not found. You can link your account later.');
+          }
+        } catch (parentError) {
+          console.error('Error finding parent:', parentError);
+          toast.warning('Could not find parent account. You can link your account later.');
+        }
+      }
+
       // Create initial user document in Firestore
       const userDoc = {
         uid: user.uid,
@@ -89,11 +110,11 @@ export function AuthProvider({ children }) {
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
         phone: userData.phone || '',
-        role: 'family',
-        userType: userData.userType || 'renter', // 'owner' or 'renter'
+        role: userData.role || 'family', // 'family' for parent, 'child' for child
+        userType: userData.userType || (parentData?.userType || 'renter'), // Copy from parent if child
 
-        // Address information (empty for new users)
-        address: {
+        // Address information - copy from parent if child, otherwise empty
+        address: parentData?.address || {
           street: '',
           unit: '',
           city: '',
@@ -102,11 +123,11 @@ export function AuthProvider({ children }) {
           country: 'USA'
         },
 
-        // Family members (empty array for new users)
-        familyMembers: [],
+        // Family members - copy from parent if child (children can't add/remove)
+        familyMembers: parentData?.familyMembers || [],
 
-        // Lease information (for renters)
-        lease: {
+        // Lease information - copy from parent if child
+        lease: parentData?.lease || {
           startDate: null,
           endDate: null,
           monthlyRent: 0,
@@ -114,8 +135,8 @@ export function AuthProvider({ children }) {
           landlordId: null
         },
 
-        // Property information (for owners)
-        property: {
+        // Property information - copy from parent if child
+        property: parentData?.property || {
           address: null,
           purchaseDate: null,
           purchasePrice: 0,
@@ -145,9 +166,13 @@ export function AuthProvider({ children }) {
           currency: 'USD'
         },
 
+        // Parent ID for child accounts
+        parentId: parentId || null,
+
         // Profile completion status
-        profileComplete: false,
-        onboardingComplete: false,
+        // Children skip onboarding, so mark as complete immediately
+        profileComplete: isChild ? true : false,
+        onboardingComplete: isChild ? true : false,
 
         // Timestamps
         createdAt: new Date(),
@@ -157,7 +182,11 @@ export function AuthProvider({ children }) {
 
       await userService.createUserProfile(user.uid, userDoc);
 
-      toast.success('Account created successfully! Please complete your profile.');
+      if (isChild) {
+        toast.success('Child account created successfully!');
+      } else {
+        toast.success('Account created successfully! Please complete your profile.');
+      }
       return userCredential;
     } catch (error) {
       console.error('Signup error:', error);

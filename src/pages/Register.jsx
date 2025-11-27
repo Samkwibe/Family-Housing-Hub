@@ -70,20 +70,12 @@ export default function Register() {
       // Check for pending invitations by email
       const invitations = await familyInvitationService.getInvitationsByEmail(formData.email);
 
-      // If child account, try to find parent by email
-      let parentId = null;
-      if (selectedRole === 'child' && formData.parentEmail) {
-        // In a real app, you'd query users by email to find parent
-        // For now, we'll store the parent email and link later
-        // This would require a users query by email service
-      }
-
       const userCredential = await signup(formData.email, formData.password, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
         role: selectedRole, // 'family' for parent, 'child' for child
-        parentId: parentId,
+        parentEmail: selectedRole === 'child' ? formData.parentEmail : null, // Pass parent email for child accounts
         familyMembers: []
       });
 

@@ -10,6 +10,7 @@ import Messages from '../pages/Messages'
 import Landlord from '../pages/Landlord'
 import Profile from '../pages/Profile'
 import ChildDashboard from '../pages/ChildDashboard'
+import ChildrenSavings from '../pages/ChildrenSavings'
 import ProtectedRoute from '../components/ProtectedRoute'
 import Layout from '../components/Layout'
 
@@ -70,6 +71,13 @@ export default function AppRouter() {
       <Route path="/child-dashboard" element={
         <ProtectedRoute>
           <ChildDashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/children" element={
+        <ProtectedRoute>
+          <Layout>
+            <ChildrenSavings />
+          </Layout>
         </ProtectedRoute>
       } />
     </Routes>

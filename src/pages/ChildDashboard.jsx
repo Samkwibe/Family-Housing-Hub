@@ -1,6 +1,7 @@
 // src/pages/ChildDashboard.jsx - Complete Child Dashboard with All Features
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import {
   childTasksService,
   childLearningService,
@@ -49,12 +50,27 @@ import {
   Unlock,
   Zap,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  User,
+  Mail,
+  Camera,
+  LogOut,
+  Bell,
+  Moon,
+  Sun,
+  Eye,
+  EyeOff,
+  Save,
+  Edit3,
+  Trash2,
+  Palette,
+  Monitor
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ChildDashboard() {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, logout, updateUserProfile, uploadProfilePhoto } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('tasks');
   const [loading, setLoading] = useState(true);
 
@@ -394,7 +410,9 @@ export default function ChildDashboard() {
     { id: 'screentime', label: 'Screen Time', icon: Smartphone },
     { id: 'safety', label: 'Safety', icon: Shield },
     { id: 'games', label: 'Games', icon: Gamepad2 },
-    { id: 'rewards', label: 'Rewards', icon: Star }
+    { id: 'rewards', label: 'Rewards', icon: Star },
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
   return (
@@ -905,6 +923,25 @@ export default function ChildDashboard() {
             )}
           </div>
         )}
+
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <ChildProfileView 
+            userProfile={userProfile}
+            currentUser={currentUser}
+            updateUserProfile={updateUserProfile}
+            uploadProfilePhoto={uploadProfilePhoto}
+          />
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <ChildSettingsView 
+            userProfile={userProfile}
+            logout={logout}
+            navigate={navigate}
+          />
+        )}
       </div>
 
       {/* Message Modal */}
@@ -1111,6 +1148,359 @@ export default function ChildDashboard() {
               </button>
               <button
                 onClick={() => setShowMoneyRequestModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Child Profile View Component
+function ChildProfileView({ userProfile, currentUser, updateUserProfile, uploadProfilePhoto }) {
+  const [editMode, setEditMode] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: userProfile?.firstName || '',
+    lastName: userProfile?.lastName || '',
+    phone: userProfile?.phone || ''
+  });
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Photo must be less than 5MB');
+      return;
+    }
+
+    setPhotoPreview(URL.createObjectURL(file));
+    setLoading(true);
+    try {
+      await uploadProfilePhoto(file);
+      toast.success('Profile photo updated!');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast.error('Failed to upload photo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      await updateUserProfile(formData);
+      setEditMode(false);
+      toast.success('Profile updated!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold text-gray-900">My Profile</h2>
+        {!editMode ? (
+          <button
+            onClick={() => setEditMode(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+          >
+            <Edit3 className="h-4 w-4" />
+            <span>Edit</span>
+          </button>
+        ) : (
+          <div className="flex space-x-2">
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2 disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" />
+              <span>Save</span>
+            </button>
+            <button
+              onClick={() => {
+                setEditMode(false);
+                setFormData({
+                  firstName: userProfile?.firstName || '',
+                  lastName: userProfile?.lastName || '',
+                  phone: userProfile?.phone || ''
+                });
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Profile Photo */}
+      <div className="flex flex-col items-center mb-6">
+        <div className="relative">
+          {photoPreview || userProfile?.photoURL ? (
+            <img
+              src={photoPreview || userProfile?.photoURL}
+              alt="Profile"
+              className="h-32 w-32 rounded-full object-cover border-4 border-blue-200"
+            />
+          ) : (
+            <div className="h-32 w-32 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center border-4 border-blue-200">
+              <span className="text-4xl font-bold text-white">
+                {userProfile?.firstName?.[0]}{userProfile?.lastName?.[0]}
+              </span>
+            </div>
+          )}
+          {editMode && (
+            <label className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full cursor-pointer hover:bg-blue-700">
+              <Camera className="h-5 w-5" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
+        <p className="text-sm text-gray-600 mt-2">{userProfile?.email}</p>
+      </div>
+
+      {/* Profile Information */}
+      <div className="space-y-4">
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+          {editMode ? (
+            <input
+              type="text"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              className="w-full border-2 border-gray-200 rounded-lg p-2"
+            />
+          ) : (
+            <p className="text-gray-900 font-medium">{userProfile?.firstName || 'Not set'}</p>
+          )}
+        </div>
+
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+          {editMode ? (
+            <input
+              type="text"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              className="w-full border-2 border-gray-200 rounded-lg p-2"
+            />
+          ) : (
+            <p className="text-gray-900 font-medium">{userProfile?.lastName || 'Not set'}</p>
+          )}
+        </div>
+
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+          <p className="text-gray-900 font-medium">{userProfile?.email || 'Not set'}</p>
+          <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+        </div>
+
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+          {editMode ? (
+            <input
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              className="w-full border-2 border-gray-200 rounded-lg p-2"
+              placeholder="(123) 456-7890"
+            />
+          ) : (
+            <p className="text-gray-900 font-medium">{userProfile?.phone || 'Not set'}</p>
+          )}
+        </div>
+
+        {/* Account Info */}
+        <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-4 mt-6">
+          <h3 className="font-semibold text-gray-900 mb-3">Account Information</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Account Type:</span>
+              <span className="font-medium text-gray-900">Child Account</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Member Since:</span>
+              <span className="font-medium text-gray-900">
+                {userProfile?.createdAt ? new Date(userProfile.createdAt).toLocaleDateString() : 'N/A'}
+              </span>
+            </div>
+            {userProfile?.parentId && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Linked to Parent:</span>
+                <span className="font-medium text-green-600">✓ Yes</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Child Settings View Component
+function ChildSettingsView({ userProfile, logout, navigate }) {
+  const [notifications, setNotifications] = useState({
+    taskReminders: true,
+    messageAlerts: true,
+    rewardUpdates: true,
+    homeworkDeadlines: true
+  });
+  const [theme, setTheme] = useState('light');
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const Toggle = ({ enabled, onChange, label }) => (
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+      <span className="text-gray-900 font-medium">{label}</span>
+      <button
+        onClick={() => onChange(!enabled)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          enabled ? 'bg-blue-600' : 'bg-gray-300'
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            enabled ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">Settings</h2>
+
+      {/* Notifications */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          <Bell className="h-5 w-5 mr-2 text-blue-600" />
+          Notifications
+        </h3>
+        <div className="space-y-3">
+          <Toggle
+            enabled={notifications.taskReminders}
+            onChange={(val) => setNotifications({ ...notifications, taskReminders: val })}
+            label="Task Reminders"
+          />
+          <Toggle
+            enabled={notifications.messageAlerts}
+            onChange={(val) => setNotifications({ ...notifications, messageAlerts: val })}
+            label="Message Alerts"
+          />
+          <Toggle
+            enabled={notifications.rewardUpdates}
+            onChange={(val) => setNotifications({ ...notifications, rewardUpdates: val })}
+            label="Reward Updates"
+          />
+          <Toggle
+            enabled={notifications.homeworkDeadlines}
+            onChange={(val) => setNotifications({ ...notifications, homeworkDeadlines: val })}
+            label="Homework Deadlines"
+          />
+        </div>
+      </div>
+
+      {/* Appearance */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          <Palette className="h-5 w-5 mr-2 text-purple-600" />
+          Appearance
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            onClick={() => setTheme('light')}
+            className={`p-4 rounded-xl border-2 transition-all ${
+              theme === 'light'
+                ? 'border-blue-600 bg-blue-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
+            <Sun className="h-6 w-6 mx-auto mb-2 text-yellow-600" />
+            <p className="text-sm font-medium">Light</p>
+          </button>
+          <button
+            onClick={() => setTheme('dark')}
+            className={`p-4 rounded-xl border-2 transition-all ${
+              theme === 'dark'
+                ? 'border-blue-600 bg-blue-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
+            <Moon className="h-6 w-6 mx-auto mb-2 text-indigo-600" />
+            <p className="text-sm font-medium">Dark</p>
+          </button>
+          <button
+            onClick={() => setTheme('auto')}
+            className={`p-4 rounded-xl border-2 transition-all ${
+              theme === 'auto'
+                ? 'border-blue-600 bg-blue-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
+            <Monitor className="h-6 w-6 mx-auto mb-2 text-gray-600" />
+            <p className="text-sm font-medium">Auto</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Account Actions */}
+      <div className="space-y-4 pt-6 border-t border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">Account</h3>
+        
+        <button
+          onClick={() => setShowLogoutConfirm(true)}
+          className="w-full flex items-center justify-between p-4 bg-red-50 border-2 border-red-200 rounded-xl hover:bg-red-100 transition-colors"
+        >
+          <div className="flex items-center space-x-3">
+            <LogOut className="h-5 w-5 text-red-600" />
+            <span className="font-medium text-red-600">Sign Out</span>
+          </div>
+          <ChevronRight className="h-5 w-5 text-red-600" />
+        </button>
+      </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Sign Out?</h3>
+            <p className="text-gray-600 mb-6">Are you sure you want to sign out of your account?</p>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleLogout}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Yes, Sign Out
+              </button>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
               >
                 Cancel

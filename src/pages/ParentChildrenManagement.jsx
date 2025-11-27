@@ -24,7 +24,7 @@ import {
     Plus, Minus, Check, X as XIcon, Send, Download, Play, Pause
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { collection, query, where, getDocs, orderBy, limit, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy, limit, onSnapshot, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 export default function ParentChildrenManagement() {
@@ -723,58 +723,162 @@ function ProfileTab({ child, onUpdate }) {
 
 // Activity Tab Component
 function ActivityTab({ child, activity }) {
+  const [timeRange, setTimeRange] = useState('today'); // today, week, month
+  const [realTimeStatus, setRealTimeStatus] = useState('offline');
+
   const completedTasks = activity?.tasks?.filter(t => t.status === 'completed' || t.status === 'approved').length || 0;
   const pendingTasks = activity?.tasks?.filter(t => t.status === 'pending').length || 0;
+  const missedTasks = activity?.tasks?.filter(t => {
+    if (!t.dueDate) return false;
+    const due = new Date(t.dueDate);
+    return due < new Date() && t.status === 'pending';
+  }).length || 0;
   const totalMessages = activity?.messages?.length || 0;
+  const completedChores = activity?.chores?.filter(c => {
+    const lastCompleted = c.lastCompleted?.toDate();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return lastCompleted && new Date(lastCompleted).setHours(0, 0, 0, 0) >= today;
+  }).length || 0;
+
   const recentActivity = [
-    ...(activity?.tasks?.slice(0, 5).map(t => ({ type: 'task', item: t })) || []),
-    ...(activity?.messages?.slice(0, 5).map(m => ({ type: 'message', item: m })) || [])
+    ...(activity?.tasks?.slice(0, 10).map(t => ({ type: 'task', item: t, time: t.createdAt || t.completedAt })) || []),
+    ...(activity?.messages?.slice(0, 10).map(m => ({ type: 'message', item: m, time: m.createdAt })) || []),
+    ...(activity?.homework?.slice(0, 5).map(h => ({ type: 'homework', item: h, time: h.submittedAt || h.createdAt })) || [])
   ].sort((a, b) => {
-    const aTime = a.item.createdAt || a.item.timestamp || 0;
-    const bTime = b.item.createdAt || b.item.timestamp || 0;
+    const aTime = a.time ? new Date(a.time).getTime() : 0;
+    const bTime = b.time ? new Date(b.time).getTime() : 0;
     return bTime - aTime;
-  }).slice(0, 10);
+  }).slice(0, 20);
+
+  // Calculate daily/weekly stats
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay());
+
+  const todayTasks = activity?.tasks?.filter(t => {
+    const created = t.createdAt ? new Date(t.createdAt) : null;
+    return created && created >= today;
+  }).length || 0;
+
+  const weekTasks = activity?.tasks?.filter(t => {
+    const created = t.createdAt ? new Date(t.createdAt) : null;
+    return created && created >= weekStart;
+  }).length || 0;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Activity Monitoring</h2>
-        <p className="text-gray-600">Real-time activity tracking and reports for {child.firstName}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Activity Monitoring</h2>
+          <p className="text-gray-600">Real-time activity tracking and reports for {child.firstName}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className={`px-3 py-1 rounded-lg text-sm font-medium ${
+            realTimeStatus === 'online' ? 'bg-green-100 text-green-700' :
+            realTimeStatus === 'focus' ? 'bg-blue-100 text-blue-700' :
+            'bg-gray-100 text-gray-700'
+          }`}>
+            {realTimeStatus === 'online' ? '🟢 Online' :
+             realTimeStatus === 'focus' ? '🔵 Focus Mode' :
+             '⚫ Offline'}
+          </div>
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="px-3 py-1 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+          </select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Real-time Status */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border-2 border-blue-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Current Status</h3>
+            <p className="text-gray-600">
+              {realTimeStatus === 'online' ? 'Child is currently active on the dashboard' :
+               realTimeStatus === 'focus' ? 'Child is in focus mode (homework/tasks only)' :
+               'Child is offline or not using the app'}
+            </p>
+          </div>
+          <Activity className="h-12 w-12 text-blue-500" />
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 rounded-lg p-4">
           <div className="text-sm text-blue-600 font-medium">Completed Tasks</div>
           <div className="text-2xl font-bold text-blue-900">{completedTasks}</div>
+          <div className="text-xs text-gray-500 mt-1">Total</div>
         </div>
         <div className="bg-yellow-50 rounded-lg p-4">
           <div className="text-sm text-yellow-600 font-medium">Pending Tasks</div>
           <div className="text-2xl font-bold text-yellow-900">{pendingTasks}</div>
+          <div className="text-xs text-gray-500 mt-1">Waiting</div>
+        </div>
+        <div className="bg-red-50 rounded-lg p-4">
+          <div className="text-sm text-red-600 font-medium">Missed Tasks</div>
+          <div className="text-2xl font-bold text-red-900">{missedTasks}</div>
+          <div className="text-xs text-gray-500 mt-1">Overdue</div>
         </div>
         <div className="bg-green-50 rounded-lg p-4">
-          <div className="text-sm text-green-600 font-medium">Messages</div>
-          <div className="text-2xl font-bold text-green-900">{totalMessages}</div>
+          <div className="text-sm text-green-600 font-medium">Completed Chores</div>
+          <div className="text-2xl font-bold text-green-900">{completedChores}</div>
+          <div className="text-xs text-gray-500 mt-1">Today</div>
         </div>
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="font-semibold text-gray-900 mb-3">Recent Activity</h3>
+      {/* Time Range Stats */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="text-sm text-gray-600">Tasks Today</div>
+          <div className="text-2xl font-bold text-gray-900">{todayTasks}</div>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="text-sm text-gray-600">Tasks This Week</div>
+          <div className="text-2xl font-bold text-gray-900">{weekTasks}</div>
+        </div>
+      </div>
+
+      {/* Recent Activity Feed */}
+      <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          Recent Activity Feed
+        </h3>
         {recentActivity.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-3 max-h-96 overflow-y-auto">
             {recentActivity.map((act, idx) => (
-              <div key={idx} className="bg-white rounded p-3 text-sm">
-                <div className="flex items-center space-x-2">
+              <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <div className="flex items-start space-x-3">
                   {act.type === 'task' ? (
-                    <CheckCircle className="h-4 w-4 text-blue-600" />
+                    <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                  ) : act.type === 'homework' ? (
+                    <BookOpen className="h-5 w-5 text-purple-600 mt-0.5" />
                   ) : (
-                    <MessageSquare className="h-4 w-4 text-green-600" />
+                    <MessageSquare className="h-5 w-5 text-green-600 mt-0.5" />
                   )}
                   <div className="flex-1">
-                    <div className="font-medium">
-                      {act.type === 'task' ? act.item.title : 'Message'}
+                    <div className="font-medium text-gray-900">
+                      {act.type === 'task' ? `Task: ${act.item.title}` :
+                       act.type === 'homework' ? `Homework: ${act.item.title}` :
+                       'Message sent/received'}
                     </div>
+                    {act.type === 'task' && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Status: {act.item.status} • 
+                        {act.item.points > 0 && ` ${act.item.points} points`}
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500 mt-1">
-                      {act.item.createdAt ? new Date(act.item.createdAt).toLocaleString() : 'Recently'}
+                      {act.time ? new Date(act.time).toLocaleString() : 'Recently'}
                     </div>
                   </div>
                 </div>
@@ -782,8 +886,31 @@ function ActivityTab({ child, activity }) {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 text-sm">No recent activity</p>
+          <p className="text-gray-500 text-sm text-center py-4">No recent activity</p>
         )}
+      </div>
+
+      {/* Daily/Weekly Report */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-200">
+        <h3 className="font-semibold text-gray-900 mb-3">Activity Summary</h3>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-gray-600">Total Messages: </span>
+            <span className="font-semibold">{totalMessages}</span>
+          </div>
+          <div>
+            <span className="text-gray-600">Homework Submitted: </span>
+            <span className="font-semibold">{activity?.homework?.filter(h => h.status === 'submitted').length || 0}</span>
+          </div>
+          <div>
+            <span className="text-gray-600">Tasks Completed: </span>
+            <span className="font-semibold">{completedTasks}</span>
+          </div>
+          <div>
+            <span className="text-gray-600">Chores Done Today: </span>
+            <span className="font-semibold">{completedChores}</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -792,10 +919,30 @@ function ActivityTab({ child, activity }) {
 // Tasks Tab Component
 function TasksTab({ child, parentId, onUpdate }) {
     const [tasks, setTasks] = useState([]);
-    const [showAddModal, setShowAddModal] = useState(false);
+    const [chores, setChores] = useState([]);
+    const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+    const [showAddChoreModal, setShowAddChoreModal] = useState(false);
+    const [editingTask, setEditingTask] = useState(null);
+    const [editingChore, setEditingChore] = useState(null);
+    const [taskForm, setTaskForm] = useState({
+        title: '',
+        description: '',
+        dueDate: '',
+        points: 0,
+        reward: ''
+    });
+    const [choreForm, setChoreForm] = useState({
+        title: '',
+        description: '',
+        scheduleDay: 'daily',
+        points: 0,
+        reward: '',
+        punishment: ''
+    });
 
     useEffect(() => {
         loadTasks();
+        loadChores();
     }, [child]);
 
     const loadTasks = async () => {
@@ -808,9 +955,64 @@ function TasksTab({ child, parentId, onUpdate }) {
         }
     };
 
+    const loadChores = async () => {
+        try {
+            const childChores = await childChoresService.getChildChores(child.uid);
+            setChores(childChores);
+        } catch (error) {
+            console.error('Error loading chores:', error);
+            toast.error('Failed to load chores');
+        }
+    };
+
+    const handleAddTask = async (e) => {
+        e.preventDefault();
+        try {
+            await childTasksService.createTask(parentId, child.uid, {
+                ...taskForm,
+                dueDate: taskForm.dueDate ? new Date(taskForm.dueDate) : null
+            });
+            toast.success('Task added!');
+            setShowAddTaskModal(false);
+            setTaskForm({ title: '', description: '', dueDate: '', points: 0, reward: '' });
+            loadTasks();
+            onUpdate();
+        } catch (error) {
+            console.error('Error adding task:', error);
+            toast.error('Failed to add task');
+        }
+    };
+
+    const handleAddChore = async (e) => {
+        e.preventDefault();
+        try {
+            await childChoresService.createChore(parentId, child.uid, choreForm);
+            toast.success('Chore added!');
+            setShowAddChoreModal(false);
+            setChoreForm({ title: '', description: '', scheduleDay: 'daily', points: 0, reward: '', punishment: '' });
+            loadChores();
+            onUpdate();
+        } catch (error) {
+            console.error('Error adding chore:', error);
+            toast.error('Failed to add chore');
+        }
+    };
+
+    const handleDeleteTask = async (taskId) => {
+        if (!window.confirm('Delete this task?')) return;
+        try {
+            // Note: Delete function would need to be added to childTasksService
+            toast.info('Delete functionality coming soon');
+            loadTasks();
+        } catch (error) {
+            toast.error('Failed to delete task');
+        }
+    };
+
     const handleApproveTask = async (taskId, approved) => {
         try {
-            await childTasksService.approveTask(taskId, parentId, approved, 10);
+            const task = tasks.find(t => t.id === taskId);
+            await childTasksService.approveTask(taskId, parentId, approved, task?.points || 10);
             toast.success(`Task ${approved ? 'approved' : 'rejected'}`);
             loadTasks();
             onUpdate();
@@ -827,55 +1029,305 @@ function TasksTab({ child, parentId, onUpdate }) {
                     <h2 className="text-2xl font-bold text-gray-900">Tasks & Chores</h2>
                     <p className="text-gray-600">Assign, edit, and approve tasks for {child.firstName}</p>
                 </div>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                    <Plus className="h-5 w-5" />
-                    <span>Add Task</span>
-                </button>
+                <div className="flex space-x-2">
+                    <button
+                        onClick={() => {
+                            setEditingTask(null);
+                            setTaskForm({ title: '', description: '', dueDate: '', points: 0, reward: '' });
+                            setShowAddTaskModal(true);
+                        }}
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                        <Plus className="h-5 w-5" />
+                        <span>Add Task</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setEditingChore(null);
+                            setChoreForm({ title: '', description: '', scheduleDay: 'daily', points: 0, reward: '', punishment: '' });
+                            setShowAddChoreModal(true);
+                        }}
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                        <Plus className="h-5 w-5" />
+                        <span>Add Chore</span>
+                    </button>
+                </div>
             </div>
 
-            <div className="space-y-3">
-                {tasks.map(task => (
-                    <div key={task.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900">{task.title}</h3>
-                                <p className="text-sm text-gray-600 mt-1">{task.description}</p>
-                                <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                                    <span>Status: {task.status}</span>
-                                    {task.deadline && (
-                                        <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>
+            {/* Tasks Section */}
+            <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Tasks</h3>
+                <div className="space-y-3">
+                    {tasks.map(task => (
+                        <div key={task.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-semibold text-gray-900">{task.title}</h3>
+                                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                            task.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                            task.status === 'completed' ? 'bg-yellow-100 text-yellow-700' :
+                                            'bg-gray-100 text-gray-700'
+                                        }`}>
+                                            {task.status}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                                    <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                        {task.dueDate && (
+                                            <span className="flex items-center gap-1">
+                                                <Calendar className="h-3 w-3" />
+                                                Due: {new Date(task.dueDate).toLocaleDateString()}
+                                            </span>
+                                        )}
+                                        {task.points > 0 && (
+                                            <span className="flex items-center gap-1">
+                                                <Star className="h-3 w-3 text-yellow-500" />
+                                                {task.points} points
+                                            </span>
+                                        )}
+                                        {task.reward && (
+                                            <span>Reward: {task.reward}</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex space-x-2 ml-4">
+                                    {task.status === 'completed' && (
+                                        <>
+                                            <button
+                                                onClick={() => handleApproveTask(task.id, true)}
+                                                className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                                            >
+                                                Approve
+                                            </button>
+                                            <button
+                                                onClick={() => handleApproveTask(task.id, false)}
+                                                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                                            >
+                                                Reject
+                                            </button>
+                                        </>
                                     )}
-                                    {task.points > 0 && (
-                                        <span>Points: {task.points}</span>
-                                    )}
+                                    <button
+                                        onClick={() => handleDeleteTask(task.id)}
+                                        className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </div>
-                            {task.status === 'completed' && (
-                                <div className="flex space-x-2">
-                                    <button
-                                        onClick={() => handleApproveTask(task.id, true)}
-                                        className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                                    >
-                                        Approve
-                                    </button>
-                                    <button
-                                        onClick={() => handleApproveTask(task.id, false)}
-                                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                                    >
-                                        Reject
-                                    </button>
-                                </div>
-                            )}
                         </div>
-                    </div>
-                ))}
-                {tasks.length === 0 && (
-                    <p className="text-center text-gray-500 py-8">No tasks assigned yet</p>
-                )}
+                    ))}
+                    {tasks.length === 0 && (
+                        <p className="text-center text-gray-500 py-8">No tasks assigned yet</p>
+                    )}
+                </div>
             </div>
+
+            {/* Chores Section */}
+            <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Chores</h3>
+                <div className="space-y-3">
+                    {chores.map(chore => (
+                        <div key={chore.id} className="bg-green-50 rounded-lg p-4 border border-green-200">
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-gray-900">{chore.title}</h3>
+                                    <p className="text-sm text-gray-600 mt-1">{chore.description}</p>
+                                    <div className="flex items-center space-x-4 mt-2 text-xs">
+                                        <span className="text-gray-500">Schedule: {chore.scheduleDay}</span>
+                                        {chore.streak > 0 && (
+                                            <span className="text-orange-600 font-semibold">🔥 Streak: {chore.streak} days</span>
+                                        )}
+                                        {chore.points > 0 && (
+                                            <span className="text-yellow-600">⭐ {chore.points} points</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => handleDeleteTask(chore.id)}
+                                    className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 ml-4"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {chores.length === 0 && (
+                        <p className="text-center text-gray-500 py-8">No chores assigned yet</p>
+                    )}
+                </div>
+            </div>
+
+            {/* Add Task Modal */}
+            {showAddTaskModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full">
+                        <h3 className="text-xl font-bold mb-4">{editingTask ? 'Edit Task' : 'Add Task'}</h3>
+                        <form onSubmit={handleAddTask} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={taskForm.title}
+                                    onChange={(e) => setTaskForm(prev => ({ ...prev, title: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <textarea
+                                    value={taskForm.description}
+                                    onChange={(e) => setTaskForm(prev => ({ ...prev, description: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                    rows={3}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                                <input
+                                    type="datetime-local"
+                                    value={taskForm.dueDate}
+                                    onChange={(e) => setTaskForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Points</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={taskForm.points}
+                                        onChange={(e) => setTaskForm(prev => ({ ...prev, points: parseInt(e.target.value) || 0 }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Reward</label>
+                                    <input
+                                        type="text"
+                                        value={taskForm.reward}
+                                        onChange={(e) => setTaskForm(prev => ({ ...prev, reward: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                        placeholder="e.g., Extra screen time"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddTaskModal(false)}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                >
+                                    {editingTask ? 'Update' : 'Add'} Task
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Chore Modal */}
+            {showAddChoreModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full">
+                        <h3 className="text-xl font-bold mb-4">{editingChore ? 'Edit Chore' : 'Add Chore'}</h3>
+                        <form onSubmit={handleAddChore} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={choreForm.title}
+                                    onChange={(e) => setChoreForm(prev => ({ ...prev, title: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <textarea
+                                    value={choreForm.description}
+                                    onChange={(e) => setChoreForm(prev => ({ ...prev, description: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                    rows={3}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Schedule</label>
+                                <select
+                                    value={choreForm.scheduleDay}
+                                    onChange={(e) => setChoreForm(prev => ({ ...prev, scheduleDay: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                >
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monday">Monday</option>
+                                    <option value="tuesday">Tuesday</option>
+                                    <option value="wednesday">Wednesday</option>
+                                    <option value="thursday">Thursday</option>
+                                    <option value="friday">Friday</option>
+                                    <option value="saturday">Saturday</option>
+                                    <option value="sunday">Sunday</option>
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Points</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={choreForm.points}
+                                        onChange={(e) => setChoreForm(prev => ({ ...prev, points: parseInt(e.target.value) || 0 }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Reward</label>
+                                    <input
+                                        type="text"
+                                        value={choreForm.reward}
+                                        onChange={(e) => setChoreForm(prev => ({ ...prev, reward: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Punishment (if not done)</label>
+                                <input
+                                    type="text"
+                                    value={choreForm.punishment}
+                                    onChange={(e) => setChoreForm(prev => ({ ...prev, punishment: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                />
+                            </div>
+                            <div className="flex space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddChoreModal(false)}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                >
+                                    {editingChore ? 'Update' : 'Add'} Chore
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -884,15 +1336,25 @@ function TasksTab({ child, parentId, onUpdate }) {
 function SchoolTab({ child, parentId, onUpdate }) {
   const [homework, setHomework] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedHomework, setSelectedHomework] = useState(null);
   const [homeworkForm, setHomeworkForm] = useState({
     subject: '',
     title: '',
     description: '',
     dueDate: ''
   });
+  const [studyGoals, setStudyGoals] = useState([]);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [goalForm, setGoalForm] = useState({
+    subject: '',
+    goal: '',
+    targetDate: ''
+  });
 
   useEffect(() => {
     loadHomework();
+    loadStudyGoals();
   }, [child]);
 
   const loadHomework = async () => {
@@ -903,6 +1365,11 @@ function SchoolTab({ child, parentId, onUpdate }) {
       console.error('Error loading homework:', error);
       toast.error('Failed to load homework');
     }
+  };
+
+  const loadStudyGoals = async () => {
+    // TODO: Implement study goals service
+    setStudyGoals([]);
   };
 
   const handleAddHomework = async (e) => {
@@ -923,6 +1390,16 @@ function SchoolTab({ child, parentId, onUpdate }) {
     }
   };
 
+  const handleReviewHomework = async (homeworkId, approved) => {
+    try {
+      // TODO: Implement review functionality
+      toast.info('Review functionality coming soon');
+      loadHomework();
+    } catch (error) {
+      toast.error('Failed to review homework');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -930,44 +1407,125 @@ function SchoolTab({ child, parentId, onUpdate }) {
           <h2 className="text-2xl font-bold text-gray-900">School & Learning</h2>
           <p className="text-gray-600">Manage homework, study schedules, and learning materials for {child.firstName}</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="h-5 w-5" />
-          <span>Add Homework</span>
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Add Homework</span>
+          </button>
+          <button
+            onClick={() => setShowGoalModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+          >
+            <Target className="h-5 w-5" />
+            <span>Set Study Goal</span>
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        {homework.map(hw => (
-          <div key={hw.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">{hw.title}</h3>
-                <p className="text-sm text-gray-600 mt-1">{hw.subject}</p>
-                <p className="text-sm text-gray-600 mt-1">{hw.description}</p>
-                <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                  <span>Status: {hw.status}</span>
-                  {hw.dueDate && (
-                    <span>Due: {new Date(hw.dueDate).toLocaleDateString()}</span>
+      {/* Study Goals */}
+      {studyGoals.length > 0 && (
+        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+          <h3 className="font-semibold text-gray-900 mb-3">Weekly Study Goals</h3>
+          <div className="space-y-2">
+            {studyGoals.map((goal, idx) => (
+              <div key={idx} className="bg-white rounded p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-medium">{goal.subject}: </span>
+                    <span>{goal.goal}</span>
+                  </div>
+                  {goal.targetDate && (
+                    <span className="text-xs text-gray-500">
+                      {new Date(goal.targetDate).toLocaleDateString()}
+                    </span>
                   )}
-                  {hw.submittedFiles && hw.submittedFiles.length > 0 && (
-                    <span>Files: {hw.submittedFiles.length}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Homework List */}
+      <div>
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Homework Assignments</h3>
+        <div className="space-y-3">
+          {homework.map(hw => (
+            <div key={hw.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold text-gray-900">{hw.title}</h3>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      hw.status === 'submitted' ? 'bg-yellow-100 text-yellow-700' :
+                      hw.status === 'reviewed' ? 'bg-green-100 text-green-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {hw.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">Subject:</span> {hw.subject}
+                  </p>
+                  {hw.description && (
+                    <p className="text-sm text-gray-600 mt-1">{hw.description}</p>
+                  )}
+                  <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                    {hw.dueDate && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Due: {new Date(hw.dueDate).toLocaleDateString()}
+                      </span>
+                    )}
+                    {hw.submittedPhotos && hw.submittedPhotos.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Image className="h-3 w-3" />
+                        {hw.submittedPhotos.length} photo(s) submitted
+                      </span>
+                    )}
+                  </div>
+                  {hw.submittedPhotos && hw.submittedPhotos.length > 0 && (
+                    <div className="mt-3 flex gap-2">
+                      {hw.submittedPhotos.map((photo, idx) => (
+                        <img key={idx} src={photo} alt={`Submission ${idx + 1}`} className="w-20 h-20 object-cover rounded border" />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="ml-4 flex flex-col gap-2">
+                  {hw.status === 'submitted' && (
+                    <>
+                      <button
+                        onClick={() => handleReviewHomework(hw.id, true)}
+                        className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReviewHomework(hw.id, false)}
+                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                      >
+                        Reject
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-        {homework.length === 0 && (
-          <p className="text-center text-gray-500 py-8">No homework assigned yet</p>
-        )}
+          ))}
+          {homework.length === 0 && (
+            <p className="text-center text-gray-500 py-8">No homework assigned yet</p>
+          )}
+        </div>
       </div>
 
+      {/* Add Homework Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">Add Homework</h3>
             <form onSubmit={handleAddHomework} className="space-y-4">
               <div>
@@ -978,6 +1536,7 @@ function SchoolTab({ child, parentId, onUpdate }) {
                   value={homeworkForm.subject}
                   onChange={(e) => setHomeworkForm(prev => ({ ...prev, subject: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="e.g., Math, Science, English"
                 />
               </div>
               <div>
@@ -988,6 +1547,7 @@ function SchoolTab({ child, parentId, onUpdate }) {
                   value={homeworkForm.title}
                   onChange={(e) => setHomeworkForm(prev => ({ ...prev, title: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="e.g., Chapter 5 Exercises"
                 />
               </div>
               <div>
@@ -997,10 +1557,11 @@ function SchoolTab({ child, parentId, onUpdate }) {
                   onChange={(e) => setHomeworkForm(prev => ({ ...prev, description: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   rows={3}
+                  placeholder="Instructions or notes..."
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Due Date & Time</label>
                 <input
                   type="datetime-local"
                   value={homeworkForm.dueDate}
@@ -1027,6 +1588,66 @@ function SchoolTab({ child, parentId, onUpdate }) {
           </div>
         </div>
       )}
+
+      {/* Study Goal Modal */}
+      {showGoalModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Set Weekly Study Goal</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              toast.info('Study goals feature coming soon');
+              setShowGoalModal(false);
+            }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Subject *</label>
+                <input
+                  type="text"
+                  required
+                  value={goalForm.subject}
+                  onChange={(e) => setGoalForm(prev => ({ ...prev, subject: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Goal *</label>
+                <textarea
+                  required
+                  value={goalForm.goal}
+                  onChange={(e) => setGoalForm(prev => ({ ...prev, goal: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  rows={3}
+                  placeholder="e.g., Complete 5 math exercises daily"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+                <input
+                  type="date"
+                  value={goalForm.targetDate}
+                  onChange={(e) => setGoalForm(prev => ({ ...prev, targetDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowGoalModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Set Goal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1036,9 +1657,15 @@ function MessagesTab({ child, parentId }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [showSendModal, setShowSendModal] = useState(false);
+  const [messageSettings, setMessageSettings] = useState({
+    messagingEnabled: true,
+    callsEnabled: true,
+    locationSharingEnabled: true
+  });
 
   useEffect(() => {
     loadMessages();
+    loadSettings();
   }, [child]);
 
   const loadMessages = async () => {
@@ -1049,11 +1676,20 @@ function MessagesTab({ child, parentId }) {
         (msg.senderId === child.uid && msg.receiverId === parentId) ||
         (msg.senderId === parentId && msg.receiverId === child.uid)
       );
-      setMessages(filtered.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)));
+      setMessages(filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
     } catch (error) {
       console.error('Error loading messages:', error);
       toast.error('Failed to load messages');
     }
+  };
+
+  const loadSettings = async () => {
+    // TODO: Load from child settings
+    setMessageSettings({
+      messagingEnabled: true,
+      callsEnabled: true,
+      locationSharingEnabled: true
+    });
   };
 
   const handleSendMessage = async (e) => {
@@ -1076,6 +1712,17 @@ function MessagesTab({ child, parentId }) {
     }
   };
 
+  const handleToggleSetting = async (setting) => {
+    try {
+      const newSettings = { ...messageSettings, [setting]: !messageSettings[setting] };
+      setMessageSettings(newSettings);
+      // TODO: Save to child settings
+      toast.success(`Messaging ${newSettings[setting] ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      toast.error('Failed to update setting');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1092,30 +1739,100 @@ function MessagesTab({ child, parentId }) {
         </button>
       </div>
 
-      <div className="space-y-3 max-h-96 overflow-y-auto">
-        {messages.map(msg => (
-          <div
-            key={msg.id}
-            className={`p-4 rounded-lg ${
-              msg.senderId === parentId ? 'bg-blue-50 ml-8' : 'bg-gray-50 mr-8'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  {msg.senderId === parentId ? 'You' : child.firstName}
-                </p>
-                <p className="text-gray-700 mt-1">{msg.message}</p>
-                <p className="text-xs text-gray-500 mt-2">
-                  {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : 'Recently'}
-                </p>
+      {/* Communication Controls */}
+      <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <h3 className="font-semibold text-gray-900 mb-4">Communication Controls</h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Messaging</label>
+              <p className="text-xs text-gray-500">Allow child to send/receive messages</p>
+            </div>
+            <button
+              onClick={() => handleToggleSetting('messagingEnabled')}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                messageSettings.messagingEnabled ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                  messageSettings.messagingEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Calls</label>
+              <p className="text-xs text-gray-500">Allow child to call parents</p>
+            </div>
+            <button
+              onClick={() => handleToggleSetting('callsEnabled')}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                messageSettings.callsEnabled ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                  messageSettings.callsEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Location Sharing</label>
+              <p className="text-xs text-gray-500">Allow child to share location</p>
+            </div>
+            <button
+              onClick={() => handleToggleSetting('locationSharingEnabled')}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                messageSettings.locationSharingEnabled ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                  messageSettings.locationSharingEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Messages List */}
+      <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <h3 className="font-semibold text-gray-900 mb-4">Message History</h3>
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {messages.map(msg => (
+            <div
+              key={msg.id}
+              className={`p-4 rounded-lg border ${
+                msg.senderId === parentId ? 'bg-blue-50 border-blue-200 ml-8' : 'bg-gray-50 border-gray-200 mr-8'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {msg.senderId === parentId ? 'You' : child.firstName}
+                    </p>
+                    {msg.type === 'call' && (
+                      <Phone className="h-4 w-4 text-blue-600" />
+                    )}
+                  </div>
+                  <p className="text-gray-700 mt-1">{msg.message || msg.content}</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : 'Recently'}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-        {messages.length === 0 && (
-          <p className="text-center text-gray-500 py-8">No messages yet</p>
-        )}
+          ))}
+          {messages.length === 0 && (
+            <p className="text-center text-gray-500 py-8">No messages yet</p>
+          )}
+        </div>
       </div>
 
       {showSendModal && (
@@ -1162,6 +1879,50 @@ function LocationTab({ child, parentId }) {
   const [locationHistory, setLocationHistory] = useState([]);
   const [safeLocations, setSafeLocations] = useState([]);
   const [showAddSafeZone, setShowAddSafeZone] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [safeZoneForm, setSafeZoneForm] = useState({
+    name: '',
+    address: '',
+    latitude: '',
+    longitude: '',
+    radius: 100
+  });
+
+  useEffect(() => {
+    loadLocationData();
+    // Set up real-time location listener
+    const unsubscribe = onSnapshot(
+      query(
+        collection(db, 'childLocationShares'),
+        where('childId', '==', child.uid),
+        orderBy('timestamp', 'desc'),
+        limit(1)
+      ),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const latest = snapshot.docs[0].data();
+          setCurrentLocation({
+            ...latest,
+            timestamp: latest.timestamp?.toDate()
+          });
+        }
+      }
+    );
+    return () => unsubscribe();
+  }, [child]);
+
+  const loadLocationData = async () => {
+    try {
+      const [history, safe] = await Promise.all([
+        getLocationHistory(child.uid),
+        childSafetyService.getSafeLocations(child.uid, parentId)
+      ]);
+      setLocationHistory(history);
+      setSafeLocations(safe);
+    } catch (error) {
+      console.error('Error loading location data:', error);
+    }
+  };
 
   const getLocationHistory = async (childId) => {
     try {
@@ -1180,6 +1941,24 @@ function LocationTab({ child, parentId }) {
     } catch (error) {
       console.error('Error getting location history:', error);
       return [];
+    }
+  };
+
+  const handleAddSafeZone = async (e) => {
+    e.preventDefault();
+    try {
+      await childSafetyService.addSafeLocation(parentId, child.uid, {
+        ...safeZoneForm,
+        latitude: parseFloat(safeZoneForm.latitude),
+        longitude: parseFloat(safeZoneForm.longitude)
+      });
+      toast.success('Safe zone added!');
+      setShowAddSafeZone(false);
+      setSafeZoneForm({ name: '', address: '', latitude: '', longitude: '', radius: 100 });
+      loadLocationData();
+    } catch (error) {
+      console.error('Error adding safe zone:', error);
+      toast.error('Failed to add safe zone');
     }
   };
 

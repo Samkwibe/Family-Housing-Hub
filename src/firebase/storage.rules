@@ -18,7 +18,9 @@ service firebase.storage {
     
     function isValidDocument() {
       return (request.resource.contentType.matches('image/.*') ||
-              request.resource.contentType == 'application/pdf') &&
+              request.resource.contentType == 'application/pdf' ||
+              request.resource.contentType == 'application/msword' ||
+              request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') &&
              request.resource.size < 10 * 1024 * 1024;
     }
     
@@ -38,7 +40,7 @@ service firebase.storage {
     
     // Documents - 10MB limit
     match /documents/{userId}/{fileName} {
-      allow read: if isAuthenticated() && isOwner(userId);
+      allow read: if isAuthenticated();
       allow write: if isAuthenticated() && isOwner(userId) && isValidDocument();
       allow delete: if isAuthenticated() && isOwner(userId);
     }

@@ -76,10 +76,24 @@ export default function Documents() {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file size
       if (file.size > 10 * 1024 * 1024) {
         toast.error('File size must be less than 10MB');
+        e.target.value = ''; // Clear the input
         return;
       }
+      
+      // Validate file type
+      const fileName = file.name.toLowerCase();
+      const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+      const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+      
+      if (!hasValidExtension) {
+        toast.error('Invalid file type. Please select PDF, JPG, PNG, DOC, or DOCX files.');
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
       setUploadForm(prev => ({ ...prev, file, title: prev.title || file.name }));
     }
   };
@@ -107,7 +121,17 @@ export default function Documents() {
       toast.success('Document uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload document');
+      // Show more specific error messages
+      const errorMessage = error.message || error.toString();
+      if (errorMessage.includes('Invalid file type')) {
+        toast.error('Invalid file type. Please upload PDF, JPG, PNG, DOC, or DOCX files only.');
+      } else if (errorMessage.includes('File size exceeds')) {
+        toast.error('File is too large. Maximum size is 10MB.');
+      } else if (errorMessage.includes('Permission denied')) {
+        toast.error('Permission denied. Please check your account permissions.');
+      } else {
+        toast.error(errorMessage || 'Failed to upload document. Please try again.');
+      }
     } finally {
       setUploading(false);
     }

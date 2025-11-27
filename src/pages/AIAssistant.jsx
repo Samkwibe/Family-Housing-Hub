@@ -517,7 +517,7 @@ Would you like me to explain any of these in more detail?`
               {message.type === 'assistant' && (
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-6 h-6 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <Zap className="h-3 w-3 text-white" />
+                    <Bot className="h-3 w-3 text-white" />
                   </div>
                   <span className="text-xs text-gray-500">Assistant</span>
                 </div>
@@ -565,7 +565,7 @@ Would you like me to explain any of these in more detail?`
         {isTyping && (
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center">
-              <Zap className="h-3 w-3 text-white" />
+              <Bot className="h-3 w-3 text-white" />
             </div>
             <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
               <div className="flex space-x-1">

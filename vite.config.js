@@ -14,7 +14,7 @@ export default defineConfig({
       // Note: transform-remove-console removed to avoid dependency issues
     })
   ],
-  
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
@@ -25,24 +25,24 @@ export default defineConfig({
   build: {
     // Target modern browsers for smaller bundles
     target: 'es2015',
-    
+
     // Enable minification
     minify: 'terser',
-    
+
     terserOptions: {
       compress: {
         drop_console: true, // Remove console.log in production
         drop_debugger: true
       }
     },
-    
+
     // Chunk splitting strategy
     rollupOptions: {
       output: {
         manualChunks: {
           // React and related libraries
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          
+
           // Firebase
           'firebase-vendor': [
             'firebase/app',
@@ -50,32 +50,32 @@ export default defineConfig({
             'firebase/firestore',
             'firebase/storage'
           ],
-          
+
           // UI libraries
           'ui-vendor': ['lucide-react', 'react-hot-toast'],
-          
+
           // Date utilities if you use them
           // 'date-vendor': ['date-fns']
         }
       }
     },
-    
+
     // Chunk size warnings
     chunkSizeWarningLimit: 1000,
-    
+
     // Source maps for production debugging (disable if not needed)
     sourcemap: false,
-    
+
     // CSS code splitting
     cssCodeSplit: true,
-    
+
     // Optimize assets
     assetsInlineLimit: 4096 // 4kb
   },
 
   // Development server
   server: {
-    port: 3000,
+    port: 3001,
     open: true,
     cors: true,
     // Enable HMR

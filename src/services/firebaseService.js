@@ -67,11 +67,24 @@ export const uploadService = {
 
       // Validate file type
       const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      const validDocumentTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+      const validDocumentTypes = [
+        'image/jpeg',
+        'image/png',
+        'application/pdf',
+        'application/msword', // .doc
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' // .docx
+      ];
 
       const isValidType = validImageTypes.includes(file.type) || validDocumentTypes.includes(file.type);
       if (!isValidType) {
-        throw new FirebaseServiceError('Invalid file type', 'INVALID_FILE_TYPE');
+        // Check file extension as fallback (some browsers don't set MIME type correctly)
+        const fileName = file.name.toLowerCase();
+        const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.gif', '.webp'];
+        const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+
+        if (!hasValidExtension) {
+          throw new FirebaseServiceError(`Invalid file type. Allowed: PDF, JPG, PNG, DOC, DOCX. Got: ${file.type || 'unknown'}`, 'INVALID_FILE_TYPE');
+        }
       }
 
       const timestamp = Date.now();
@@ -87,7 +100,17 @@ export const uploadService = {
         throw error;
       }
       console.error('Upload error:', error);
-      throw new FirebaseServiceError('Failed to upload file', 'UPLOAD_FAILED');
+
+      // Provide more specific error messages
+      if (error.code === 'storage/unauthorized') {
+        throw new FirebaseServiceError('Permission denied. Please check your account permissions.', 'UPLOAD_FAILED');
+      } else if (error.code === 'storage/canceled') {
+        throw new FirebaseServiceError('Upload was canceled', 'UPLOAD_CANCELED');
+      } else if (error.code === 'storage/unknown') {
+        throw new FirebaseServiceError('An unknown error occurred during upload', 'UPLOAD_FAILED');
+      }
+
+      throw new FirebaseServiceError(error.message || 'Failed to upload file. Please try again.', 'UPLOAD_FAILED');
     }
   },
 
@@ -214,6 +237,29 @@ export const userService = {
     } catch (error) {
       console.error('Error deleting profile photo:', error);
       throw new FirebaseServiceError('Failed to delete photo', 'PHOTO_DELETE_FAILED');
+    }
+  },
+
+  // Get child accounts by parent ID
+  async getChildrenByParent(parentId) {
+    try {
+      const q = query(
+        collection(db, 'users'),
+        where('parentId', '==', parentId),
+        where('role', '==', 'child')
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+        updatedAt: doc.data().updatedAt?.toDate(),
+        lastLogin: doc.data().lastLogin?.toDate()
+      }));
+    } catch (error) {
+      console.error('Error getting children by parent:', error);
+      return [];
     }
   }
 };
@@ -1874,6 +1920,702 @@ export const familyInvitationService = {
     } catch (error) {
       console.error('Error cancelling invitation:', error);
       throw new FirebaseServiceError('Failed to cancel invitation', 'INVITATION_CANCEL_FAILED');
+    }
+  }
+};
+
+// ============================================================================
+// CHILD DASHBOARD SERVICES - Complete child management system
+// ============================================================================
+
+// Child Tasks & To-Do Service
+export const childTasksService = {
+  // Get tasks for a child
+  async getChildTasks(childId, parentId) {
+    try {
+      const cacheKey = `child_tasks_${childId}`;
+      const cached = getCachedData(cacheKey);
+      if (cached) return cached;
+
+      const q = query(
+        collection(db, 'childTasks'),
+        where('childId', '==', childId)
+      );
+
+      const snapshot = await getDocs(q);
+      const tasks = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        deadline: doc.data().deadline?.toDate(),
+        createdAt: doc.data().createdAt?.toDate(),
+        completedAt: doc.data().completedAt?.toDate()
+      }));
+
+      tasks.sort((a, b) => (a.deadline || 0) - (b.deadline || 0));
+      setCachedData(cacheKey, tasks);
+      return tasks;
+    } catch (error) {
+      console.error('Error getting child tasks:', error);
+      return [];
+    }
+  },
+
+  // Create task for child (parent only)
+  async createTask(parentId, childId, taskData) {
+    try {
+      const docRef = await addDoc(collection(db, 'childTasks'), {
+        parentId,
+        childId,
+        title: taskData.title,
+        description: taskData.description || '',
+        category: taskData.category || 'general',
+        deadline: taskData.deadline ? Timestamp.fromDate(new Date(taskData.deadline)) : null,
+        reward: taskData.reward || null,
+        points: taskData.points || 0,
+        status: 'pending', // pending, completed, approved, rejected
+        completedAt: null,
+        approvedAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      clearCache(`child_tasks_${childId}`);
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw new FirebaseServiceError('Failed to create task', 'TASK_CREATE_FAILED');
+    }
+  },
+
+  // Mark task as completed (child)
+  async completeTask(taskId, childId) {
+    try {
+      const taskRef = doc(db, 'childTasks', taskId);
+      await updateDoc(taskRef, {
+        status: 'completed',
+        completedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      clearCache(`child_tasks_${childId}`);
+      return true;
+    } catch (error) {
+      console.error('Error completing task:', error);
+      throw new FirebaseServiceError('Failed to complete task', 'TASK_COMPLETE_FAILED');
+    }
+  },
+
+  // Approve/reject task (parent)
+  async approveTask(taskId, parentId, approved, points = 0) {
+    try {
+      const taskRef = doc(db, 'childTasks', taskId);
+      await updateDoc(taskRef, {
+        status: approved ? 'approved' : 'rejected',
+        approvedAt: serverTimestamp(),
+        pointsAwarded: approved ? points : 0,
+        updatedAt: serverTimestamp()
+      });
+
+      // If approved, add points to child wallet
+      if (approved && points > 0) {
+        const taskSnap = await getDoc(taskRef);
+        const taskData = taskSnap.data();
+        await childWalletService.addPoints(taskData.childId, parentId, points, 'task_completion', taskId);
+      }
+
+      const taskSnap = await getDoc(taskRef);
+      clearCache(`child_tasks_${taskSnap.data().childId}`);
+      return true;
+    } catch (error) {
+      console.error('Error approving task:', error);
+      throw new FirebaseServiceError('Failed to approve task', 'TASK_APPROVE_FAILED');
+    }
+  },
+
+  // Delete task
+  async deleteTask(taskId, childId) {
+    try {
+      await deleteDoc(doc(db, 'childTasks', taskId));
+      clearCache(`child_tasks_${childId}`);
+      return true;
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      throw new FirebaseServiceError('Failed to delete task', 'TASK_DELETE_FAILED');
+    }
+  }
+};
+
+// School & Learning Service
+export const childLearningService = {
+  // Get homework for child
+  async getChildHomework(childId) {
+    try {
+      const q = query(
+        collection(db, 'childHomework'),
+        where('childId', '==', childId)
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        dueDate: doc.data().dueDate?.toDate(),
+        createdAt: doc.data().createdAt?.toDate(),
+        submittedAt: doc.data().submittedAt?.toDate()
+      }));
+    } catch (error) {
+      console.error('Error getting homework:', error);
+      return [];
+    }
+  },
+
+  // Add homework (parent)
+  async addHomework(parentId, childId, homeworkData) {
+    try {
+      const docRef = await addDoc(collection(db, 'childHomework'), {
+        parentId,
+        childId,
+        subject: homeworkData.subject,
+        title: homeworkData.title,
+        description: homeworkData.description || '',
+        dueDate: homeworkData.dueDate ? Timestamp.fromDate(new Date(homeworkData.dueDate)) : null,
+        status: 'assigned', // assigned, submitted, reviewed
+        submittedFiles: [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      return docRef.id;
+    } catch (error) {
+      console.error('Error adding homework:', error);
+      throw new FirebaseServiceError('Failed to add homework', 'HOMEWORK_ADD_FAILED');
+    }
+  },
+
+  // Submit homework (child)
+  async submitHomework(homeworkId, childId, files) {
+    try {
+      const homeworkRef = doc(db, 'childHomework', homeworkId);
+      await updateDoc(homeworkRef, {
+        status: 'submitted',
+        submittedFiles: files || [],
+        submittedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error submitting homework:', error);
+      throw new FirebaseServiceError('Failed to submit homework', 'HOMEWORK_SUBMIT_FAILED');
+    }
+  }
+};
+
+// Chores Service
+export const childChoresService = {
+  // Get chores for child
+  async getChildChores(childId) {
+    try {
+      const q = query(
+        collection(db, 'childChores'),
+        where('childId', '==', childId)
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        dueDate: doc.data().dueDate?.toDate(),
+        completedAt: doc.data().completedAt?.toDate(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
+    } catch (error) {
+      console.error('Error getting chores:', error);
+      return [];
+    }
+  },
+
+  // Create chore (parent)
+  async createChore(parentId, childId, choreData) {
+    try {
+      const docRef = await addDoc(collection(db, 'childChores'), {
+        parentId,
+        childId,
+        title: choreData.title,
+        description: choreData.description || '',
+        frequency: choreData.frequency || 'daily', // daily, weekly, one-time
+        reward: choreData.reward || null,
+        points: choreData.points || 0,
+        status: 'pending',
+        streak: 0,
+        completedAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating chore:', error);
+      throw new FirebaseServiceError('Failed to create chore', 'CHORE_CREATE_FAILED');
+    }
+  },
+
+  // Mark chore complete (child)
+  async completeChore(choreId, childId) {
+    try {
+      const choreRef = doc(db, 'childChores', choreId);
+      const choreSnap = await getDoc(choreRef);
+      const choreData = choreSnap.data();
+
+      await updateDoc(choreRef, {
+        status: 'completed',
+        completedAt: serverTimestamp(),
+        streak: (choreData.streak || 0) + 1,
+        updatedAt: serverTimestamp()
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error completing chore:', error);
+      throw new FirebaseServiceError('Failed to complete chore', 'CHORE_COMPLETE_FAILED');
+    }
+  }
+};
+
+// Child Wallet Service
+export const childWalletService = {
+  // Get wallet for child
+  async getChildWallet(childId, parentId) {
+    try {
+      const walletRef = doc(db, 'childWallets', childId);
+      const walletSnap = await getDoc(walletRef);
+
+      if (walletSnap.exists()) {
+        return {
+          id: walletSnap.id,
+          ...walletSnap.data(),
+          createdAt: walletSnap.data().createdAt?.toDate(),
+          updatedAt: walletSnap.data().updatedAt?.toDate()
+        };
+      }
+
+      // Create wallet if doesn't exist
+      await setDoc(walletRef, {
+        childId,
+        parentId,
+        balance: 0,
+        points: 0,
+        savingsGoals: [],
+        transactions: [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      return {
+        id: childId,
+        childId,
+        parentId,
+        balance: 0,
+        points: 0,
+        savingsGoals: [],
+        transactions: []
+      };
+    } catch (error) {
+      console.error('Error getting wallet:', error);
+      throw new FirebaseServiceError('Failed to get wallet', 'WALLET_GET_FAILED');
+    }
+  },
+
+  // Add points to wallet
+  async addPoints(childId, parentId, points, source, sourceId) {
+    try {
+      const walletRef = doc(db, 'childWallets', childId);
+      const walletSnap = await getDoc(walletRef);
+      const currentPoints = walletSnap.exists() ? (walletSnap.data().points || 0) : 0;
+
+      await setDoc(walletRef, {
+        childId,
+        parentId,
+        points: currentPoints + points,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      // Add transaction
+      await addDoc(collection(db, 'childWalletTransactions'), {
+        childId,
+        parentId,
+        type: 'points_earned',
+        amount: points,
+        source,
+        sourceId,
+        createdAt: serverTimestamp()
+      });
+
+      clearCache(`child_wallet_${childId}`);
+      return true;
+    } catch (error) {
+      console.error('Error adding points:', error);
+      throw new FirebaseServiceError('Failed to add points', 'POINTS_ADD_FAILED');
+    }
+  },
+
+  // Request money (child)
+  async requestMoney(childId, parentId, amount, reason) {
+    try {
+      const docRef = await addDoc(collection(db, 'childMoneyRequests'), {
+        childId,
+        parentId,
+        amount: parseFloat(amount),
+        reason: reason || '',
+        status: 'pending', // pending, approved, denied
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      return docRef.id;
+    } catch (error) {
+      console.error('Error requesting money:', error);
+      throw new FirebaseServiceError('Failed to request money', 'MONEY_REQUEST_FAILED');
+    }
+  },
+
+  // Approve/deny money request (parent)
+  async handleMoneyRequest(requestId, parentId, approved) {
+    try {
+      const requestRef = doc(db, 'childMoneyRequests', requestId);
+      const requestSnap = await getDoc(requestRef);
+      const requestData = requestSnap.data();
+
+      await updateDoc(requestRef, {
+        status: approved ? 'approved' : 'denied',
+        updatedAt: serverTimestamp()
+      });
+
+      if (approved) {
+        const walletRef = doc(db, 'childWallets', requestData.childId);
+        const walletSnap = await getDoc(walletRef);
+        const currentBalance = walletSnap.exists() ? (walletSnap.data().balance || 0) : 0;
+
+        await setDoc(walletRef, {
+          childId: requestData.childId,
+          parentId,
+          balance: currentBalance + requestData.amount,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error handling money request:', error);
+      throw new FirebaseServiceError('Failed to handle request', 'MONEY_REQUEST_HANDLE_FAILED');
+    }
+  }
+};
+
+// Behavior Tracker Service
+export const childBehaviorService = {
+  // Get behavior records for child
+  async getChildBehavior(childId) {
+    try {
+      const q = query(
+        collection(db, 'childBehavior'),
+        where('childId', '==', childId),
+        orderBy('createdAt', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().date?.toDate(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
+    } catch (error) {
+      console.error('Error getting behavior:', error);
+      return [];
+    }
+  },
+
+  // Add behavior note (parent or child)
+  async addBehaviorNote(childId, userId, noteData) {
+    try {
+      const docRef = await addDoc(collection(db, 'childBehavior'), {
+        childId,
+        addedBy: userId,
+        type: noteData.type || 'note', // note, achievement, badge
+        title: noteData.title,
+        description: noteData.description || '',
+        points: noteData.points || 0,
+        mood: noteData.mood || null,
+        date: serverTimestamp(),
+        createdAt: serverTimestamp()
+      });
+
+      // If points awarded, add to wallet
+      if (noteData.points > 0) {
+        const userProfile = await userService.getUserProfile(userId);
+        await childWalletService.addPoints(childId, userId, noteData.points, 'behavior', docRef.id);
+      }
+
+      return docRef.id;
+    } catch (error) {
+      console.error('Error adding behavior note:', error);
+      throw new FirebaseServiceError('Failed to add behavior note', 'BEHAVIOR_ADD_FAILED');
+    }
+  }
+};
+
+// Rewards Service
+export const childRewardsService = {
+  // Get rewards for child
+  async getChildRewards(childId) {
+    try {
+      const q = query(
+        collection(db, 'childRewards'),
+        where('childId', '==', childId)
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
+    } catch (error) {
+      console.error('Error getting rewards:', error);
+      return [];
+    }
+  },
+
+  // Create reward (parent)
+  async createReward(parentId, childId, rewardData) {
+    try {
+      const docRef = await addDoc(collection(db, 'childRewards'), {
+        parentId,
+        childId,
+        name: rewardData.name,
+        description: rewardData.description || '',
+        type: rewardData.type || 'item', // item, activity, privilege
+        cost: rewardData.cost || 0, // points or money
+        costType: rewardData.costType || 'points', // points, money
+        status: 'available', // available, redeemed, expired
+        createdAt: serverTimestamp()
+      });
+
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating reward:', error);
+      throw new FirebaseServiceError('Failed to create reward', 'REWARD_CREATE_FAILED');
+    }
+  },
+
+  // Redeem reward (child)
+  async redeemReward(rewardId, childId) {
+    try {
+      const rewardRef = doc(db, 'childRewards', rewardId);
+      const rewardSnap = await getDoc(rewardRef);
+      const rewardData = rewardSnap.data();
+
+      if (rewardData.status !== 'available') {
+        throw new FirebaseServiceError('Reward not available', 'REWARD_NOT_AVAILABLE');
+      }
+
+      // Check if child has enough points/money
+      const wallet = await childWalletService.getChildWallet(childId, rewardData.parentId);
+      const hasEnough = rewardData.costType === 'points'
+        ? wallet.points >= rewardData.cost
+        : wallet.balance >= rewardData.cost;
+
+      if (!hasEnough) {
+        throw new FirebaseServiceError('Insufficient balance', 'INSUFFICIENT_BALANCE');
+      }
+
+      // Update reward status
+      await updateDoc(rewardRef, {
+        status: 'pending_approval',
+        redeemedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error redeeming reward:', error);
+      throw error;
+    }
+  },
+
+  // Approve reward redemption (parent)
+  async approveRewardRedemption(rewardId, parentId, approved) {
+    try {
+      const rewardRef = doc(db, 'childRewards', rewardId);
+      const rewardSnap = await getDoc(rewardRef);
+      const rewardData = rewardSnap.data();
+
+      if (approved) {
+        // Deduct cost from wallet
+        const wallet = await childWalletService.getChildWallet(rewardData.childId, parentId);
+        if (rewardData.costType === 'points') {
+          // Deduct points logic would go here
+        } else {
+          // Deduct money logic would go here
+        }
+
+        await updateDoc(rewardRef, {
+          status: 'redeemed',
+          approvedAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await updateDoc(rewardRef, {
+          status: 'available',
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error approving reward:', error);
+      throw new FirebaseServiceError('Failed to approve reward', 'REWARD_APPROVE_FAILED');
+    }
+  }
+};
+
+// Screen Time Management Service
+export const childScreenTimeService = {
+  // Get screen time settings for child
+  async getScreenTimeSettings(childId, parentId) {
+    try {
+      const settingsRef = doc(db, 'childScreenTime', childId);
+      const settingsSnap = await getDoc(settingsRef);
+
+      if (settingsSnap.exists()) {
+        return {
+          id: settingsSnap.id,
+          ...settingsSnap.data(),
+          updatedAt: settingsSnap.data().updatedAt?.toDate()
+        };
+      }
+
+      // Create default settings
+      const defaultSettings = {
+        childId,
+        parentId,
+        dailyLimit: 120, // minutes
+        allowedSections: ['tasks', 'homework', 'messages', 'calendar'],
+        blockedSections: [],
+        focusModeEnabled: false,
+        schoolHoursBlocked: true,
+        schoolStartTime: '08:00',
+        schoolEndTime: '15:00',
+        updatedAt: serverTimestamp()
+      };
+
+      await setDoc(settingsRef, defaultSettings);
+      return { id: childId, ...defaultSettings };
+    } catch (error) {
+      console.error('Error getting screen time settings:', error);
+      throw new FirebaseServiceError('Failed to get settings', 'SCREENTIME_GET_FAILED');
+    }
+  },
+
+  // Update screen time settings (parent)
+  async updateScreenTimeSettings(childId, parentId, settings) {
+    try {
+      const settingsRef = doc(db, 'childScreenTime', childId);
+      await setDoc(settingsRef, {
+        childId,
+        parentId,
+        ...settings,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      return true;
+    } catch (error) {
+      console.error('Error updating screen time:', error);
+      throw new FirebaseServiceError('Failed to update settings', 'SCREENTIME_UPDATE_FAILED');
+    }
+  }
+};
+
+// Safety & Emergency Service
+export const childSafetyService = {
+  // Send SOS alert (child)
+  async sendSOS(childId, parentId, location) {
+    try {
+      const docRef = await addDoc(collection(db, 'childSOSAlerts'), {
+        childId,
+        parentId,
+        location: location || null,
+        status: 'active',
+        createdAt: serverTimestamp()
+      });
+
+      return docRef.id;
+    } catch (error) {
+      console.error('Error sending SOS:', error);
+      throw new FirebaseServiceError('Failed to send SOS', 'SOS_FAILED');
+    }
+  },
+
+  // Share location (child)
+  async shareLocation(childId, parentId, location) {
+    try {
+      await addDoc(collection(db, 'childLocationShares'), {
+        childId,
+        parentId,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        timestamp: serverTimestamp()
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error sharing location:', error);
+      throw new FirebaseServiceError('Failed to share location', 'LOCATION_SHARE_FAILED');
+    }
+  },
+
+  // Get safe locations for child
+  async getSafeLocations(childId, parentId) {
+    try {
+      const q = query(
+        collection(db, 'childSafeLocations'),
+        where('childId', '==', childId)
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
+    } catch (error) {
+      console.error('Error getting safe locations:', error);
+      return [];
+    }
+  }
+};
+
+// Child Games Service
+export const childGamesService = {
+  // Get approved games for child
+  async getChildGames(childId) {
+    try {
+      const q = query(
+        collection(db, 'childGames'),
+        where('childId', '==', childId),
+        where('approved', '==', true)
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
+    } catch (error) {
+      console.error('Error getting games:', error);
+      return [];
     }
   }
 };

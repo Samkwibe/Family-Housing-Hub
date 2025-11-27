@@ -25,6 +25,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated(); // Allow reading any user profile for search/messaging
       allow write: if isOwner(userId); // Only edit own profile
+      // Parents can read their children's profiles
+      allow read: if isAuthenticated() && 
+        resource.data.parentId == request.auth.uid;
     }
     
     // Generic rule for user-owned collections
@@ -244,6 +247,127 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
       allow delete: if isAuthenticated();
+    }
+    
+    // Helper function to check if user is parent of child
+    function isParentOfChild(childId) {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(childId)) &&
+        get(/databases/$(database)/documents/users/$(childId)).data.parentId == request.auth.uid;
+    }
+    
+    function isChildOrParent(childId, parentId) {
+      return isAuthenticated() && 
+        (request.auth.uid == childId || request.auth.uid == parentId);
+    }
+    
+    // Child Tasks
+    match /childTasks/{taskId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.parentId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow delete: if isAuthenticated() && resource.data.parentId == request.auth.uid;
+    }
+    
+    // Child Homework
+    match /childHomework/{homeworkId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.parentId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow delete: if isAuthenticated() && resource.data.parentId == request.auth.uid;
+    }
+    
+    // Child Chores
+    match /childChores/{choreId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.parentId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow delete: if isAuthenticated() && resource.data.parentId == request.auth.uid;
+    }
+    
+    // Child Wallets
+    match /childWallets/{childId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow write: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+    }
+    
+    // Child Wallet Transactions
+    match /childWalletTransactions/{transactionId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow create: if isAuthenticated();
+    }
+    
+    // Child Money Requests
+    match /childMoneyRequests/{requestId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.childId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.parentId == request.auth.uid;
+    }
+    
+    // Child Behavior
+    match /childBehavior/{behaviorId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.addedBy == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && resource.data.addedBy == request.auth.uid;
+    }
+    
+    // Child Rewards
+    match /childRewards/{rewardId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.parentId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow delete: if isAuthenticated() && resource.data.parentId == request.auth.uid;
+    }
+    
+    // Child Screen Time
+    match /childScreenTime/{childId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow write: if isAuthenticated() && resource.data.parentId == request.auth.uid;
+    }
+    
+    // Child SOS Alerts
+    match /childSOSAlerts/{alertId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.childId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.parentId == request.auth.uid;
+    }
+    
+    // Child Location Shares
+    match /childLocationShares/{shareId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.childId == request.auth.uid;
+    }
+    
+    // Child Safe Locations
+    match /childSafeLocations/{locationId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.parentId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.parentId == request.auth.uid;
+    }
+    
+    // Child Games
+    match /childGames/{gameId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.parentId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.parentId == request.auth.uid;
     }
   }
 }

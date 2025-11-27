@@ -567,21 +567,29 @@ export default function Messages() {
           timestamp: serverTimestamp()
         } : null,
         attachments: attachmentUrls.length > 0 ? attachmentUrls : null,
-        // Sender info - ensure no undefined values
-        senderName: `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || currentUser.displayName || 'User',
-        senderEmail: userProfile?.email || currentUser.email || null,
-        senderPhone: userProfile?.phone || null,
-        senderPhotoURL: userProfile?.photoURL || null
+        // Sender info - ensure no undefined values (Firestore doesn't allow undefined)
+        senderName: `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || currentUser.displayName || 'User'
       };
 
+      // Add optional sender fields only if they exist
+      const senderEmail = userProfile?.email || currentUser.email;
+      const senderPhone = userProfile?.phone;
+      const senderPhotoURL = userProfile?.photoURL;
+
       // Remove undefined fields before sending to Firestore
-      Object.keys(messageData).forEach(key => {
-        if (messageData[key] === undefined) {
-          delete messageData[key];
+      const cleanMessageData = { ...messageData };
+      if (senderEmail) cleanMessageData.senderEmail = senderEmail;
+      if (senderPhone) cleanMessageData.senderPhone = senderPhone;
+      if (senderPhotoURL) cleanMessageData.senderPhotoURL = senderPhotoURL;
+
+      // Final cleanup - remove any undefined values
+      Object.keys(cleanMessageData).forEach(key => {
+        if (cleanMessageData[key] === undefined) {
+          delete cleanMessageData[key];
         }
       });
 
-      const messageRef = await addDoc(collection(db, 'messages'), messageData);
+      const messageRef = await addDoc(collection(db, 'messages'), cleanMessageData);
 
       // Mark as read for sender (they see it immediately)
       // Update the message we just created directly

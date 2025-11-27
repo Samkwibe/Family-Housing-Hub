@@ -34,6 +34,8 @@ const ShoppingMeals = lazy(() => import('./pages/ShoppingMeals'));
 const FamilySafety = lazy(() => import('./pages/FamilySafety'));
 const Security = lazy(() => import('./pages/Security'));
 const NearbyPlaces = lazy(() => import('./pages/NearbyPlaces'));
+const ChildDashboard = lazy(() => import('./pages/ChildDashboard'));
+const ParentChildrenManagement = lazy(() => import('./pages/ParentChildrenManagement'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Protected Route with Onboarding Check
@@ -62,6 +64,57 @@ const ProtectedRoute = ({ children }) => {
 
   // If profile is complete but user is trying to access onboarding
   if (profileComplete && location.pathname === '/onboarding') {
+    // Redirect children to child dashboard, parents to main dashboard
+    if (userProfile?.role === 'child') {
+      return <Navigate to="/child-dashboard" replace />;
+    }
+    return <Navigate to="/" replace />;
+  }
+
+  // Redirect children from parent dashboard to child dashboard
+  if (userProfile?.role === 'child' && location.pathname === '/') {
+    return <Navigate to="/child-dashboard" replace />;
+  }
+
+  return children;
+};
+
+// Parent-only route - redirects children to child dashboard
+const ParentOnlyRoute = ({ children }) => {
+  const { currentUser, userProfile, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <LoadingScreen message="Verifying access..." />;
+  }
+
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // If child tries to access parent route, redirect to child dashboard
+  if (userProfile?.role === 'child') {
+    return <Navigate to="/child-dashboard" replace />;
+  }
+
+  return children;
+};
+
+// Child-only route - redirects parents to main dashboard
+const ChildOnlyRoute = ({ children }) => {
+  const { currentUser, userProfile, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <LoadingScreen message="Verifying access..." />;
+  }
+
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // If parent tries to access child route, redirect to main dashboard
+  if (userProfile?.role !== 'child') {
     return <Navigate to="/" replace />;
   }
 
@@ -108,53 +161,69 @@ const AppRouter = () => {
           </ProtectedRoute>
         } />
 
-        {/* Protected Routes with Layout */}
+        {/* Child Dashboard Route (Child Only) */}
+        <Route path="/child-dashboard" element={
+          <ChildOnlyRoute>
+            <ChildDashboard />
+          </ChildOnlyRoute>
+        } />
+
+        {/* Parent Children Management (Parent Only) */}
+        <Route path="/parent-children" element={
+          <ParentOnlyRoute>
+            <Layout>
+              <ParentChildrenManagement />
+            </Layout>
+          </ParentOnlyRoute>
+        } />
+
+        {/* Protected Routes with Layout (Parent Only) */}
         <Route path="/" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <Dashboard />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/rent" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <Rent />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/maintenance" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <Maintenance />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/documents" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <Documents />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/messages" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <Messages />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/landlord" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <Landlord />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/profile" element={
@@ -182,83 +251,83 @@ const AppRouter = () => {
         } />
 
         <Route path="/children" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <ChildrenSavings />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/health" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <FamilyHealth />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/budget" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <Budget />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/calendar" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <FamilyCalendar />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/resources" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <CommunityResources />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/assistant" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <AIAssistant />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/shopping" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <ShoppingMeals />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/safety" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <FamilySafety />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/security" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <Security />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         <Route path="/map" element={
-          <ProtectedRoute>
+          <ParentOnlyRoute>
             <Layout>
               <NearbyPlaces />
             </Layout>
-          </ProtectedRoute>
+          </ParentOnlyRoute>
         } />
 
         {/* Fallback */}

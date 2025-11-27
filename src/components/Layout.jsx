@@ -34,7 +34,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import LangSwitch from './LangSwitch';
 import NotificationCenter from './NotificationCenter';
 
-const navigation = [
+// Parent navigation (full access)
+const parentNavigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Rent', href: '/rent', icon: DollarSign },
   { name: 'Budget', href: '/budget', icon: Wallet },
@@ -43,13 +44,20 @@ const navigation = [
   { name: 'Shopping & Meals', href: '/shopping', icon: ShoppingCart },
   { name: 'Documents', href: '/documents', icon: FileText },
   { name: 'Messages', href: '/messages', icon: MessageCircle },
-  { name: 'Children', href: '/children', icon: PiggyBank },
+  { name: 'Manage Children', href: '/parent-children', icon: Users },
+  { name: 'Children Savings', href: '/children', icon: PiggyBank },
   { name: 'Health', href: '/health', icon: Heart },
   { name: 'Safety', href: '/safety', icon: AlertTriangle },
   { name: 'AI Assistant', href: '/assistant', icon: Zap },
   { name: 'Resources', href: '/resources', icon: Users },
   { name: 'Nearby Places', href: '/map', icon: MapPin },
   { name: 'Landlord', href: '/landlord', icon: Building },
+  { name: 'Profile', href: '/profile', icon: User },
+];
+
+// Child navigation (limited access - children don't see this, they use ChildDashboard)
+const childNavigation = [
+  { name: 'My Dashboard', href: '/child-dashboard', icon: Home },
   { name: 'Profile', href: '/profile', icon: User },
 ];
 
@@ -64,6 +72,11 @@ export default function Layout({ children }) {
 
   // FIX: Add null check for messages to prevent the filter error
   const unreadMessages = messages?.filter(m => !m.read).length || 0;
+
+  // Determine which navigation to show based on user role
+  // Children should not see this Layout - they use ChildDashboard
+  // But if they somehow access it, show limited navigation
+  const navigation = userProfile?.role === 'child' ? childNavigation : parentNavigation;
 
   const handleLogout = async () => {
     try {
@@ -156,7 +169,9 @@ export default function Layout({ children }) {
               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                 {userProfile?.firstName} {userProfile?.lastName}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Family Account</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {userProfile?.role === 'child' ? 'Child Account' : 'Family Account'}
+              </p>
             </div>
             <button
               onClick={handleLogout}
@@ -227,7 +242,9 @@ export default function Layout({ children }) {
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {userProfile?.firstName} {userProfile?.lastName}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Family Account</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {userProfile?.role === 'child' ? 'Child Account' : 'Family Account'}
+              </p>
                 </div>
               </div>
               <div className="relative">
@@ -338,7 +355,9 @@ export default function Layout({ children }) {
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {userProfile?.firstName} {userProfile?.lastName}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Family</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {userProfile?.role === 'child' ? 'Child' : 'Family'}
+                    </p>
                   </div>
                   {userProfile?.photoURL ? (
                     <img

@@ -663,7 +663,7 @@ export const messageService = {
 
       // Combine results and remove duplicates
       const messageMap = new Map();
-      
+
       [...sentSnapshot.docs, ...receivedSnapshot.docs].forEach(doc => {
         if (!messageMap.has(doc.id)) {
           messageMap.set(doc.id, {

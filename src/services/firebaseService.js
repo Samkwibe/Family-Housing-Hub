@@ -695,8 +695,8 @@ export const messageService = {
   // Send message
   async sendMessage(userId, messageData) {
     try {
-      const docRef = await addDoc(collection(db, 'messages'), {
-        userId,
+      // Support both old format (userId) and new format (senderId/receiverId)
+      const messageDoc = {
         subject: messageData.subject || 'General Inquiry',
         message: messageData.message,
         type: messageData.type || 'general',
@@ -706,12 +706,54 @@ export const messageService = {
         createdAt: serverTimestamp(),
         readAt: null,
         repliedAt: null
-      });
+      };
+
+      // If senderId and receiverId are provided (new format), use them
+      if (messageData.senderId && messageData.receiverId) {
+        messageDoc.senderId = messageData.senderId;
+        messageDoc.receiverId = messageData.receiverId;
+      } else {
+        // Old format - use userId as senderId
+        messageDoc.senderId = userId;
+        messageDoc.receiverId = messageData.receiverId || null;
+        messageDoc.userId = userId; // Keep for backward compatibility
+      }
+
+      const docRef = await addDoc(collection(db, 'messages'), messageDoc);
 
       clearCache(`messages_${userId}`);
+      if (messageData.receiverId) {
+        clearCache(`messages_${messageData.receiverId}`);
+      }
       return docRef.id;
     } catch (error) {
       console.error('Error sending message:', error);
+      throw new FirebaseServiceError('Failed to send message', 'MESSAGE_SEND_FAILED');
+    }
+  },
+
+  // Send message from child to parent
+  async sendChildToParentMessage(childId, parentId, messageData) {
+    try {
+      const docRef = await addDoc(collection(db, 'messages'), {
+        senderId: childId,
+        receiverId: parentId,
+        subject: messageData.subject || 'Message from Child',
+        message: messageData.message,
+        type: 'child_to_parent',
+        priority: messageData.priority || 'normal',
+        read: false,
+        replied: false,
+        createdAt: serverTimestamp(),
+        readAt: null,
+        repliedAt: null
+      });
+
+      clearCache(`messages_${childId}`);
+      clearCache(`messages_${parentId}`);
+      return docRef.id;
+    } catch (error) {
+      console.error('Error sending child to parent message:', error);
       throw new FirebaseServiceError('Failed to send message', 'MESSAGE_SEND_FAILED');
     }
   },

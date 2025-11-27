@@ -5,7 +5,15 @@ import {
     userService,
     childrenService,
     messageService,
-    uploadService
+    uploadService,
+    childTasksService,
+    childChoresService,
+    childLearningService,
+    childWalletService,
+    childBehaviorService,
+    childRewardsService,
+    childScreenTimeService,
+    childSafetyService
 } from '../services/firebaseService';
 import {
     UserPlus, Edit3, Trash2, User, Camera, X, Save, CheckCircle, XCircle,
@@ -104,17 +112,27 @@ export default function ParentChildrenManagement() {
             // Note: Some services are not yet implemented, using placeholders
             const messages = await messageService.getUserMessages(childId).catch(() => []);
             
+            const [tasksData, choresData, homeworkData, walletData, behaviorData, rewardsData, locationData] = await Promise.all([
+                childTasksService.getChildTasks(childId, currentUser.uid).catch(() => []),
+                childChoresService.getChildChores(childId).catch(() => []),
+                childLearningService.getChildHomework(childId).catch(() => []),
+                childWalletService.getChildWallet(childId, currentUser.uid).catch(() => ({ balance: 0, transactions: [] })),
+                childBehaviorService.getChildBehavior(childId).catch(() => []),
+                childRewardsService.getChildRewards(childId).catch(() => []),
+                getLocationHistory(childId).catch(() => [])
+            ]);
+
             setChildActivity(prev => ({
                 ...prev,
                 [childId]: {
-                    tasks: [], // TODO: Implement childTasksService
-                    chores: [], // TODO: Implement childChoresService
-                    homework: [], // TODO: Implement childLearningService
-                    wallet: { balance: 0, transactions: [] }, // TODO: Implement childWalletService
-                    behavior: [], // TODO: Implement childBehaviorService
-                    rewards: [], // TODO: Implement childRewardsService
+                    tasks: tasksData,
+                    chores: choresData,
+                    homework: homeworkData,
+                    wallet: walletData,
+                    behavior: behaviorData,
+                    rewards: rewardsData,
                     messages: messages || [],
-                    locationHistory: [] // TODO: Implement location tracking
+                    locationHistory: locationData
                 }
             }));
         } catch (error) {
@@ -782,8 +800,7 @@ function TasksTab({ child, parentId, onUpdate }) {
 
     const loadTasks = async () => {
         try {
-            // TODO: Implement childTasksService
-            const childTasks = [];
+            const childTasks = await childTasksService.getChildTasks(child.uid, parentId);
             setTasks(childTasks);
         } catch (error) {
             console.error('Error loading tasks:', error);
@@ -793,8 +810,8 @@ function TasksTab({ child, parentId, onUpdate }) {
 
     const handleApproveTask = async (taskId, approved) => {
         try {
-            // TODO: Implement childTasksService
-            toast.info('Task approval feature coming soon');
+            await childTasksService.approveTask(taskId, parentId, approved, 10);
+            toast.success(`Task ${approved ? 'approved' : 'rejected'}`);
             loadTasks();
             onUpdate();
         } catch (error) {
@@ -880,8 +897,7 @@ function SchoolTab({ child, parentId, onUpdate }) {
 
   const loadHomework = async () => {
     try {
-      // TODO: Implement childLearningService
-      const hw = [];
+      const hw = await childLearningService.getChildHomework(child.uid);
       setHomework(hw);
     } catch (error) {
       console.error('Error loading homework:', error);
@@ -892,12 +908,10 @@ function SchoolTab({ child, parentId, onUpdate }) {
   const handleAddHomework = async (e) => {
     e.preventDefault();
     try {
-      // TODO: Implement childLearningService
-      // await childLearningService.addHomework(parentId, child.uid, {
-      //   ...homeworkForm,
-      //   dueDate: homeworkForm.dueDate ? new Date(homeworkForm.dueDate) : null
-      // });
-      toast.info('Homework feature coming soon');
+      await childLearningService.addHomework(parentId, child.uid, {
+        ...homeworkForm,
+        dueDate: homeworkForm.dueDate ? new Date(homeworkForm.dueDate) : null
+      });
       toast.success('Homework added!');
       setShowAddModal(false);
       setHomeworkForm({ subject: '', title: '', description: '', dueDate: '' });
@@ -1177,7 +1191,7 @@ function LocationTab({ child, parentId }) {
     try {
       const [history, safe] = await Promise.all([
         getLocationHistory(child.uid),
-        [] // TODO: childSafetyService.getSafeLocations(child.uid, parentId)
+        childSafetyService.getSafeLocations(child.uid, parentId)
       ]);
       setLocationHistory(history);
       setSafeLocations(safe);
@@ -1266,8 +1280,7 @@ function BehaviorTab({ child, parentId, onUpdate }) {
 
   const loadBehavior = async () => {
     try {
-      // TODO: Implement childBehaviorService
-      const beh = [];
+      const beh = await childBehaviorService.getChildBehavior(child.uid);
       setBehavior(beh);
     } catch (error) {
       console.error('Error loading behavior:', error);
@@ -1277,9 +1290,7 @@ function BehaviorTab({ child, parentId, onUpdate }) {
   const handleAddBehavior = async (e) => {
     e.preventDefault();
     try {
-      // TODO: Implement childBehaviorService
-      // await childBehaviorService.addBehaviorNote(child.uid, parentId, behaviorForm);
-      toast.info('Behavior tracking feature coming soon');
+      await childBehaviorService.addBehaviorNote(child.uid, parentId, behaviorForm);
       toast.success('Behavior note added!');
       setShowAddModal(false);
       setBehaviorForm({ type: 'note', title: '', description: '', points: 0, mood: null });
@@ -1349,8 +1360,7 @@ function RewardsTab({ child, parentId, onUpdate }) {
 
   const loadRewards = async () => {
     try {
-      // TODO: Implement childRewardsService
-      const rew = [];
+      const rew = await childRewardsService.getChildRewards(child.uid);
       setRewards(rew);
     } catch (error) {
       console.error('Error loading rewards:', error);
@@ -1359,9 +1369,7 @@ function RewardsTab({ child, parentId, onUpdate }) {
 
   const handleApproveRedemption = async (rewardId, approved) => {
     try {
-      // TODO: Implement childRewardsService
-      // await childRewardsService.approveRewardRedemption(rewardId, parentId, approved);
-      toast.info('Reward approval feature coming soon');
+      await childRewardsService.approveRewardRedemption(rewardId, parentId, approved);
       toast.success(`Reward ${approved ? 'approved' : 'rejected'}`);
       loadRewards();
       onUpdate();
@@ -1440,9 +1448,8 @@ function WalletTab({ child, parentId, onUpdate }) {
   const loadWalletData = async () => {
     try {
       const [wal, requests] = await Promise.all([
-        // TODO: Implement childWalletService
-        { balance: 0, transactions: [] }, // childWalletService.getChildWallet(child.uid, parentId),
-        [] // childWalletService.getMoneyRequests(parentId)
+        childWalletService.getChildWallet(child.uid, parentId),
+        childWalletService.getMoneyRequests(parentId)
       ]);
       setWallet(wal);
       setMoneyRequests(requests.filter(r => r.childId === child.uid));
@@ -1454,9 +1461,7 @@ function WalletTab({ child, parentId, onUpdate }) {
   const handleAddMoney = async (e) => {
     e.preventDefault();
     try {
-      // TODO: Implement childWalletService
-      // await childWalletService.addMoney(child.uid, parentId, addMoneyForm.amount, addMoneyForm.reason);
-      toast.info('Wallet feature coming soon');
+      await childWalletService.addPoints(child.uid, parentId, parseFloat(addMoneyForm.amount), addMoneyForm.reason);
       toast.success('Money added!');
       setShowAddMoney(false);
       setAddMoneyForm({ amount: '', reason: '' });
@@ -1470,9 +1475,7 @@ function WalletTab({ child, parentId, onUpdate }) {
 
   const handleMoneyRequest = async (requestId, approved) => {
     try {
-      // TODO: Implement childWalletService
-      // await childWalletService.handleMoneyRequest(requestId, parentId, approved);
-      toast.info('Money request feature coming soon');
+      await childWalletService.handleMoneyRequest(requestId, parentId, approved);
       toast.success(`Request ${approved ? 'approved' : 'denied'}`);
       loadWalletData();
       onUpdate();
@@ -1610,8 +1613,7 @@ function ScreenTimeTab({ child, parentId }) {
 
   const loadSettings = async () => {
     try {
-      // TODO: Implement childScreenTimeService
-      const s = null; // await childScreenTimeService.getScreenTimeSettings(child.uid, parentId);
+      const s = await childScreenTimeService.getScreenTimeSettings(child.uid, parentId);
       setSettings(s);
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -1622,11 +1624,9 @@ function ScreenTimeTab({ child, parentId }) {
 
   const handleUpdateSettings = async (updates) => {
     try {
-      // TODO: Implement childScreenTimeService
-      // await childScreenTimeService.updateScreenTimeSettings(child.uid, parentId, {
-      //   ...screenTimeForm
-      // });
-      toast.info('Screen time settings feature coming soon');
+      await childScreenTimeService.updateScreenTimeSettings(child.uid, parentId, {
+        ...screenTimeForm
+      });
       // toast.success('Settings updated!');
       loadSettings();
     } catch (error) {

@@ -2379,6 +2379,60 @@ export const childWalletService = {
       console.error('Error handling money request:', error);
       throw new FirebaseServiceError('Failed to handle request', 'MONEY_REQUEST_HANDLE_FAILED');
     }
+  },
+
+  // Get money requests for parent
+  async getMoneyRequests(parentId) {
+    try {
+      const q = query(
+        collection(db, 'childMoneyRequests'),
+        where('parentId', '==', parentId),
+        orderBy('createdAt', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+        updatedAt: doc.data().updatedAt?.toDate()
+      }));
+    } catch (error) {
+      console.error('Error getting money requests:', error);
+      return [];
+    }
+  },
+
+  // Add money to wallet (parent)
+  async addMoney(childId, parentId, amount, reason) {
+    try {
+      const walletRef = doc(db, 'childWallets', childId);
+      const walletSnap = await getDoc(walletRef);
+      const currentBalance = walletSnap.exists() ? (walletSnap.data().balance || 0) : 0;
+
+      await setDoc(walletRef, {
+        childId,
+        parentId,
+        balance: currentBalance + parseFloat(amount),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      // Add transaction
+      await addDoc(collection(db, 'childWalletTransactions'), {
+        childId,
+        parentId,
+        type: 'money_added',
+        amount: parseFloat(amount),
+        reason: reason || 'Parent added money',
+        createdAt: serverTimestamp()
+      });
+
+      clearCache(`child_wallet_${childId}`);
+      return true;
+    } catch (error) {
+      console.error('Error adding money:', error);
+      throw new FirebaseServiceError('Failed to add money', 'MONEY_ADD_FAILED');
+    }
   }
 };
 

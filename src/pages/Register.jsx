@@ -261,7 +261,7 @@ export default function Register() {
               {selectedRole === 'child' ? 'Welcome, Kid!' : 'Join Our Community'}
             </h1>
             <p className="text-xl text-emerald-100 mb-10">
-              {selectedRole === 'child' 
+              {selectedRole === 'child'
                 ? 'Create your account and start earning rewards!'
                 : 'Create your account and start managing your housing needs in one convenient place.'}
             </p>

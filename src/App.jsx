@@ -56,7 +56,7 @@ const ProtectedRoute = ({ children }) => {
   if (!profileComplete && location.pathname !== '/onboarding' && userProfile?.role !== 'child') {
     return <Navigate to="/onboarding" replace />;
   }
-  
+
   // Children should never see onboarding
   if (userProfile?.role === 'child' && location.pathname === '/onboarding') {
     return <Navigate to="/child-dashboard" replace />;

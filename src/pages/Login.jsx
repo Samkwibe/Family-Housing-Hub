@@ -303,14 +303,25 @@ export default function Login() {
               Try Demo Experience
             </button>
 
-            {/* Sign Up Link */}
-            <div className="mt-10 text-center">
-              <p className="text-blue-100">
-                New to FamilyHub?{' '}
-                <Link to="/register" className="font-black text-cyan-400 hover:text-cyan-300 transition-colors duration-200 underline decoration-2 underline-offset-4">
-                  Start your family journey
-                </Link>
-              </p>
+            {/* Sign Up Options */}
+            <div className="mt-10 space-y-4">
+              <div className="text-center">
+                <p className="text-blue-100 mb-4">New to FamilyHub?</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Link
+                    to="/register?role=family"
+                    className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold text-sm transition-all duration-200 border-2 border-white/20 hover:border-white/40 backdrop-blur-sm text-center"
+                  >
+                    Sign Up as Parent
+                  </Link>
+                  <Link
+                    to="/register?role=child"
+                    className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold text-sm transition-all duration-200 border-2 border-white/20 hover:border-white/40 backdrop-blur-sm text-center"
+                  >
+                    Sign Up as Child
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -50,8 +50,14 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // If profile is not complete and not on onboarding page
-  if (!profileComplete && location.pathname !== '/onboarding') {
+  // Children skip onboarding, only parents need it
+  if (!profileComplete && location.pathname !== '/onboarding' && userProfile?.role !== 'child') {
     return <Navigate to="/onboarding" replace />;
+  }
+  
+  // Children should never see onboarding
+  if (userProfile?.role === 'child' && location.pathname === '/onboarding') {
+    return <Navigate to="/child-dashboard" replace />;
   }
 
   // If profile is complete but user is trying to access onboarding

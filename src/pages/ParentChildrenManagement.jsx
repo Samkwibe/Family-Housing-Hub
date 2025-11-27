@@ -1962,23 +1962,6 @@ function LocationTab({ child, parentId }) {
     }
   };
 
-  useEffect(() => {
-    loadLocationData();
-  }, [child]);
-
-  const loadLocationData = async () => {
-    try {
-      const [history, safe] = await Promise.all([
-        getLocationHistory(child.uid),
-        childSafetyService.getSafeLocations(child.uid, parentId)
-      ]);
-      setLocationHistory(history);
-      setSafeLocations(safe);
-    } catch (error) {
-      console.error('Error loading location data:', error);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

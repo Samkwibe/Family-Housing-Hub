@@ -55,8 +55,10 @@ export default function ParentChildrenManagement() {
     const [realTimeStatus, setRealTimeStatus] = useState({});
 
     useEffect(() => {
-        if (currentUser && userProfile?.role === 'family') {
+        if (currentUser && userProfile && userProfile?.role !== 'child') {
             loadChildAccounts();
+        } else if (currentUser && !userProfile) {
+            // Wait for profile to load
         } else {
             setLoading(false);
         }
@@ -308,12 +310,13 @@ export default function ParentChildrenManagement() {
         return age;
     };
 
-    if (userProfile?.role !== 'family') {
+    // Allow access for all non-child users (parents, renters, owners)
+    if (userProfile && userProfile?.role === 'child') {
         return (
             <div className="p-6 text-center">
                 <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Parent Access Only</h2>
-                <p className="text-gray-600">This page is only available for parent accounts.</p>
+                <p className="text-gray-600">This page is only available for parent accounts. Children should use the child dashboard.</p>
             </div>
         );
     }

@@ -182,6 +182,17 @@ export function AuthProvider({ children }) {
 
       await userService.createUserProfile(user.uid, userDoc);
 
+      // Immediately load the profile so it's available for redirect logic
+      try {
+        const profile = await userService.getUserProfile(user.uid);
+        setUserProfile(profile);
+        const isComplete = checkProfileComplete(profile);
+        setProfileComplete(isComplete);
+      } catch (profileError) {
+        console.error('Error loading profile after signup:', profileError);
+        // Continue anyway - the auth state listener will load it
+      }
+
       if (isChild) {
         toast.success('Child account created successfully!');
       } else {

@@ -29,7 +29,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
-  const { signup } = useAuth();
+  const { signup, userProfile } = useAuth();
   const navigate = useNavigate();
 
   // If role is selected, show the form
@@ -89,14 +89,17 @@ export default function Register() {
         }
       }
 
-      // Redirect based on role
-      if (selectedRole === 'child') {
-        // Children go straight to child dashboard (no onboarding)
-        navigate('/child-dashboard');
-      } else {
-        // Parents go to onboarding
-        navigate('/onboarding');
-      }
+      // Redirect based on role after a brief delay to ensure profile is loaded
+      // The signup function now loads the profile immediately, so a short delay is enough
+      setTimeout(() => {
+        if (selectedRole === 'child') {
+          // Children go straight to child dashboard (no onboarding)
+          navigate('/child-dashboard', { replace: true });
+        } else {
+          // Parents go to onboarding
+          navigate('/onboarding', { replace: true });
+        }
+      }, 300); // Small delay to ensure profile state is updated
     } catch (error) {
       console.error('Signup error:', error);
       toast.error(error.message || 'Failed to create account');

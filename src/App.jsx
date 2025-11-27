@@ -123,13 +123,17 @@ const ChildOnlyRoute = ({ children }) => {
 
 // Public Route Component
 const PublicRoute = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, userProfile, loading } = useAuth();
 
   if (loading) {
     return <LoadingScreen message="Loading..." />;
   }
 
   if (currentUser) {
+    // If user is logged in, redirect based on role
+    if (userProfile?.role === 'child') {
+      return <Navigate to="/child-dashboard" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 

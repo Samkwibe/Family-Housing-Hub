@@ -49,24 +49,41 @@ export default function ChildDashboard() {
 
   // Load child data
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && userProfile) {
       loadChildData();
     }
-  }, [currentUser]);
+  }, [currentUser, userProfile]);
 
   const loadChildData = async () => {
     setLoading(true);
     try {
-      // Get all children and find the one matching current user or first child
-      const children = await childrenService.getChildren(currentUser.uid);
-      const child = children.length > 0 ? children[0] : null;
-      
-      if (child) {
+      // If user is a child, use their profile data directly
+      if (userProfile?.role === 'child') {
+        // Create child data from user profile
+        const child = {
+          id: currentUser.uid,
+          name: `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'Child',
+          dateOfBirth: userProfile.dateOfBirth || null,
+          gender: userProfile.gender || '',
+          notes: userProfile.notes || ''
+        };
         setChildData(child);
-        // Get savings goals for this child
+        
+        // Get savings goals for this child (using their userId)
         const goals = await savingsService.getUserSavings(currentUser.uid);
-        const childGoals = goals.filter(g => g.childId === child.id);
-        setSavingsGoals(childGoals);
+        setSavingsGoals(goals);
+      } else {
+        // If user is a parent, get their children
+        const children = await childrenService.getChildren(currentUser.uid);
+        const child = children.length > 0 ? children[0] : null;
+        
+        if (child) {
+          setChildData(child);
+          // Get savings goals for this child
+          const goals = await savingsService.getUserSavings(currentUser.uid);
+          const childGoals = goals.filter(g => g.childId === child.id);
+          setSavingsGoals(childGoals);
+        }
       }
     } catch (error) {
       console.error('Error loading child data:', error);

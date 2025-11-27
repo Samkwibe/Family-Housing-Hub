@@ -36,17 +36,6 @@ export function AuthProvider({ children }) {
   const checkProfileComplete = (profile) => {
     if (!profile) return false;
 
-    // If onboardingComplete flag is set, respect it
-    if (profile.onboardingComplete === true) {
-      return true;
-    }
-
-    // If profileComplete flag is set, respect it
-    if (profile.profileComplete === true) {
-      return true;
-    }
-
-    // Otherwise, check required fields
     const requiredFields = [
       'firstName',
       'lastName',
@@ -82,27 +71,6 @@ export function AuthProvider({ children }) {
         photoURL: userData.photoURL || null
       });
 
-      // Determine if this is a child account
-      const isChild = userData.role === 'child';
-      let parentData = null;
-      let parentId = null;
-
-      // If child account and parent email provided, find and copy parent data
-      if (isChild && userData.parentEmail) {
-        try {
-          parentData = await userService.getUserByEmail(userData.parentEmail);
-          if (parentData) {
-            parentId = parentData.uid || parentData.id;
-            toast.success('Parent account found! Linking your account...');
-          } else {
-            toast.warning('Parent email not found. You can link your account later.');
-          }
-        } catch (parentError) {
-          console.error('Error finding parent:', parentError);
-          toast.warning('Could not find parent account. You can link your account later.');
-        }
-      }
-
       // Create initial user document in Firestore
       const userDoc = {
         uid: user.uid,
@@ -110,11 +78,12 @@ export function AuthProvider({ children }) {
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
         phone: userData.phone || '',
-        role: userData.role || 'family', // 'family' for parent, 'child' for child
-        userType: userData.userType || (parentData?.userType || 'renter'), // Copy from parent if child
+        role: userData.role || 'family', // Support 'family' (parent) or 'child'
+        parentId: userData.parentId || null,
+        parentEmail: userData.parentEmail || null,
 
-        // Address information - copy from parent if child, otherwise empty
-        address: parentData?.address || {
+        // Address information (empty for new users)
+        address: {
           street: '',
           unit: '',
           city: '',
@@ -123,33 +92,16 @@ export function AuthProvider({ children }) {
           country: 'USA'
         },
 
-        // Family members - copy from parent if child (children can't add/remove)
-        familyMembers: parentData?.familyMembers || [],
+        // Family members (empty array for new users)
+        familyMembers: [],
 
-        // Lease information - copy from parent if child
-        lease: parentData?.lease || {
+        // Lease information
+        lease: {
           startDate: null,
           endDate: null,
           monthlyRent: 0,
           securityDeposit: 0,
           landlordId: null
-        },
-
-        // Property information - copy from parent if child
-        property: parentData?.property || {
-          address: null,
-          purchaseDate: null,
-          purchasePrice: 0,
-          currentValue: 0,
-          mortgage: {
-            hasMortgage: false,
-            lender: '',
-            loanAmount: 0,
-            monthlyPayment: 0,
-            interestRate: 0,
-            loanStartDate: null,
-            loanEndDate: null
-          }
         },
 
         // User preferences
@@ -166,13 +118,9 @@ export function AuthProvider({ children }) {
           currency: 'USD'
         },
 
-        // Parent ID for child accounts
-        parentId: parentId || null,
-
         // Profile completion status
-        // Children skip onboarding, so mark as complete immediately
-        profileComplete: isChild ? true : false,
-        onboardingComplete: isChild ? true : false,
+        profileComplete: false,
+        onboardingComplete: false,
 
         // Timestamps
         createdAt: new Date(),
@@ -182,22 +130,7 @@ export function AuthProvider({ children }) {
 
       await userService.createUserProfile(user.uid, userDoc);
 
-      // Immediately load the profile so it's available for redirect logic
-      try {
-        const profile = await userService.getUserProfile(user.uid);
-        setUserProfile(profile);
-        const isComplete = checkProfileComplete(profile);
-        setProfileComplete(isComplete);
-      } catch (profileError) {
-        console.error('Error loading profile after signup:', profileError);
-        // Continue anyway - the auth state listener will load it
-      }
-
-      if (isChild) {
-        toast.success('Child account created successfully!');
-      } else {
-        toast.success('Account created successfully! Please complete your profile.');
-      }
+      toast.success('Account created successfully! Please complete your profile.');
       return userCredential;
     } catch (error) {
       console.error('Signup error:', error);
@@ -389,48 +322,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Update property info (for owners)
-  async function updatePropertyInfo(propertyData) {
-    try {
-      if (!currentUser) throw new Error('No user logged in');
-
-      const updates = {
-        property: {
-          address: propertyData.address || null,
-          purchaseDate: propertyData.purchaseDate ? new Date(propertyData.purchaseDate) : null,
-          purchasePrice: propertyData.purchasePrice || 0,
-          currentValue: propertyData.currentValue || 0,
-          propertyType: propertyData.propertyType || null,
-          bedrooms: propertyData.bedrooms || null,
-          bathrooms: propertyData.bathrooms || null,
-          squareFootage: propertyData.squareFootage || null,
-          yearBuilt: propertyData.yearBuilt || null,
-          mortgage: {
-            hasMortgage: propertyData.mortgage?.hasMortgage || false,
-            lender: propertyData.mortgage?.lender || '',
-            loanAmount: propertyData.mortgage?.loanAmount || 0,
-            monthlyPayment: propertyData.mortgage?.monthlyPayment || 0,
-            interestRate: propertyData.mortgage?.interestRate || 0,
-            loanStartDate: propertyData.mortgage?.loanStartDate ? new Date(propertyData.mortgage.loanStartDate) : null,
-            loanEndDate: propertyData.mortgage?.loanEndDate ? new Date(propertyData.mortgage.loanEndDate) : null,
-            downPayment: propertyData.mortgage?.downPayment || 0
-          }
-        },
-        updatedAt: new Date()
-      };
-
-      const updatedProfile = await userService.updateUserProfile(currentUser.uid, updates);
-      setUserProfile(updatedProfile);
-
-      toast.success('Property information updated!');
-      return updatedProfile;
-    } catch (error) {
-      console.error('Error updating property info:', error);
-      toast.error('Failed to update property information');
-      throw error;
-    }
-  }
-
   // Update lease information
   async function updateLeaseInfo(leaseData) {
     try {
@@ -439,16 +330,7 @@ export function AuthProvider({ children }) {
       const updatedProfile = await userService.updateUserProfile(currentUser.uid, {
         lease: {
           ...userProfile?.lease,
-          monthlyRent: leaseData.monthlyRent || 0,
-          startDate: leaseData.startDate || null,
-          endDate: leaseData.endDate || null,
-          securityDeposit: leaseData.securityDeposit || 0,
-          landlordName: leaseData.landlordName || null,
-          landlordPhone: leaseData.landlordPhone || null,
-          landlordEmail: leaseData.landlordEmail || null,
-          landlordId: leaseData.landlordId || null,
-          utilitiesIncluded: leaseData.utilitiesIncluded || false,
-          utilitiesCost: leaseData.utilitiesCost || 0
+          ...leaseData
         },
         updatedAt: new Date()
       });
@@ -626,7 +508,6 @@ export function AuthProvider({ children }) {
     addFamilyMember,
     removeFamilyMember,
     updateLeaseInfo,
-    updatePropertyInfo,
     uploadProfilePhoto,
     resetPassword,
     updateUserEmail,

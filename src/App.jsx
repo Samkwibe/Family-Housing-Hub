@@ -33,9 +33,6 @@ const AIAssistant = lazy(() => import('./pages/AIAssistant'));
 const ShoppingMeals = lazy(() => import('./pages/ShoppingMeals'));
 const FamilySafety = lazy(() => import('./pages/FamilySafety'));
 const Security = lazy(() => import('./pages/Security'));
-const NearbyPlaces = lazy(() => import('./pages/NearbyPlaces'));
-const ChildDashboard = lazy(() => import('./pages/ChildDashboard'));
-const ParentChildrenManagement = lazy(() => import('./pages/ParentChildrenManagement'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Protected Route with Onboarding Check
@@ -52,69 +49,12 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // If profile is not complete and not on onboarding page
-  // Children skip onboarding, only parents need it
-  if (!profileComplete && location.pathname !== '/onboarding' && userProfile?.role !== 'child') {
+  if (!profileComplete && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
-  }
-
-  // Children should never see onboarding
-  if (userProfile?.role === 'child' && location.pathname === '/onboarding') {
-    return <Navigate to="/child-dashboard" replace />;
   }
 
   // If profile is complete but user is trying to access onboarding
   if (profileComplete && location.pathname === '/onboarding') {
-    // Redirect children to child dashboard, parents to main dashboard
-    if (userProfile?.role === 'child') {
-      return <Navigate to="/child-dashboard" replace />;
-    }
-    return <Navigate to="/" replace />;
-  }
-
-  // Redirect children from parent dashboard to child dashboard
-  if (userProfile?.role === 'child' && location.pathname === '/') {
-    return <Navigate to="/child-dashboard" replace />;
-  }
-
-  return children;
-};
-
-// Parent-only route - redirects children to child dashboard
-const ParentOnlyRoute = ({ children }) => {
-  const { currentUser, userProfile, loading } = useAuth();
-  const location = useLocation();
-
-  if (loading) {
-    return <LoadingScreen message="Verifying access..." />;
-  }
-
-  if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // If child tries to access parent route, redirect to child dashboard
-  if (userProfile?.role === 'child') {
-    return <Navigate to="/child-dashboard" replace />;
-  }
-
-  return children;
-};
-
-// Child-only route - redirects parents to main dashboard
-const ChildOnlyRoute = ({ children }) => {
-  const { currentUser, userProfile, loading } = useAuth();
-  const location = useLocation();
-
-  if (loading) {
-    return <LoadingScreen message="Verifying access..." />;
-  }
-
-  if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // If parent tries to access child route, redirect to main dashboard
-  if (userProfile?.role !== 'child') {
     return <Navigate to="/" replace />;
   }
 
@@ -123,17 +63,13 @@ const ChildOnlyRoute = ({ children }) => {
 
 // Public Route Component
 const PublicRoute = ({ children }) => {
-  const { currentUser, userProfile, loading } = useAuth();
+  const { currentUser, loading } = useAuth();
 
   if (loading) {
     return <LoadingScreen message="Loading..." />;
   }
 
   if (currentUser) {
-    // If user is logged in, redirect based on role
-    if (userProfile?.role === 'child') {
-      return <Navigate to="/child-dashboard" replace />;
-    }
     return <Navigate to="/" replace />;
   }
 
@@ -165,69 +101,53 @@ const AppRouter = () => {
           </ProtectedRoute>
         } />
 
-        {/* Child Dashboard Route (Child Only) */}
-        <Route path="/child-dashboard" element={
-          <ChildOnlyRoute>
-            <ChildDashboard />
-          </ChildOnlyRoute>
-        } />
-
-        {/* Parent Children Management (Parent Only) */}
-        <Route path="/parent-children" element={
-          <ParentOnlyRoute>
-            <Layout>
-              <ParentChildrenManagement />
-            </Layout>
-          </ParentOnlyRoute>
-        } />
-
-        {/* Protected Routes with Layout (Parent Only) */}
+        {/* Protected Routes with Layout */}
         <Route path="/" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <Dashboard />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/rent" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <Rent />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/maintenance" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <Maintenance />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/documents" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <Documents />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/messages" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <Messages />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/landlord" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <Landlord />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/profile" element={
@@ -255,83 +175,75 @@ const AppRouter = () => {
         } />
 
         <Route path="/children" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <ChildrenSavings />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/health" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <FamilyHealth />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/budget" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <Budget />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/calendar" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <FamilyCalendar />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/resources" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <CommunityResources />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/assistant" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <AIAssistant />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/shopping" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <ShoppingMeals />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/safety" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <FamilySafety />
             </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         <Route path="/security" element={
-          <ParentOnlyRoute>
+          <ProtectedRoute>
             <Layout>
               <Security />
             </Layout>
-          </ParentOnlyRoute>
-        } />
-
-        <Route path="/map" element={
-          <ParentOnlyRoute>
-            <Layout>
-              <NearbyPlaces />
-            </Layout>
-          </ParentOnlyRoute>
+          </ProtectedRoute>
         } />
 
         {/* Fallback */}

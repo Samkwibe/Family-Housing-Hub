@@ -29,7 +29,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
-  const { signup, userProfile } = useAuth();
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
   // If role is selected, show the form
@@ -70,12 +70,21 @@ export default function Register() {
       // Check for pending invitations by email
       const invitations = await familyInvitationService.getInvitationsByEmail(formData.email);
 
+      // If child account, try to find parent by email
+      let parentId = null;
+      if (selectedRole === 'child' && formData.parentEmail) {
+        // In a real app, you'd query users by email to find parent
+        // For now, we'll store the parent email and link later
+        // This would require a users query by email service
+      }
+
       const userCredential = await signup(formData.email, formData.password, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
         role: selectedRole, // 'family' for parent, 'child' for child
-        parentEmail: selectedRole === 'child' ? formData.parentEmail : null, // Pass parent email for child accounts
+        parentId: parentId,
+        parentEmail: selectedRole === 'child' ? formData.parentEmail : null,
         familyMembers: []
       });
 
@@ -89,17 +98,14 @@ export default function Register() {
         }
       }
 
-      // Redirect based on role after a brief delay to ensure profile is loaded
-      // The signup function now loads the profile immediately, so a short delay is enough
-      setTimeout(() => {
-        if (selectedRole === 'child') {
-          // Children go straight to child dashboard (no onboarding)
-          navigate('/child-dashboard', { replace: true });
-        } else {
-          // Parents go to onboarding
-          navigate('/onboarding', { replace: true });
-        }
-      }, 300); // Small delay to ensure profile state is updated
+      // Redirect based on role
+      if (selectedRole === 'child') {
+        // Children go straight to child dashboard (no onboarding)
+        navigate('/child-dashboard');
+      } else {
+        // Parents go to onboarding or dashboard
+        navigate('/');
+      }
     } catch (error) {
       console.error('Signup error:', error);
       toast.error(error.message || 'Failed to create account');
@@ -261,7 +267,7 @@ export default function Register() {
               {selectedRole === 'child' ? 'Welcome, Kid!' : 'Join Our Community'}
             </h1>
             <p className="text-xl text-emerald-100 mb-10">
-              {selectedRole === 'child'
+              {selectedRole === 'child' 
                 ? 'Create your account and start earning rewards!'
                 : 'Create your account and start managing your housing needs in one convenient place.'}
             </p>

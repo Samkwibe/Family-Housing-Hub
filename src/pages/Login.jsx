@@ -1,5 +1,5 @@
 // src/pages/Login.jsx - PREMIUM ENHANCED DESIGN
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Home, Eye, EyeOff, Mail, Lock, Sparkles, Shield, Zap, Users, Heart, Star, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
@@ -12,7 +12,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [error, setError] = useState(null);
-  const { login } = useAuth();
+  const { login, userProfile } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -22,11 +22,20 @@ export default function Login() {
     try {
       setLoading(true);
       await login(email, password);
-      navigate('/');
+      
+      // Wait a moment for profile to load, then redirect based on role
+      setTimeout(async () => {
+        // Get fresh profile from auth context
+        const profile = userProfile;
+        if (profile?.role === 'child') {
+          navigate('/child-dashboard');
+        } else {
+          navigate('/');
+        }
+      }, 500);
     } catch (error) {
       console.error('Login failed:', error);
       setError(error.message || 'Failed to login. Please check your credentials.');
-    } finally {
       setLoading(false);
     }
   }
@@ -303,25 +312,14 @@ export default function Login() {
               Try Demo Experience
             </button>
 
-            {/* Sign Up Options */}
-            <div className="mt-10 space-y-4">
-              <div className="text-center">
-                <p className="text-blue-100 mb-4">New to FamilyHub?</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Link
-                    to="/register?role=family"
-                    className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold text-sm transition-all duration-200 border-2 border-white/20 hover:border-white/40 backdrop-blur-sm text-center"
-                  >
-                    Sign Up as Parent
-                  </Link>
-                  <Link
-                    to="/register?role=child"
-                    className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold text-sm transition-all duration-200 border-2 border-white/20 hover:border-white/40 backdrop-blur-sm text-center"
-                  >
-                    Sign Up as Child
-                  </Link>
-                </div>
-              </div>
+            {/* Sign Up Link */}
+            <div className="mt-10 text-center">
+              <p className="text-blue-100">
+                New to FamilyHub?{' '}
+                <Link to="/register" className="font-black text-cyan-400 hover:text-cyan-300 transition-colors duration-200 underline decoration-2 underline-offset-4">
+                  Start your family journey
+                </Link>
+              </p>
             </div>
           </div>
         </div>

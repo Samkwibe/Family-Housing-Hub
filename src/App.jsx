@@ -48,13 +48,32 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If profile is not complete and not on onboarding page
-  if (!profileComplete && location.pathname !== '/onboarding') {
+  // Redirect child users to child dashboard if they try to access main dashboard
+  if (userProfile?.role === 'child' && location.pathname === '/') {
+    return <Navigate to="/child-dashboard" replace />;
+  }
+
+  // Redirect parent users away from child dashboard to main dashboard
+  if (userProfile?.role !== 'child' && location.pathname === '/child-dashboard') {
+    return <Navigate to="/" replace />;
+  }
+
+  // If profile is not complete and not on onboarding page (only for parents)
+  if (!profileComplete && location.pathname !== '/onboarding' && userProfile?.role !== 'child') {
     return <Navigate to="/onboarding" replace />;
+  }
+
+  // Children skip onboarding - they go straight to child dashboard
+  if (userProfile?.role === 'child' && location.pathname === '/onboarding') {
+    return <Navigate to="/child-dashboard" replace />;
   }
 
   // If profile is complete but user is trying to access onboarding
   if (profileComplete && location.pathname === '/onboarding') {
+    // Redirect based on role
+    if (userProfile?.role === 'child') {
+      return <Navigate to="/child-dashboard" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 

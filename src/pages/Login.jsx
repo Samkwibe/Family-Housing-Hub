@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Eye, EyeOff, Mail, Lock, Sparkles, Shield, Zap, Users, Heart, Star, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
+import { Home, Eye, EyeOff, Mail, Lock, Sparkles, Shield, Zap, Users, Heart, Star, Calendar, CheckCircle, AlertCircle, Baby, UserPlus, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Login() {
@@ -12,8 +12,43 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [error, setError] = useState(null);
-  const { login, userProfile } = useAuth();
+  const { login, userProfile, currentUser } = useAuth();
   const navigate = useNavigate();
+
+  // Track if we just logged in to trigger redirect
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
+
+  // Redirect after login based on user role
+  useEffect(() => {
+    if (justLoggedIn && currentUser && userProfile && !loading && !hasRedirected) {
+      // Profile is loaded, redirect based on role
+      setHasRedirected(true);
+      if (userProfile.role === 'child') {
+        navigate('/child-dashboard', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+      setJustLoggedIn(false);
+      setLoading(false);
+    }
+  }, [justLoggedIn, currentUser, userProfile, loading, navigate, hasRedirected]);
+
+  // Fallback: if profile takes too long, redirect to default dashboard
+  useEffect(() => {
+    if (justLoggedIn && currentUser && !hasRedirected) {
+      const fallbackTimer = setTimeout(() => {
+        if (!userProfile) {
+          // Profile not loaded yet, redirect to default (will be corrected by ProtectedRoute)
+          navigate('/', { replace: true });
+          setHasRedirected(true);
+          setJustLoggedIn(false);
+          setLoading(false);
+        }
+      }, 2000); // Wait 2 seconds max
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [justLoggedIn, currentUser, userProfile, hasRedirected, navigate]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -22,21 +57,14 @@ export default function Login() {
     try {
       setLoading(true);
       await login(email, password);
-      
-      // Wait a moment for profile to load, then redirect based on role
-      setTimeout(async () => {
-        // Get fresh profile from auth context
-        const profile = userProfile;
-        if (profile?.role === 'child') {
-          navigate('/child-dashboard');
-        } else {
-          navigate('/');
-        }
-      }, 500);
+      // Set flag to trigger redirect when profile loads
+      setJustLoggedIn(true);
     } catch (error) {
       console.error('Login failed:', error);
       setError(error.message || 'Failed to login. Please check your credentials.');
       setLoading(false);
+      setJustLoggedIn(false);
+      setHasRedirected(false);
     }
   }
 
@@ -312,14 +340,63 @@ export default function Login() {
               Try Demo Experience
             </button>
 
-            {/* Sign Up Link */}
-            <div className="mt-10 text-center">
-              <p className="text-blue-100">
-                New to FamilyHub?{' '}
-                <Link to="/register" className="font-black text-cyan-400 hover:text-cyan-300 transition-colors duration-200 underline decoration-2 underline-offset-4">
-                  Start your family journey
+            {/* Sign Up Section */}
+            <div className="mt-10 space-y-4">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/20"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-transparent text-blue-100 font-medium">New to FamilyHub?</span>
+                </div>
+              </div>
+
+              {/* Sign Up Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Sign Up as Parent */}
+                <Link
+                  to="/register?role=family"
+                  className="group relative bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-xl border-2 border-purple-400/30 rounded-2xl p-5 hover:border-purple-400/60 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/20"
+                >
+                  <div className="flex flex-col items-center text-center space-y-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-white font-bold text-sm mb-1">Sign Up as Parent</p>
+                      <p className="text-blue-200 text-xs">Full access to all features</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-purple-300 group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </Link>
-              </p>
+
+                {/* Sign Up as Child */}
+                <Link
+                  to="/register?role=child"
+                  className="group relative bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-xl border-2 border-blue-400/30 rounded-2xl p-5 hover:border-blue-400/60 hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/20"
+                >
+                  <div className="flex flex-col items-center text-center space-y-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                      <Baby className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-white font-bold text-sm mb-1">Sign Up as Child</p>
+                      <p className="text-blue-200 text-xs">Kid-friendly dashboard</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-blue-300 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              </div>
+
+              {/* Alternative Sign Up Link */}
+              <div className="text-center pt-2">
+                <Link 
+                  to="/register" 
+                  className="text-sm text-blue-200 hover:text-cyan-300 transition-colors duration-200 font-medium"
+                >
+                  Or create account without role selection
+                </Link>
+              </div>
             </div>
           </div>
         </div>

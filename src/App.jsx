@@ -34,6 +34,7 @@ const ShoppingMeals = lazy(() => import('./pages/ShoppingMeals'));
 const FamilySafety = lazy(() => import('./pages/FamilySafety'));
 const Security = lazy(() => import('./pages/Security'));
 const ChildDashboard = lazy(() => import('./pages/ChildDashboard'));
+const ParentChildrenManagement = lazy(() => import('./pages/ParentChildrenManagement'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Protected Route with Onboarding Check
@@ -269,6 +270,14 @@ const AppRouter = () => {
         <Route path="/child-dashboard" element={
           <ProtectedRoute>
             <ChildDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/parent-children" element={
+          <ProtectedRoute>
+            <Layout>
+              <ParentChildrenManagement />
+            </Layout>
           </ProtectedRoute>
         } />
 

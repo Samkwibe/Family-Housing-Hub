@@ -22,7 +22,8 @@ import {
   Users,
   Zap,
   ShoppingCart,
-  AlertTriangle
+  AlertTriangle,
+  UserCog
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFamily } from '../contexts/FamilyContext';
@@ -40,6 +41,7 @@ const navigation = [
   { name: 'Documents', href: '/documents', icon: FileText },
   { name: 'Messages', href: '/messages', icon: MessageCircle },
   { name: 'Children', href: '/children', icon: PiggyBank },
+  { name: 'Manage Children', href: '/parent-children', icon: UserCog },
   { name: 'Health', href: '/health', icon: Heart },
   { name: 'Safety', href: '/safety', icon: AlertTriangle },
   { name: 'AI Assistant', href: '/assistant', icon: Zap },

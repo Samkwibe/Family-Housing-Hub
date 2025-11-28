@@ -30,9 +30,11 @@ import {
   Settings
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Maintenance() {
   const { maintenanceRequests = [], submitMaintenanceRequest, loading } = useFamily();
+  const { isDark } = useTheme();
   const { userProfile } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,7 +59,7 @@ export default function Maintenance() {
     { id: 'electrical', label: 'Electrical', icon: Lightbulb, color: 'text-yellow-600 bg-yellow-100' },
     { id: 'hvac', label: 'HVAC', icon: Thermometer, color: 'text-red-600 bg-red-100' },
     { id: 'appliance', label: 'Appliances', icon: Settings, color: 'text-purple-600 bg-purple-100' },
-    { id: 'lock', label: 'Locks/Security', icon: Lock, color: 'text-gray-600 bg-gray-100' },
+    { id: 'lock', label: 'Locks/Security', icon: Lock, color: 'text-gray-600 bg-gray-100 dark:bg-gray-700' },
     { id: 'pest', label: 'Pest Control', icon: Bug, color: 'text-green-600 bg-green-100' },
     { id: 'general', label: 'General', icon: Wrench, color: 'text-orange-600 bg-orange-100' }
   ];
@@ -93,7 +95,7 @@ export default function Maintenance() {
       submitted: { label: 'Submitted', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
       'in-progress': { label: 'In Progress', color: 'bg-blue-100 text-blue-800', icon: Wrench },
       completed: { label: 'Completed', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-800', icon: XCircle }
+      cancelled: { label: 'Cancelled', color: 'bg-gray-100 dark:bg-gray-700 text-gray-800', icon: XCircle }
     };
     return configs[status] || configs.submitted;
   };
@@ -101,7 +103,7 @@ export default function Maintenance() {
   // Priority config
   const getPriorityConfig = (priority) => {
     const configs = {
-      low: { label: 'Low', color: 'bg-gray-100 text-gray-700' },
+      low: { label: 'Low', color: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' },
       normal: { label: 'Normal', color: 'bg-blue-100 text-blue-700' },
       high: { label: 'High', color: 'bg-orange-100 text-orange-700' },
       urgent: { label: 'Urgent', color: 'bg-red-100 text-red-700' }
@@ -149,12 +151,12 @@ export default function Maintenance() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Maintenance Requests</h1>
-          <p className="text-gray-600 mt-1">Track and manage repair requests for your home</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Maintenance Requests</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Track and manage repair requests for your home</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
@@ -167,10 +169,10 @@ export default function Maintenance() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Submitted</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Submitted</p>
               <p className="text-3xl font-bold text-yellow-600 mt-1">{stats.submitted}</p>
             </div>
             <div className="p-3 bg-yellow-100 rounded-xl">
@@ -179,10 +181,10 @@ export default function Maintenance() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">In Progress</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">In Progress</p>
               <p className="text-3xl font-bold text-blue-600 mt-1">{stats.inProgress}</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-xl">
@@ -191,10 +193,10 @@ export default function Maintenance() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Completed</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Completed</p>
               <p className="text-3xl font-bold text-green-600 mt-1">{stats.completed}</p>
             </div>
             <div className="p-3 bg-green-100 rounded-xl">
@@ -203,10 +205,10 @@ export default function Maintenance() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Urgent</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Urgent</p>
               <p className="text-3xl font-bold text-red-600 mt-1">{stats.urgent}</p>
             </div>
             <div className="p-3 bg-red-100 rounded-xl">
@@ -235,7 +237,7 @@ export default function Maintenance() {
             placeholder="Search requests..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           />
         </div>
         
@@ -243,7 +245,7 @@ export default function Maintenance() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
           >
             <option value="all">All Status</option>
             <option value="submitted">Submitted</option>
@@ -254,7 +256,7 @@ export default function Maintenance() {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
           >
             <option value="all">All Priority</option>
             <option value="urgent">Urgent</option>
@@ -282,7 +284,7 @@ export default function Maintenance() {
             return (
               <div
                 key={request.id}
-                className={`bg-white rounded-2xl border-2 p-5 hover:shadow-lg transition-all cursor-pointer group ${
+                className={`bg-white dark:bg-gray-800 rounded-2xl border-2 p-5 hover:shadow-lg transition-all cursor-pointer group ${
                   request.priority === 'urgent' ? 'border-red-200' : 'border-gray-200 hover:border-blue-300'
                 }`}
                 onClick={() => setSelectedRequest(request)}
@@ -307,12 +309,12 @@ export default function Maintenance() {
                 <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors">
                   {request.title}
                 </h3>
-                <p className="text-sm text-gray-500 mb-4 line-clamp-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
                   {request.description}
                 </p>
 
                 {/* Meta */}
-                <div className="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-100">
                   <div className="flex items-center space-x-1">
                     <MapPin className="h-4 w-4" />
                     <span>{request.location || 'General'}</span>
@@ -335,8 +337,8 @@ export default function Maintenance() {
           })}
         </div>
       ) : (
-        <div className="text-center py-16 bg-gray-50 rounded-2xl">
-          <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="text-center py-16 bg-gray-50 dark:bg-gray-800 rounded-2xl">
+          <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Wrench className="h-10 w-10 text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -344,7 +346,7 @@ export default function Maintenance() {
               ? 'No matching requests' 
               : 'No maintenance requests'}
           </h3>
-          <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
             {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all'
               ? 'Try adjusting your filters'
               : 'Submit your first maintenance request when you need something fixed'}
@@ -364,15 +366,15 @@ export default function Maintenance() {
       {/* New Request Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">New Maintenance Request</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">New Maintenance Request</h2>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
@@ -380,20 +382,20 @@ export default function Maintenance() {
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title *</label>
                 <input
                   type="text"
                   required
                   value={formData.title}
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Brief description of the issue"
                 />
               </div>
 
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
                 <div className="grid grid-cols-4 gap-2">
                   {categories.slice(0, 4).map((cat) => (
                     <button
@@ -407,7 +409,7 @@ export default function Maintenance() {
                       }`}
                     >
                       <cat.icon className={`h-5 w-5 ${
-                        formData.category === cat.id ? 'text-blue-600' : 'text-gray-500'
+                        formData.category === cat.id ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'
                       }`} />
                       <span className={`text-xs font-medium ${
                         formData.category === cat.id ? 'text-blue-700' : 'text-gray-600'
@@ -419,7 +421,7 @@ export default function Maintenance() {
 
               {/* Priority */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Priority</label>
                 <div className="grid grid-cols-4 gap-2">
                   {['low', 'normal', 'high', 'urgent'].map((priority) => (
                     <button
@@ -431,7 +433,7 @@ export default function Maintenance() {
                           ? priority === 'urgent' ? 'border-red-500 bg-red-50 text-red-700' :
                             priority === 'high' ? 'border-orange-500 bg-orange-50 text-orange-700' :
                             priority === 'normal' ? 'border-blue-500 bg-blue-50 text-blue-700' :
-                            'border-gray-500 bg-gray-50 text-gray-700'
+                            'border-gray-500 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                           : 'border-gray-200 text-gray-600 hover:border-gray-300'
                       }`}
                     >
@@ -443,11 +445,11 @@ export default function Maintenance() {
 
               {/* Location */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Location</label>
                 <select
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
                 >
                   {locations.map((loc) => (
                     <option key={loc} value={loc.toLowerCase()}>{loc}</option>
@@ -457,12 +459,12 @@ export default function Maintenance() {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description *</label>
                 <textarea
                   required
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   rows={4}
                   placeholder="Please provide details about the issue..."
                 />
@@ -470,7 +472,7 @@ export default function Maintenance() {
 
               {/* Photo Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Photos (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Photos (Optional)</label>
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
                   <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                   <p className="text-sm text-gray-600">Click to upload photos</p>
@@ -483,7 +485,7 @@ export default function Maintenance() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>
@@ -513,20 +515,20 @@ export default function Maintenance() {
       {/* Request Detail Modal */}
       {selectedRequest && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Request Details</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Request Details</h2>
                 <button
                   onClick={() => setSelectedRequest(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 space-y-6">
               {/* Status & Priority */}
               <div className="flex items-center space-x-3">
                 <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${getStatusConfig(selectedRequest.status).color}`}>
@@ -545,16 +547,16 @@ export default function Maintenance() {
 
               {/* Details Grid */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 mb-1">Category</p>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Category</p>
                   <p className="font-medium capitalize">{selectedRequest.category || 'General'}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 mb-1">Location</p>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Location</p>
                   <p className="font-medium capitalize">{selectedRequest.location || 'General'}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 mb-1">Submitted</p>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Submitted</p>
                   <p className="font-medium">{formatDate(selectedRequest.createdAt)}</p>
                 </div>
                 {selectedRequest.scheduledDate && (
@@ -586,7 +588,7 @@ export default function Maintenance() {
               {/* Close Button */}
               <button
                 onClick={() => setSelectedRequest(null)}
-                className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                className="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 transition-colors"
               >
                 Close
               </button>

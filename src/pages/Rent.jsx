@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useFamily } from '../contexts/FamilyContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   DollarSign,
   Calendar,
@@ -36,6 +37,7 @@ import toast from 'react-hot-toast';
 export default function Rent() {
   const { rentPayments = [], addRentPayment, loading } = useFamily();
   const { userProfile } = useAuth();
+  const { isDark } = useTheme();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showRecordModal, setShowRecordModal] = useState(false);
   const [showUtilitiesModal, setShowUtilitiesModal] = useState(false);
@@ -188,17 +190,17 @@ export default function Rent() {
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto dark:bg-gray-900 min-h-screen transition-colors duration-200">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Rent & Payments</h1>
-          <p className="text-gray-600 mt-1">Manage your rent payments and view payment history</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Rent & Payments</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your rent payments and view payment history</p>
         </div>
         <div className="flex space-x-3">
           <button
             onClick={() => setShowRecordModal(true)}
-            className="bg-white border border-gray-300 text-gray-700 px-5 py-3 rounded-xl font-semibold flex items-center space-x-2 hover:bg-gray-50 transition-colors"
+            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-5 py-3 rounded-xl font-semibold flex items-center space-x-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             <Receipt className="h-5 w-5" />
             <span>Record Payment</span>
@@ -257,46 +259,46 @@ export default function Rent() {
         </div>
 
         {/* Paid This Year */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-gray-500 font-medium">Paid This Year</p>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-green-600" />
+            <p className="text-gray-500 dark:text-gray-400 font-medium">Paid This Year</p>
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{formatCurrency(stats.totalPaidThisYear)}</p>
-          <p className="text-green-600 text-sm mt-1 flex items-center">
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.totalPaidThisYear)}</p>
+          <p className="text-green-600 dark:text-green-400 text-sm mt-1 flex items-center">
             <ArrowUpRight className="h-4 w-4 mr-1" />
             {stats.totalPaid} payment(s)
           </p>
         </div>
 
         {/* Payment Status */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-gray-500 font-medium">Status</p>
-            <div className={`p-2 rounded-lg ${stats.totalOverdue > 0 ? 'bg-red-100' : 'bg-green-100'}`}>
+            <p className="text-gray-500 dark:text-gray-400 font-medium">Status</p>
+            <div className={`p-2 rounded-lg ${stats.totalOverdue > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-green-100 dark:bg-green-900/30'}`}>
               {stats.totalOverdue > 0 ? (
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
               ) : (
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
               )}
             </div>
           </div>
           {stats.totalOverdue > 0 ? (
             <>
-              <p className="text-3xl font-bold text-red-600">{stats.totalOverdue} Overdue</p>
-              <p className="text-red-600 text-sm mt-1">Requires immediate attention</p>
+              <p className="text-3xl font-bold text-red-600 dark:text-red-400">{stats.totalOverdue} Overdue</p>
+              <p className="text-red-600 dark:text-red-400 text-sm mt-1">Requires immediate attention</p>
             </>
           ) : stats.totalPending > 0 ? (
             <>
-              <p className="text-3xl font-bold text-yellow-600">{stats.totalPending} Pending</p>
-              <p className="text-gray-500 text-sm mt-1">Upcoming payments</p>
+              <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.totalPending} Pending</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Upcoming payments</p>
             </>
           ) : (
             <>
-              <p className="text-3xl font-bold text-green-600">Good Standing</p>
-              <p className="text-gray-500 text-sm mt-1">All payments up to date</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">Good Standing</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">All payments up to date</p>
             </>
           )}
         </div>
@@ -304,12 +306,12 @@ export default function Rent() {
 
       {/* Overdue Alert */}
       {stats.totalOverdue > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <AlertTriangle className="h-6 w-6 text-red-600" />
+            <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
             <div>
-              <p className="font-semibold text-red-800">You have {stats.totalOverdue} overdue payment(s)</p>
-              <p className="text-red-600 text-sm">Please make a payment as soon as possible to avoid late fees.</p>
+              <p className="font-semibold text-red-800 dark:text-red-300">You have {stats.totalOverdue} overdue payment(s)</p>
+              <p className="text-red-600 dark:text-red-400 text-sm">Please make a payment as soon as possible to avoid late fees.</p>
             </div>
           </div>
           <button
@@ -322,18 +324,18 @@ export default function Rent() {
       )}
 
       {/* Payment History */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h2 className="text-xl font-bold text-gray-900">Payment History</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Payment History</h2>
             <div className="flex space-x-2">
               {['all', 'paid', 'pending'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
                   className={`px-4 py-2 rounded-lg font-medium capitalize transition-colors ${filterStatus === status
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                 >
                   {status}
@@ -343,10 +345,10 @@ export default function Rent() {
           </div>
         </div>
 
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {loading?.rent ? (
             <div className="p-8 text-center">
-              <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+              <div className="w-10 h-10 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin mx-auto" />
             </div>
           ) : filteredPayments.length > 0 ? (
             filteredPayments.map((payment) => {
@@ -356,27 +358,27 @@ export default function Rent() {
               return (
                 <div
                   key={payment.id}
-                  className="p-5 hover:bg-gray-50 transition-colors flex items-center justify-between"
+                  className="p-5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className={`p-3 rounded-xl ${payment.status === 'paid' ? 'bg-green-100' :
-                      getStatusConfig(payment.status, payment.dueDate).label === 'Overdue' ? 'bg-red-100' :
-                        'bg-yellow-100'
+                    <div className={`p-3 rounded-xl ${payment.status === 'paid' ? 'bg-green-100 dark:bg-green-900/30' :
+                      getStatusConfig(payment.status, payment.dueDate).label === 'Overdue' ? 'bg-red-100 dark:bg-red-900/30' :
+                        'bg-yellow-100 dark:bg-yellow-900/30'
                       }`}>
-                      <StatusIcon className={`h-6 w-6 ${payment.status === 'paid' ? 'text-green-600' :
-                        getStatusConfig(payment.status, payment.dueDate).label === 'Overdue' ? 'text-red-600' :
-                          'text-yellow-600'
+                      <StatusIcon className={`h-6 w-6 ${payment.status === 'paid' ? 'text-green-600 dark:text-green-400' :
+                        getStatusConfig(payment.status, payment.dueDate).label === 'Overdue' ? 'text-red-600 dark:text-red-400' :
+                          'text-yellow-600 dark:text-yellow-400'
                         }`} />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(payment.amount)}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         {new Date(payment.dueDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                       </p>
                       {payment.paymentMethod && payment.status === 'paid' && (
-                        <p className="text-xs text-gray-400 mt-0.5 capitalize">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 capitalize">
                           via {payment.paymentMethod.replace('_', ' ')}
                         </p>
                       )}
@@ -385,17 +387,17 @@ export default function Rent() {
 
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         {payment.status === 'paid'
                           ? `Paid ${formatDate(payment.paidDate)}`
                           : `Due ${formatDate(payment.dueDate)}`
                         }
                       </p>
                       {payment.confirmationNumber && (
-                        <p className="text-xs text-gray-400">#{payment.confirmationNumber}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400">#{payment.confirmationNumber}</p>
                       )}
                     </div>
-                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${statusConfig.color}`}>
+                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${statusConfig.color} dark:bg-opacity-30`}>
                       {statusConfig.label}
                     </span>
                   </div>
@@ -404,11 +406,11 @@ export default function Rent() {
             })
           ) : (
             <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Receipt className="h-8 w-8 text-gray-400" />
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Receipt className="h-8 w-8 text-gray-400 dark:text-gray-500 dark:text-gray-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No payment records</h3>
-              <p className="text-gray-600 mb-4">Start tracking your rent payments</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No payment records</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">Start tracking your rent payments</p>
               <button
                 onClick={() => setShowRecordModal(true)}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
@@ -421,12 +423,12 @@ export default function Rent() {
       </div>
 
       {/* Utilities & Bills Section */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mt-8">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mt-8 transition-colors duration-200">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Utilities & Bills</h2>
-              <p className="text-gray-600 text-sm mt-1">Track your monthly utility payments and other bills</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Utilities & Bills</h2>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">Track your monthly utility payments and other bills</p>
             </div>
             <button
               onClick={() => {
@@ -469,25 +471,25 @@ export default function Rent() {
                   <div
                     key={idx}
                     className={`p-5 rounded-xl border-2 transition-all ${utility.isPaid
-                      ? 'bg-green-50 border-green-200'
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                       : isOverdue
-                        ? 'bg-red-50 border-red-200'
-                        : 'bg-yellow-50 border-yellow-200'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                        : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
                       }`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <div className={`p-2 rounded-lg ${utility.isPaid
-                          ? 'bg-green-100 text-green-600'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
                           : isOverdue
-                            ? 'bg-red-100 text-red-600'
-                            : 'bg-yellow-100 text-yellow-600'
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
                           }`}>
                           <Icon className="h-5 w-5" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900">{utility.name}</h3>
-                          <p className="text-xs text-gray-500 capitalize">{utility.type}</p>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{utility.name}</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{utility.type}</p>
                         </div>
                       </div>
                       <div className="flex space-x-1">
@@ -497,7 +499,7 @@ export default function Rent() {
                             setUtilityForm({ ...utility });
                             setShowUtilitiesModal(true);
                           }}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
@@ -506,24 +508,24 @@ export default function Rent() {
                             setUtilities(prev => prev.filter((_, i) => i !== idx));
                             toast.success('Bill removed');
                           }}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(utility.amount)}</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(utility.amount)}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         Due: {formatDate(utility.dueDate)}
                       </p>
                       {utility.isPaid && utility.paidDate && (
-                        <p className="text-xs text-green-600">
+                        <p className="text-xs text-green-600 dark:text-green-400">
                           Paid: {formatDate(utility.paidDate)}
                         </p>
                       )}
                       {isOverdue && (
-                        <p className="text-xs text-red-600 font-semibold">Overdue</p>
+                        <p className="text-xs text-red-600 dark:text-red-400 font-semibold">Overdue</p>
                       )}
                       <button
                         onClick={() => {
@@ -538,8 +540,8 @@ export default function Rent() {
                           toast.success(updated[idx].isPaid ? 'Marked as paid' : 'Marked as unpaid');
                         }}
                         className={`w-full mt-2 py-2 rounded-lg font-medium text-sm transition-colors ${utility.isPaid
-                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          : 'bg-green-600 text-white hover:bg-green-700'
+                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          : 'bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600'
                           }`}
                       >
                         {utility.isPaid ? 'Mark as Unpaid' : 'Mark as Paid'}
@@ -551,11 +553,11 @@ export default function Rent() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Zap className="h-8 w-8 text-gray-400" />
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Zap className="h-8 w-8 text-gray-400 dark:text-gray-500 dark:text-gray-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No utilities or bills added</h3>
-              <p className="text-gray-600 mb-4">Start tracking your monthly bills</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No utilities or bills added</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">Start tracking your monthly bills</p>
               <button
                 onClick={() => setShowUtilitiesModal(true)}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
@@ -570,30 +572,30 @@ export default function Rent() {
       {/* Pay Rent Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl transition-colors duration-200">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Pay Rent</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pay Rent</h2>
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
 
             <div className="p-6">
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 text-center mb-6">
-                <p className="text-green-700 font-medium mb-2">Amount Due</p>
-                <p className="text-4xl font-bold text-green-800">{formatCurrency(stats.monthlyRent)}</p>
+              <div className="bg-gradient-to-br from-green-50 dark:from-green-900/20 to-emerald-50 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6 text-center mb-6">
+                <p className="text-green-700 dark:text-green-300 font-medium mb-2">Amount Due</p>
+                <p className="text-4xl font-bold text-green-800 dark:text-green-300">{formatCurrency(stats.monthlyRent)}</p>
                 {stats.nextDue && (
-                  <p className="text-green-600 text-sm mt-2">Due {formatDate(stats.nextDue.dueDate)}</p>
+                  <p className="text-green-600 dark:text-green-400 text-sm mt-2">Due {formatDate(stats.nextDue.dueDate)}</p>
                 )}
               </div>
 
               <div className="space-y-4 text-center">
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-400">
                   Online payment integration coming soon. For now, please record your payment after making it through your preferred method.
                 </p>
                 <button
@@ -614,15 +616,15 @@ export default function Rent() {
       {/* Record Payment Modal */}
       {showRecordModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl transition-colors duration-200">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Record Payment</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Record Payment</h2>
                 <button
                   onClick={() => setShowRecordModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
@@ -630,16 +632,16 @@ export default function Rent() {
             <form onSubmit={handleRecordPayment} className="p-6 space-y-5">
               {/* Amount */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Amount Paid *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount Paid *</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-lg">$</span>
                   <input
                     type="number"
                     required
                     step="0.01"
                     value={paymentForm.amount}
                     onChange={(e) => setPaymentForm(prev => ({ ...prev, amount: e.target.value }))}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-lg"
                     placeholder="0.00"
                   />
                 </div>
@@ -647,19 +649,19 @@ export default function Rent() {
 
               {/* Payment Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Payment Date *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Date *</label>
                 <input
                   type="date"
                   required
                   value={paymentForm.paidDate}
                   onChange={(e) => setPaymentForm(prev => ({ ...prev, paidDate: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 />
               </div>
 
               {/* Payment Method */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
                 <div className="grid grid-cols-3 gap-2">
                   {paymentMethods.slice(0, 3).map((method) => (
                     <button
@@ -667,13 +669,13 @@ export default function Rent() {
                       type="button"
                       onClick={() => setPaymentForm(prev => ({ ...prev, paymentMethod: method.id }))}
                       className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center space-y-1 ${paymentForm.paymentMethod === method.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                         }`}
                     >
-                      <method.icon className={`h-5 w-5 ${paymentForm.paymentMethod === method.id ? 'text-blue-600' : 'text-gray-500'
+                      <method.icon className={`h-5 w-5 ${paymentForm.paymentMethod === method.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
                         }`} />
-                      <span className={`text-xs font-medium ${paymentForm.paymentMethod === method.id ? 'text-blue-700' : 'text-gray-600'
+                      <span className={`text-xs font-medium ${paymentForm.paymentMethod === method.id ? 'text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'
                         }`}>{method.label}</span>
                     </button>
                   ))}
@@ -682,23 +684,23 @@ export default function Rent() {
 
               {/* Confirmation Number */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Confirmation/Reference # (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirmation/Reference # (Optional)</label>
                 <input
                   type="text"
                   value={paymentForm.confirmationNumber}
                   onChange={(e) => setPaymentForm(prev => ({ ...prev, confirmationNumber: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                   placeholder="e.g., TXN123456"
                 />
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
                 <textarea
                   value={paymentForm.notes}
                   onChange={(e) => setPaymentForm(prev => ({ ...prev, notes: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none"
                   rows={2}
                   placeholder="Any additional notes..."
                 />
@@ -709,7 +711,7 @@ export default function Rent() {
                 <button
                   type="button"
                   onClick={() => setShowRecordModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>
@@ -739,10 +741,10 @@ export default function Rent() {
       {/* Utilities & Bills Modal */}
       {showUtilitiesModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl transition-colors duration-200">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   {editingUtility !== null ? 'Edit Bill' : 'Add Bill'}
                 </h2>
                 <button
@@ -750,9 +752,9 @@ export default function Rent() {
                     setShowUtilitiesModal(false);
                     setEditingUtility(null);
                   }}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
@@ -797,7 +799,7 @@ export default function Rent() {
             >
               {/* Bill Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Bill Name *
                 </label>
                 <input
@@ -805,21 +807,21 @@ export default function Rent() {
                   required
                   value={utilityForm.name}
                   onChange={(e) => setUtilityForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                   placeholder="e.g., Electric Bill"
                 />
               </div>
 
               {/* Bill Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Bill Type *
                 </label>
                 <select
                   required
                   value={utilityForm.type}
                   onChange={(e) => setUtilityForm(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 >
                   <option value="electricity">Electricity</option>
                   <option value="water">Water</option>
@@ -832,18 +834,18 @@ export default function Rent() {
 
               {/* Amount */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Amount *
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-lg">$</span>
                   <input
                     type="number"
                     required
                     step="0.01"
                     value={utilityForm.amount}
                     onChange={(e) => setUtilityForm(prev => ({ ...prev, amount: e.target.value }))}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                     placeholder="0.00"
                   />
                 </div>
@@ -851,7 +853,7 @@ export default function Rent() {
 
               {/* Due Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Due Date *
                 </label>
                 <input
@@ -859,19 +861,19 @@ export default function Rent() {
                   required
                   value={utilityForm.dueDate}
                   onChange={(e) => setUtilityForm(prev => ({ ...prev, dueDate: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 />
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Notes (Optional)
                 </label>
                 <textarea
                   value={utilityForm.notes}
                   onChange={(e) => setUtilityForm(prev => ({ ...prev, notes: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none"
                   rows={2}
                   placeholder="Any additional notes..."
                 />
@@ -885,7 +887,7 @@ export default function Rent() {
                     setShowUtilitiesModal(false);
                     setEditingUtility(null);
                   }}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>

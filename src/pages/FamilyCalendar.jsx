@@ -44,13 +44,14 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Event types with colors
 const EVENT_TYPES = [
   { id: 'appointment', label: 'Appointment', icon: Clock, color: 'bg-blue-500', lightColor: 'bg-blue-100 text-blue-700' },
   { id: 'school', label: 'School', icon: GraduationCap, color: 'bg-purple-500', lightColor: 'bg-purple-100 text-purple-700' },
   { id: 'health', label: 'Health', icon: Heart, color: 'bg-red-500', lightColor: 'bg-red-100 text-red-700' },
-  { id: 'work', label: 'Work', icon: Briefcase, color: 'bg-gray-500', lightColor: 'bg-gray-100 text-gray-700' },
+  { id: 'work', label: 'Work', icon: Briefcase, color: 'bg-gray-50 dark:bg-gray-8000', lightColor: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' },
   { id: 'family', label: 'Family', icon: Users, color: 'bg-green-500', lightColor: 'bg-green-100 text-green-700' },
   { id: 'celebration', label: 'Celebration', icon: PartyPopper, color: 'bg-pink-500', lightColor: 'bg-pink-100 text-pink-700' },
   { id: 'travel', label: 'Travel', icon: Plane, color: 'bg-cyan-500', lightColor: 'bg-cyan-100 text-cyan-700' },
@@ -61,7 +62,7 @@ const EVENT_TYPES = [
 
 // Task priorities
 const PRIORITIES = [
-  { id: 'low', label: 'Low', color: 'bg-gray-100 text-gray-600 border-gray-200' },
+  { id: 'low', label: 'Low', color: 'bg-gray-100 dark:bg-gray-700 text-gray-600 border-gray-200' },
   { id: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
   { id: 'high', label: 'High', color: 'bg-orange-100 text-orange-700 border-orange-200' },
   { id: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-700 border-red-200' }
@@ -69,6 +70,7 @@ const PRIORITIES = [
 
 export default function FamilyCalendar() {
   const { currentUser, userProfile } = useAuth();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -439,14 +441,14 @@ export default function FamilyCalendar() {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[400px]">
+      <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 flex items-center justify-center min-h-[400px]">
         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
         <div>
@@ -456,10 +458,10 @@ export default function FamilyCalendar() {
             </div>
             Family Calendar
           </h1>
-          <p className="text-gray-600 mt-1">Organize events and tasks for the whole family</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Organize events and tasks for the whole family</p>
         </div>
         <div className="flex gap-3">
-          <div className="flex bg-gray-100 rounded-xl p-1">
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
             <button
               onClick={() => setView('calendar')}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -493,22 +495,22 @@ export default function FamilyCalendar() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Calendar */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               {/* Calendar Header */}
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <button
                     onClick={goToPrevMonth}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                     {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                   </h2>
                   <button
                     onClick={goToNextMonth}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
@@ -522,7 +524,7 @@ export default function FamilyCalendar() {
               </div>
 
               {/* Days of Week */}
-              <div className="grid grid-cols-7 border-b border-gray-200">
+              <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                   <div key={day} className="p-3 text-center text-sm font-semibold text-gray-600">
                     {day}
@@ -541,8 +543,8 @@ export default function FamilyCalendar() {
                       key={index}
                       onClick={() => setSelectedDate(day.date)}
                       className={`min-h-[100px] p-2 border-b border-r border-gray-100 cursor-pointer transition-colors ${
-                        day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                      } ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                        day.isCurrentMonth ? 'bg-white' : 'bg-gray-50 dark:bg-gray-800'
+                      } ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700'}`}
                     >
                       <div className={`text-sm font-medium mb-1 ${
                         !day.isCurrentMonth ? 'text-gray-400' : 
@@ -564,7 +566,7 @@ export default function FamilyCalendar() {
                           );
                         })}
                         {dayEvents.length > 2 && (
-                          <div className="text-xs text-gray-500 px-2">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 px-2">
                             +{dayEvents.length - 2} more
                           </div>
                         )}
@@ -580,9 +582,9 @@ export default function FamilyCalendar() {
           <div className="space-y-6">
             {/* Selected Date Events */}
             {selectedDate && (
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="p-4 border-b border-gray-200">
-                  <h3 className="font-semibold text-gray-900">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
                     {formatDate(selectedDate)}
                   </h3>
                 </div>
@@ -592,14 +594,14 @@ export default function FamilyCalendar() {
                       const eventType = getEventType(event.type);
                       const EventIcon = eventType.icon;
                       return (
-                        <div key={event.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl">
+                        <div key={event.id} className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
                           <div className={`p-2 rounded-lg ${eventType.lightColor}`}>
                             <EventIcon className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 truncate">{event.title}</p>
                             {event.startTime && (
-                              <p className="text-sm text-gray-500">{event.startTime}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{event.startTime}</p>
                             )}
                           </div>
                           <button
@@ -612,14 +614,14 @@ export default function FamilyCalendar() {
                       );
                     })
                   ) : (
-                    <p className="text-gray-500 text-sm text-center py-4">No events</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">No events</p>
                   )}
                   <button
                     onClick={() => {
                       setEventForm(prev => ({ ...prev, date: selectedDate.toISOString().split('T')[0] }));
                       setShowAddEvent(true);
                     }}
-                    className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                    className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 transition-colors"
                   >
                     <Plus className="h-4 w-4 inline mr-1" /> Add Event
                   </button>
@@ -628,9 +630,9 @@ export default function FamilyCalendar() {
             )}
 
             {/* Upcoming Events */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="p-4 border-b border-gray-200">
-                <h3 className="font-semibold text-gray-900">Upcoming</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Upcoming</h3>
               </div>
               <div className="p-4 space-y-3">
                 {upcomingEvents.length > 0 ? (
@@ -644,13 +646,13 @@ export default function FamilyCalendar() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 text-sm truncate">{event.title}</p>
-                          <p className="text-xs text-gray-500">{formatDate(event.date)}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(event.date)}</p>
                         </div>
                       </div>
                     );
                   })
                 ) : (
-                  <p className="text-gray-500 text-sm text-center">No upcoming events</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm text-center">No upcoming events</p>
                 )}
               </div>
             </div>
@@ -661,37 +663,37 @@ export default function FamilyCalendar() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Task Stats */}
           <div className="lg:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Total Tasks</p>
-                  <p className="text-3xl font-bold text-gray-900">{taskStats.total}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Tasks</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{taskStats.total}</p>
                 </div>
                 <ListTodo className="h-8 w-8 text-blue-600" />
               </div>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Pending</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Pending</p>
                   <p className="text-3xl font-bold text-yellow-600">{taskStats.pending}</p>
                 </div>
                 <Circle className="h-8 w-8 text-yellow-600" />
               </div>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Completed</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
                   <p className="text-3xl font-bold text-green-600">{taskStats.completed}</p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Overdue</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Overdue</p>
                   <p className="text-3xl font-bold text-red-600">{taskStats.overdue}</p>
                 </div>
                 <AlertCircle className="h-8 w-8 text-red-600" />
@@ -701,9 +703,9 @@ export default function FamilyCalendar() {
 
           {/* Tasks List */}
           <div className="lg:col-span-4">
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900">Tasks</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h2 className="font-semibold text-gray-900 dark:text-white">Tasks</h2>
                 <div className="flex gap-2">
                   {['all', 'pending', 'completed'].map(filter => (
                     <button
@@ -712,7 +714,7 @@ export default function FamilyCalendar() {
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
                         taskFilter === filter
                           ? 'bg-blue-100 text-blue-700'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
                       {filter}
@@ -731,7 +733,7 @@ export default function FamilyCalendar() {
                       <div
                         key={task.id}
                         className={`p-4 flex items-start space-x-4 ${
-                          task.status === 'completed' ? 'bg-gray-50' : ''
+                          task.status === 'completed' ? 'bg-gray-50 dark:bg-gray-800' : ''
                         }`}
                       >
                         <button
@@ -761,9 +763,9 @@ export default function FamilyCalendar() {
                             )}
                           </div>
                           {task.description && (
-                            <p className="text-sm text-gray-500 mt-1">{task.description}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{task.description}</p>
                           )}
-                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
                             {task.dueDate && (
                               <span className="flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
@@ -792,15 +794,15 @@ export default function FamilyCalendar() {
                               setEditingTask(task);
                               setShowAddTask(true);
                             }}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                           >
-                            <Edit3 className="h-4 w-4 text-gray-500" />
+                            <Edit3 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                           </button>
                           <button
                             onClick={() => handleDeleteTask(task.id)}
                             className="p-2 hover:bg-red-100 rounded-lg transition-colors"
                           >
-                            <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-600" />
+                            <Trash2 className="h-4 w-4 text-gray-500 dark:text-gray-400 hover:text-red-600" />
                           </button>
                         </div>
                       </div>
@@ -809,7 +811,7 @@ export default function FamilyCalendar() {
                 ) : (
                   <div className="p-12 text-center">
                     <ListTodo className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 mb-4">No tasks found</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">No tasks found</p>
                     <button
                       onClick={() => setShowAddTask(true)}
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700"
@@ -827,36 +829,36 @@ export default function FamilyCalendar() {
       {/* Add Event Modal */}
       {showAddEvent && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   {editingEvent ? 'Edit Event' : 'Add Event'}
                 </h2>
                 <button
                   onClick={() => { setShowAddEvent(false); setEditingEvent(null); }}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
 
             <form onSubmit={handleAddEvent} className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title *</label>
                 <input
                   type="text"
                   required
                   value={eventForm.title}
                   onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500"
                   placeholder="Event title"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
                 <div className="grid grid-cols-5 gap-2">
                   {EVENT_TYPES.slice(0, 5).map((type) => (
                     <button
@@ -869,7 +871,7 @@ export default function FamilyCalendar() {
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <type.icon className={`h-5 w-5 ${eventForm.type === type.id ? 'text-blue-600' : 'text-gray-500'}`} />
+                      <type.icon className={`h-5 w-5 ${eventForm.type === type.id ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'}`} />
                       <span className="text-xs mt-1">{type.label}</span>
                     </button>
                   ))}
@@ -878,43 +880,43 @@ export default function FamilyCalendar() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date *</label>
                   <input
                     type="date"
                     required
                     value={eventForm.date}
                     onChange={(e) => setEventForm(prev => ({ ...prev, date: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Time</label>
                   <input
                     type="time"
                     value={eventForm.startTime}
                     onChange={(e) => setEventForm(prev => ({ ...prev, startTime: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Location</label>
                 <input
                   type="text"
                   value={eventForm.location}
                   onChange={(e) => setEventForm(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500"
                   placeholder="Event location"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assign To</label>
                 <select
                   value={eventForm.assignedTo}
                   onChange={(e) => setEventForm(prev => ({ ...prev, assignedTo: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700"
                 >
                   <option value="">Everyone</option>
                   {familyMembers.map(m => (
@@ -931,14 +933,14 @@ export default function FamilyCalendar() {
                   onChange={(e) => setEventForm(prev => ({ ...prev, reminder: e.target.checked }))}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
-                <label htmlFor="reminder" className="text-sm text-gray-700">Send reminder</label>
+                <label htmlFor="reminder" className="text-sm text-gray-700 dark:text-gray-300">Send reminder</label>
               </div>
 
               <div className="flex space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={() => { setShowAddEvent(false); setEditingEvent(null); }}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>
@@ -958,40 +960,40 @@ export default function FamilyCalendar() {
       {/* Add Task Modal */}
       {showAddTask && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   {editingTask ? 'Edit Task' : 'Add Task'}
                 </h2>
                 <button
                   onClick={() => { setShowAddTask(false); setEditingTask(null); }}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
 
             <form onSubmit={handleAddTask} className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Task *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Task *</label>
                 <input
                   type="text"
                   required
                   value={taskForm.title}
                   onChange={(e) => setTaskForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500"
                   placeholder="What needs to be done?"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
                 <textarea
                   value={taskForm.description}
                   onChange={(e) => setTaskForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none"
                   rows={2}
                   placeholder="Additional details..."
                 />
@@ -999,20 +1001,20 @@ export default function FamilyCalendar() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Date</label>
                   <input
                     type="date"
                     value={taskForm.dueDate}
                     onChange={(e) => setTaskForm(prev => ({ ...prev, dueDate: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Priority</label>
                   <select
                     value={taskForm.priority}
                     onChange={(e) => setTaskForm(prev => ({ ...prev, priority: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700"
                   >
                     {PRIORITIES.map(p => (
                       <option key={p.id} value={p.id}>{p.label}</option>
@@ -1022,11 +1024,11 @@ export default function FamilyCalendar() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assign To</label>
                 <select
                   value={taskForm.assignedTo}
                   onChange={(e) => setTaskForm(prev => ({ ...prev, assignedTo: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700"
                 >
                   <option value="">Unassigned</option>
                   {familyMembers.map(m => (
@@ -1039,7 +1041,7 @@ export default function FamilyCalendar() {
                 <button
                   type="button"
                   onClick={() => { setShowAddTask(false); setEditingTask(null); }}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>

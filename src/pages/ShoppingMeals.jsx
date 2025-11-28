@@ -42,6 +42,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Shopping categories
 const SHOPPING_CATEGORIES = [
@@ -52,7 +53,7 @@ const SHOPPING_CATEGORIES = [
   { id: 'frozen', label: 'Frozen', icon: Snowflake, color: 'bg-cyan-100 text-cyan-700' },
   { id: 'pantry', label: 'Pantry', icon: Package, color: 'bg-orange-100 text-orange-700' },
   { id: 'beverages', label: 'Beverages', icon: Coffee, color: 'bg-purple-100 text-purple-700' },
-  { id: 'other', label: 'Other', icon: ShoppingCart, color: 'bg-gray-100 text-gray-700' }
+  { id: 'other', label: 'Other', icon: ShoppingCart, color: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }
 ];
 
 // Meal types
@@ -68,6 +69,7 @@ const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 
 export default function ShoppingMeals() {
   const { currentUser } = useAuth();
+  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('shopping');
   const [loading, setLoading] = useState(true);
   const [shoppingItems, setShoppingItems] = useState([]);
@@ -404,14 +406,14 @@ export default function ShoppingMeals() {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[400px]">
+      <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 flex items-center justify-center min-h-[400px]">
         <div className="w-10 h-10 border-4 border-orange-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
         <div>
@@ -425,14 +427,14 @@ export default function ShoppingMeals() {
             </div>
             {activeTab === 'shopping' ? 'Shopping List' : 'Meal Planner'}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             {activeTab === 'shopping' 
               ? 'Organize your grocery shopping' 
               : 'Plan meals for the week'}
           </p>
         </div>
         <div className="flex gap-3">
-          <div className="flex bg-gray-100 rounded-xl p-1">
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
             <button
               onClick={() => setActiveTab('shopping')}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -467,28 +469,28 @@ export default function ShoppingMeals() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Stats */}
           <div className="lg:col-span-4 grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Total Items</p>
-                  <p className="text-3xl font-bold text-gray-900">{shoppingStats.total}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Items</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{shoppingStats.total}</p>
                 </div>
                 <ShoppingCart className="h-8 w-8 text-orange-600" />
               </div>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Remaining</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Remaining</p>
                   <p className="text-3xl font-bold text-orange-600">{shoppingStats.remaining}</p>
                 </div>
                 <Package className="h-8 w-8 text-orange-600" />
               </div>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Completed</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
                   <p className="text-3xl font-bold text-green-600">{shoppingStats.checked}</p>
                 </div>
                 <Check className="h-8 w-8 text-green-600" />
@@ -498,13 +500,13 @@ export default function ShoppingMeals() {
 
           {/* Category Filter */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 sticky top-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sticky top-6">
               <h3 className="font-semibold text-gray-900 mb-4">Categories</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => setSelectedCategory('all')}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    selectedCategory === 'all' ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-100'
+                    selectedCategory === 'all' ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700'
                   }`}
                 >
                   All Items
@@ -516,7 +518,7 @@ export default function ShoppingMeals() {
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
                       className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${
-                        selectedCategory === cat.id ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-100'
+                        selectedCategory === cat.id ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700'
                       }`}
                     >
                       <span className="flex items-center gap-2">
@@ -546,9 +548,9 @@ export default function ShoppingMeals() {
 
           {/* Shopping Items */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="p-4 border-b border-gray-200">
-                <h2 className="font-semibold text-gray-900">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="font-semibold text-gray-900 dark:text-white">
                   {selectedCategory === 'all' ? 'All Items' : getCategoryInfo(selectedCategory).label}
                 </h2>
               </div>
@@ -562,7 +564,7 @@ export default function ShoppingMeals() {
                     return (
                       <div
                         key={item.id}
-                        className={`p-4 flex items-center gap-4 ${item.checked ? 'bg-gray-50' : ''}`}
+                        className={`p-4 flex items-center gap-4 ${item.checked ? 'bg-gray-50 dark:bg-gray-800' : ''}`}
                       >
                         <button
                           onClick={() => toggleItemChecked(item)}
@@ -583,7 +585,7 @@ export default function ShoppingMeals() {
                           <p className={`font-medium ${item.checked ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
                             {item.name}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             {item.quantity} {item.unit} {item.notes && `• ${item.notes}`}
                           </p>
                         </div>
@@ -600,7 +602,7 @@ export default function ShoppingMeals() {
                 ) : (
                   <div className="p-12 text-center">
                     <ShoppingCart className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 mb-4">No items in your list</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">No items in your list</p>
                     <button
                       onClick={() => setShowAddItem(true)}
                       className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700"
@@ -621,14 +623,14 @@ export default function ShoppingMeals() {
             <div className="flex items-center gap-4">
               <button
                 onClick={goToPrevWeek}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <h2 className="text-xl font-bold text-gray-900">{formatWeekRange()}</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{formatWeekRange()}</h2>
               <button
                 onClick={goToNextWeek}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
@@ -652,13 +654,13 @@ export default function ShoppingMeals() {
               return (
                 <div
                   key={day}
-                  className={`bg-white rounded-2xl border-2 overflow-hidden ${
+                  className={`bg-white dark:bg-gray-800 rounded-2xl border-2 overflow-hidden ${
                     isToday ? 'border-orange-500' : 'border-gray-200'
                   }`}
                 >
-                  <div className={`p-3 ${isToday ? 'bg-orange-500 text-white' : 'bg-gray-50'}`}>
+                  <div className={`p-3 ${isToday ? 'bg-orange-500 text-white' : 'bg-gray-50 dark:bg-gray-800'}`}>
                     <p className="font-medium text-center">{day.slice(0, 3)}</p>
-                    <p className={`text-center text-sm ${isToday ? 'text-orange-100' : 'text-gray-500'}`}>
+                    <p className={`text-center text-sm ${isToday ? 'text-orange-100' : 'text-gray-500 dark:text-gray-400'}`}>
                       {dayDate.getDate()}
                     </p>
                   </div>
@@ -725,7 +727,7 @@ export default function ShoppingMeals() {
           <div className="mt-8 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-200">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-orange-600" />
-              <h3 className="font-semibold text-gray-900">Quick Meal Ideas</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Quick Meal Ideas</h3>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {['Grilled Chicken Salad', 'Pasta Primavera', 'Fish Tacos', 'Stir Fry Vegetables', 
@@ -736,7 +738,7 @@ export default function ShoppingMeals() {
                     setMealForm(prev => ({ ...prev, name: meal }));
                     setShowAddMeal(true);
                   }}
-                  className="px-4 py-2 bg-white rounded-xl text-sm font-medium text-gray-700 hover:bg-orange-100 hover:text-orange-700 transition-colors"
+                  className="px-4 py-2 bg-white rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-100 hover:text-orange-700 transition-colors"
                 >
                   {meal}
                 </button>
@@ -749,57 +751,57 @@ export default function ShoppingMeals() {
       {/* Add Item Modal */}
       {showAddItem && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Add Item</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Item</h2>
                 <button
                   onClick={() => { setShowAddItem(false); setEditingItem(null); }}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
 
             <form onSubmit={handleAddItem} className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Item Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item Name *</label>
                 <input
                   type="text"
                   required
                   value={itemForm.name}
                   onChange={(e) => setItemForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500"
                   placeholder="e.g., Apples, Milk, Bread"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quantity</label>
                   <input
                     type="text"
                     value={itemForm.quantity}
                     onChange={(e) => setItemForm(prev => ({ ...prev, quantity: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500"
                     placeholder="1"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Unit</label>
                   <input
                     type="text"
                     value={itemForm.unit}
                     onChange={(e) => setItemForm(prev => ({ ...prev, unit: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500"
                     placeholder="lbs, oz, pack"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
                 <div className="grid grid-cols-4 gap-2">
                   {SHOPPING_CATEGORIES.slice(0, 8).map((cat) => (
                     <button
@@ -812,7 +814,7 @@ export default function ShoppingMeals() {
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <cat.icon className={`h-4 w-4 ${itemForm.category === cat.id ? 'text-orange-600' : 'text-gray-500'}`} />
+                      <cat.icon className={`h-4 w-4 ${itemForm.category === cat.id ? 'text-orange-600' : 'text-gray-500 dark:text-gray-400'}`} />
                       <span className="text-xs mt-1">{cat.label}</span>
                     </button>
                   ))}
@@ -823,7 +825,7 @@ export default function ShoppingMeals() {
                 <button
                   type="button"
                   onClick={() => { setShowAddItem(false); setEditingItem(null); }}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>
@@ -843,39 +845,39 @@ export default function ShoppingMeals() {
       {/* Add Meal Modal */}
       {showAddMeal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Plan Meal</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Plan Meal</h2>
                 <button
                   onClick={() => setShowAddMeal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
 
             <form onSubmit={handleAddMeal} className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Meal Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Meal Name *</label>
                 <input
                   type="text"
                   required
                   value={mealForm.name}
                   onChange={(e) => setMealForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500"
                   placeholder="e.g., Grilled Chicken with Rice"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Meal Type</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Meal Type</label>
                   <select
                     value={mealForm.type}
                     onChange={(e) => setMealForm(prev => ({ ...prev, type: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700"
                   >
                     {MEAL_TYPES.map(type => (
                       <option key={type.id} value={type.id}>{type.label}</option>
@@ -883,35 +885,35 @@ export default function ShoppingMeals() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
                   <input
                     type="date"
                     value={mealForm.date}
                     onChange={(e) => setMealForm(prev => ({ ...prev, date: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Servings</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Servings</label>
                 <input
                   type="number"
                   value={mealForm.servings}
                   onChange={(e) => setMealForm(prev => ({ ...prev, servings: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500"
                   min="1"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Ingredients (one per line - can add to shopping list later)
                 </label>
                 <textarea
                   value={mealForm.ingredients}
                   onChange={(e) => setMealForm(prev => ({ ...prev, ingredients: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 resize-none"
                   rows={4}
                   placeholder="Chicken breast&#10;Rice&#10;Olive oil&#10;Garlic"
                 />
@@ -921,7 +923,7 @@ export default function ShoppingMeals() {
                 <button
                   type="button"
                   onClick={() => setShowAddMeal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>

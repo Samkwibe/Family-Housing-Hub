@@ -22,9 +22,11 @@ import {
   ChevronDown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Documents() {
   const { documents = [], addDocument, deleteDocument, loading } = useFamily();
+  const { isDark } = useTheme();
   const { userProfile } = useAuth();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,7 +48,7 @@ export default function Documents() {
     income: { label: 'Income Verification', icon: File, color: 'text-green-600 bg-green-100' },
     id: { label: 'Identification', icon: File, color: 'text-purple-600 bg-purple-100' },
     insurance: { label: 'Insurance', icon: FileText, color: 'text-orange-600 bg-orange-100' },
-    other: { label: 'Other', icon: File, color: 'text-gray-600 bg-gray-100' }
+    other: { label: 'Other', icon: File, color: 'text-gray-600 bg-gray-100 dark:bg-gray-700' }
   };
 
   // Filter documents
@@ -174,12 +176,12 @@ export default function Documents() {
   const expiredDocs = documents.filter(d => isExpired(d.expiryDate)).length;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
-          <p className="text-gray-600 mt-1">Manage your important housing documents securely</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Documents</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your important housing documents securely</p>
         </div>
         <button
           onClick={() => setIsUploadModalOpen(true)}
@@ -192,10 +194,10 @@ export default function Documents() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Total Documents</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Documents</p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{totalDocs}</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-xl">
@@ -204,10 +206,10 @@ export default function Documents() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Valid Documents</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Valid Documents</p>
               <p className="text-3xl font-bold text-green-600 mt-1">{totalDocs - expiredDocs}</p>
             </div>
             <div className="p-3 bg-green-100 rounded-xl">
@@ -216,10 +218,10 @@ export default function Documents() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Expiring Soon</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Expiring Soon</p>
               <p className="text-3xl font-bold text-orange-600 mt-1">{expiringDocs}</p>
             </div>
             <div className="p-3 bg-orange-100 rounded-xl">
@@ -228,10 +230,10 @@ export default function Documents() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Expired</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Expired</p>
               <p className="text-3xl font-bold text-red-600 mt-1">{expiredDocs}</p>
             </div>
             <div className="p-3 bg-red-100 rounded-xl">
@@ -260,7 +262,7 @@ export default function Documents() {
             placeholder="Search documents..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           />
         </div>
         
@@ -268,7 +270,7 @@ export default function Documents() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="appearance-none px-4 py-3 pr-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[180px]"
+            className="appearance-none px-4 py-3 pr-10 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[180px]"
           >
             <option value="all">All Types</option>
             {Object.entries(documentTypes).map(([key, { label }]) => (
@@ -295,7 +297,7 @@ export default function Documents() {
             return (
               <div 
                 key={doc.id} 
-                className={`bg-white rounded-2xl border-2 p-5 hover:shadow-lg transition-all group ${
+                className={`bg-white dark:bg-gray-800 rounded-2xl border-2 p-5 hover:shadow-lg transition-all group ${
                   expired ? 'border-red-200 bg-red-50/50' :
                   expiringSoon ? 'border-orange-200 bg-orange-50/50' :
                   'border-gray-200 hover:border-blue-300'
@@ -326,10 +328,10 @@ export default function Documents() {
                 
                 <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">{doc.title}</h3>
                 {doc.description && (
-                  <p className="text-sm text-gray-500 mb-3 line-clamp-2">{doc.description}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{doc.description}</p>
                 )}
                 
-                <div className="space-y-2 text-sm text-gray-600 mb-4">
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <span>Uploaded: {formatDate(doc.uploadedAt || doc.createdAt)}</span>
@@ -363,7 +365,7 @@ export default function Documents() {
                       <a
                         href={doc.fileURL}
                         download
-                        className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-3 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors flex items-center justify-center space-x-1"
+                        className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2.5 px-3 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors flex items-center justify-center space-x-1"
                       >
                         <Download className="h-4 w-4" />
                         <span>Download</span>
@@ -382,14 +384,14 @@ export default function Documents() {
           })}
         </div>
       ) : (
-        <div className="text-center py-16 bg-gray-50 rounded-2xl">
-          <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="text-center py-16 bg-gray-50 dark:bg-gray-800 rounded-2xl">
+          <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <FolderOpen className="h-10 w-10 text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             {searchTerm || typeFilter !== 'all' ? 'No documents found' : 'No documents yet'}
           </h3>
-          <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
             {searchTerm || typeFilter !== 'all' 
               ? 'Try adjusting your search or filter criteria' 
               : 'Upload your first document to keep your important files organized and secure'
@@ -410,15 +412,15 @@ export default function Documents() {
       {/* Upload Modal */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Upload Document</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Upload Document</h2>
                 <button
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
@@ -426,7 +428,7 @@ export default function Documents() {
             <form onSubmit={handleUpload} className="p-6 space-y-5">
               {/* File Upload Area */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">File *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">File *</label>
                 <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
                   uploadForm.file ? 'border-blue-300 bg-blue-50' : 'border-gray-300 hover:border-blue-400'
                 }`}>
@@ -434,8 +436,8 @@ export default function Documents() {
                     <div className="flex items-center justify-center space-x-3">
                       <FileText className="h-8 w-8 text-blue-600" />
                       <div className="text-left">
-                        <p className="font-medium text-gray-900">{uploadForm.file.name}</p>
-                        <p className="text-sm text-gray-500">{formatFileSize(uploadForm.file.size)}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{uploadForm.file.name}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{formatFileSize(uploadForm.file.size)}</p>
                       </div>
                       <button
                         type="button"
@@ -463,24 +465,24 @@ export default function Documents() {
 
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Document Title *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Document Title *</label>
                 <input
                   type="text"
                   required
                   value={uploadForm.title}
                   onChange={(e) => setUploadForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., Lease Agreement 2025"
                 />
               </div>
 
               {/* Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Document Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Document Type</label>
                 <select
                   value={uploadForm.type}
                   onChange={(e) => setUploadForm(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
                 >
                   {Object.entries(documentTypes).map(([key, { label }]) => (
                     <option key={key} value={key}>{label}</option>
@@ -490,11 +492,11 @@ export default function Documents() {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description (Optional)</label>
                 <textarea
                   value={uploadForm.description}
                   onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   rows={3}
                   placeholder="Add any notes about this document..."
                 />
@@ -502,12 +504,12 @@ export default function Documents() {
 
               {/* Expiry Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Expiry Date (Optional)</label>
                 <input
                   type="date"
                   value={uploadForm.expiryDate}
                   onChange={(e) => setUploadForm(prev => ({ ...prev, expiryDate: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
@@ -516,7 +518,7 @@ export default function Documents() {
                 <button
                   type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>

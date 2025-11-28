@@ -1094,34 +1094,82 @@ export default function ChildDashboard() {
               )}
             </div>
 
-            {/* Theme Customization */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg">
-              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                <Palette className="h-6 w-6 text-pink-600" />
-                Choose Your Theme
+            {/* App Theme (Dark/Light/System) */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 dark:text-white">
+                <Moon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                App Theme
               </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Choose between light and dark mode for the entire app
+              </p>
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { id: 'light', label: 'Light', icon: Sun, gradient: 'from-amber-100 to-orange-100' },
+                  { id: 'dark', label: 'Dark', icon: Moon, gradient: 'from-gray-700 to-gray-900' },
+                  { id: 'system', label: 'System', icon: Monitor, gradient: 'from-blue-100 to-purple-100' }
+                ].map((themeOption) => {
+                  const ThemeIcon = themeOption.icon;
+                  const isSelected = theme === themeOption.id;
+                  return (
+                    <button
+                      key={themeOption.id}
+                      onClick={() => {
+                        setThemeMode(themeOption.id);
+                        toast.success(`${themeOption.label} mode activated! ${themeOption.id === 'dark' ? '🌙' : themeOption.id === 'light' ? '☀️' : '💻'}`);
+                      }}
+                      className={`relative p-4 rounded-xl border-2 transition-all duration-200 dark:border-gray-700 ${
+                        isSelected
+                          ? 'border-purple-500 dark:border-purple-400 shadow-lg shadow-purple-100 dark:shadow-purple-900'
+                          : 'border-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <div className={`w-full h-20 rounded-lg bg-gradient-to-br ${themeOption.gradient} mb-3 flex items-center justify-center`}>
+                        <ThemeIcon className={`h-8 w-8 ${themeOption.id === 'dark' ? 'text-white' : 'text-gray-700'}`} />
+                      </div>
+                      <p className="font-semibold text-sm dark:text-gray-100">{themeOption.label}</p>
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 bg-purple-500 dark:bg-purple-400 text-white p-1 rounded-full">
+                          <CheckCircle className="h-3 w-3" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Colorful Header Themes */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 dark:text-white">
+                <Palette className="h-6 w-6 text-pink-600 dark:text-pink-400" />
+                Header Colors
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Choose a colorful theme for your dashboard header
+              </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {themes.map((theme, idx) => {
-                  const ThemeIcon = theme.icon;
+                {themes.map((headerTheme, idx) => {
+                  const ThemeIcon = headerTheme.icon;
                   return (
                     <button
                       key={idx}
                       onClick={() => {
-                        setCurrentTheme(theme);
-                        toast.success(`${theme.name} theme activated! 🌈`);
+                        setCurrentTheme(headerTheme);
+                        toast.success(`${headerTheme.name} header theme activated! 🌈`);
                       }}
-                      className={`p-4 rounded-xl border-2 transition-all transform hover:scale-105 ${
-                        currentTheme.name === theme.name
-                          ? 'border-purple-500 bg-purple-50 shadow-lg scale-105'
-                          : 'border-gray-200 hover:border-gray-300'
+                      className={`p-4 rounded-xl border-2 transition-all transform hover:scale-105 dark:border-gray-700 ${
+                        currentTheme.name === headerTheme.name
+                          ? 'border-purple-500 dark:border-purple-400 bg-purple-50 dark:bg-purple-900/30 shadow-lg scale-105'
+                          : 'border-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
                     >
                       <ThemeIcon className={`h-8 w-8 mx-auto mb-2 ${
-                        currentTheme.name === theme.name ? 'text-purple-600' : 'text-gray-400'
+                        currentTheme.name === headerTheme.name ? 'text-purple-600 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'
                       }`} />
-                      <p className="font-semibold text-sm">{theme.name}</p>
-                      {currentTheme.name === theme.name && (
-                        <CheckCircle className="h-5 w-5 text-purple-600 mx-auto mt-2" />
+                      <p className="font-semibold text-sm dark:text-gray-100">{headerTheme.name}</p>
+                      {currentTheme.name === headerTheme.name && (
+                        <CheckCircle className="h-5 w-5 text-purple-600 dark:text-purple-400 mx-auto mt-2" />
                       )}
                     </button>
                   );

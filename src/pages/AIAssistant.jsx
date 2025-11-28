@@ -350,6 +350,55 @@ Prepare children for school:
     ],
     category: 'education'
   },
+  'homework': {
+    title: 'Homework Help & Support',
+    content: `**Helping Your Child with Homework:**
+
+**1. Create a Study Space**
+• Quiet, well-lit area
+• All supplies nearby
+• Remove distractions
+
+**2. Set a Routine**
+• Same time each day
+• Break into smaller tasks
+• Take short breaks
+
+**3. Be Supportive**
+• Help them understand, don't do it for them
+• Ask questions to guide thinking
+• Praise effort, not just results
+
+**4. Get Help When Needed**
+• Contact your child's teacher
+• Look for tutoring programs
+• Use online resources
+
+**5. Make It Fun**
+• Use games for learning
+• Connect to real life
+• Celebrate small wins`,
+    homework: `**Homework Helper Checklist:**
+
+1. 📚 Set up a quiet study space
+2. ⏰ Create a daily homework schedule
+3. 📝 Break big assignments into small steps
+4. 🎯 Set goals and track progress
+5. 🎉 Celebrate when homework is done`,
+    childrenActivity: `**Family Activity: Homework Time**
+
+Make homework fun:
+• Create a special homework corner
+• Use colorful supplies
+• Play "teacher" and let child explain
+• Take brain breaks with movement`,
+    audioPrompt: "Help your child with homework by creating a quiet study space, setting a daily routine, and being supportive. Break big tasks into smaller steps and celebrate their progress.",
+    links: [
+      { label: 'Homework Help Resources', url: 'https://www.khanacademy.org' },
+      { label: 'Study Tips', url: 'https://www.understood.org' }
+    ],
+    category: 'education'
+  },
   'immigration': {
     title: 'Immigration Resources',
     content: `**Immigration Help & Resources:**
@@ -647,41 +696,79 @@ How can I help your family today?`,
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Enhanced response finder with location context
+  // Enhanced response finder with location context and better keyword matching
   const findResponse = useCallback((query) => {
     const AI_RESPONSES = createAIResponses(userLocation);
     const lowerQuery = query.toLowerCase();
     
-    // Keyword matching with priority
-    const keywordMap = {
-      'rent': 'rent assistance',
-      'evict': 'eviction',
-      'insurance': 'insurance',
-      'health insurance': 'health insurance',
-      'vaccine': 'vaccine',
-      'budget': 'budget',
-      'budget planning': 'budget planning',
-      'food stamp': 'food stamps',
-      'snap': 'food stamps',
-      'school': 'school enrollment',
-      'enroll': 'school enrollment',
-      'immigra': 'immigration',
-      'immigration help': 'immigration help',
-      'job': 'job assistance',
-      'employment': 'job assistance',
-      'work': 'job assistance',
-      'childcare': 'childcare assistance',
-      'child care': 'childcare assistance',
-      'daycare': 'childcare assistance',
-      'help': 'help'
-    };
-
-    for (const [keyword, responseKey] of Object.entries(keywordMap)) {
-      if (lowerQuery.includes(keyword)) {
-        return AI_RESPONSES[responseKey] || AI_RESPONSES['help'];
-      }
+    // Priority-based keyword matching (more specific first)
+    // Check for homework/education first (before generic "help" or "work")
+    if (lowerQuery.includes('homework') || lowerQuery.includes('home work') || 
+        lowerQuery.includes('school work') || lowerQuery.includes('assignment') ||
+        (lowerQuery.includes('help') && (lowerQuery.includes('homework') || lowerQuery.includes('son') || lowerQuery.includes('child') || lowerQuery.includes('kid')))) {
+      return AI_RESPONSES['homework'] || AI_RESPONSES['school enrollment'] || AI_RESPONSES['help'];
     }
-
+    
+    if (lowerQuery.includes('study') || lowerQuery.includes('learn') ||
+        lowerQuery.includes('tutor') || lowerQuery.includes('student') ||
+        lowerQuery.includes('teaching')) {
+      return AI_RESPONSES['homework'] || AI_RESPONSES['school enrollment'] || AI_RESPONSES['help'];
+    }
+    
+    // Check for specific topics
+    if (lowerQuery.includes('rent') && !lowerQuery.includes('parent')) {
+      return AI_RESPONSES['rent assistance'];
+    }
+    
+    if (lowerQuery.includes('evict')) {
+      return AI_RESPONSES['eviction'];
+    }
+    
+    if (lowerQuery.includes('health insurance') || (lowerQuery.includes('insurance') && lowerQuery.includes('health'))) {
+      return AI_RESPONSES['health insurance'];
+    }
+    
+    if (lowerQuery.includes('insurance') && !lowerQuery.includes('health')) {
+      return AI_RESPONSES['insurance'];
+    }
+    
+    if (lowerQuery.includes('vaccine') || lowerQuery.includes('vaccination')) {
+      return AI_RESPONSES['vaccine'] || AI_RESPONSES['help'];
+    }
+    
+    if (lowerQuery.includes('budget') || lowerQuery.includes('money') || lowerQuery.includes('save money')) {
+      return AI_RESPONSES['budget'] || AI_RESPONSES['budget planning'];
+    }
+    
+    if (lowerQuery.includes('food stamp') || lowerQuery.includes('snap') || 
+        lowerQuery.includes('food assistance') || lowerQuery.includes('food help')) {
+      return AI_RESPONSES['food stamps'];
+    }
+    
+    if (lowerQuery.includes('school') || lowerQuery.includes('enroll') || 
+        lowerQuery.includes('education') || lowerQuery.includes('child school')) {
+      return AI_RESPONSES['school enrollment'];
+    }
+    
+    if (lowerQuery.includes('immigration') || lowerQuery.includes('immigrant')) {
+      return AI_RESPONSES['immigration'] || AI_RESPONSES['immigration help'];
+    }
+    
+    if ((lowerQuery.includes('job') || lowerQuery.includes('employment') || 
+         lowerQuery.includes('career') || (lowerQuery.includes('work') && 
+         !lowerQuery.includes('homework') && !lowerQuery.includes('school work') && 
+         !lowerQuery.includes('home work'))) && 
+        !lowerQuery.includes('homework') && !lowerQuery.includes('school work') &&
+        !lowerQuery.includes('home work')) {
+      return AI_RESPONSES['job assistance'];
+    }
+    
+    if (lowerQuery.includes('childcare') || lowerQuery.includes('child care') || 
+        lowerQuery.includes('daycare') || lowerQuery.includes('babysit')) {
+      return AI_RESPONSES['childcare assistance'];
+    }
+    
+    // Default to help
     return AI_RESPONSES['help'];
   }, [userLocation]);
 
@@ -729,16 +816,8 @@ How can I help your family today?`,
     setIsTyping(false);
     setMessages(prev => [...prev, assistantMessage]);
 
-    // Text-to-speech if not muted
-    if (!isMuted && response.audioPrompt && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(response.audioPrompt);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 0.8;
-      window.speechSynthesis.speak(utterance);
-    }
-  }, [inputValue, findResponse, isMuted]);
+    // Don't auto-play audio - user can click play button if they want
+  }, [inputValue, findResponse]);
 
   // Stop speaking
   const stopSpeaking = useCallback(() => {
@@ -787,16 +866,8 @@ How can I help your family today?`,
     setIsTyping(false);
     setMessages(prev => [...prev, assistantMessage]);
 
-    // Text-to-speech if not muted
-    if (!isMuted && response.audioPrompt && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(response.audioPrompt);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 0.8;
-      window.speechSynthesis.speak(utterance);
-    }
-  }, [findResponse, isMuted]);
+    // Don't auto-play audio - user can click play button if they want
+  }, [findResponse]);
 
   // Audio recording functionality
   const startRecording = async () => {
@@ -1051,16 +1122,7 @@ How can I help your family today?`,
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Voice Guidance</span>
-              <button
-                onClick={() => {
-                  setIsMuted(!isMuted);
-                  if (!isMuted) stopSpeaking();
-                }}
-                className={`p-2 rounded-lg ${isMuted ? 'bg-gray-200' : 'bg-blue-200'}`}
-              >
-                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </button>
+              <span className="text-sm text-gray-700">💡 Audio is optional - click the 🔊 Listen button on any message to hear the response</span>
             </div>
           </div>
         </div>
@@ -1260,19 +1322,37 @@ How can I help your family today?`,
                           <button 
                             onClick={() => {
                               if (message.audioPrompt && 'speechSynthesis' in window) {
+                                // Stop any current speech
                                 window.speechSynthesis.cancel();
+                                
+                                // Create and play new utterance
                                 const utterance = new SpeechSynthesisUtterance(message.audioPrompt);
                                 utterance.rate = 0.9;
                                 utterance.pitch = 1;
                                 utterance.volume = 0.8;
+                                
+                                utterance.onstart = () => {
+                                  toast.success('Playing audio...');
+                                };
+                                
+                                utterance.onend = () => {
+                                  // Audio finished silently
+                                };
+                                
+                                utterance.onerror = () => {
+                                  toast.error('Audio playback error');
+                                };
+                                
                                 window.speechSynthesis.speak(utterance);
-                                toast.success('Playing audio guide...');
+                              } else {
+                                toast.error('Audio not supported in your browser');
                               }
                             }}
                             className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs hover:bg-blue-200 transition-colors"
+                            title="Click to listen to audio guide"
                           >
                             <Play className="h-3 w-3" />
-                            Play Guide
+                            🔊 Listen
                           </button>
                         )}
                       </div>

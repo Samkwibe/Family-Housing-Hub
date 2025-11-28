@@ -25,14 +25,17 @@ import {
   Key,
   TrendingDown,
   BarChart3,
-  Wallet
+  Wallet,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
 
 // Safe data processing with useMemo for performance
 export default function Dashboard() {
   const { maintenanceRequests = [], rentPayments = [], documents = [], messages = [], loading } = useFamily();
   const { userProfile } = useAuth();
-  const { isDark } = useTheme();
+  const { theme, toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
   
   // Determine user type (owner or renter)
@@ -301,35 +304,51 @@ export default function Dashboard() {
 
   if (loading.maintenance || loading.rent || loading.documents) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-64">
+      <div className="p-6 flex items-center justify-center min-h-64 dark:bg-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading dashboard data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 dark:bg-gray-900 min-h-screen">
-      {/* Welcome Header */}
+    <div className="p-6 space-y-6 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+      {/* Welcome Header with Theme Toggle */}
       <div className={`bg-gradient-to-r rounded-2xl p-6 text-white relative overflow-hidden ${
         isOwner 
-          ? 'from-emerald-600 to-teal-600' 
-          : 'from-blue-600 to-purple-600'
+          ? 'from-emerald-600 to-teal-600 dark:from-emerald-700 dark:to-teal-700' 
+          : 'from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700'
       }`}>
-        <div className="relative z-10">
-          <h1 className="text-3xl font-bold mb-2">
-            Welcome back, {userProfile?.firstName || 'Family'}! 👋
-          </h1>
-          <p className="text-white/80 text-lg">
-            {isOwner ? 'Property Owner Dashboard' : 'Renter Dashboard'} • {new Date().toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
-          </p>
+        <div className="relative z-10 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">
+              Welcome back, {userProfile?.firstName || 'Family'}! 👋
+            </h1>
+            <p className="text-white/80 text-lg">
+              {isOwner ? 'Property Owner Dashboard' : 'Renter Dashboard'} • {new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </p>
+          </div>
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="p-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-200 hover:scale-110 shadow-lg"
+            title={`Current theme: ${theme === 'system' ? 'System' : theme === 'dark' ? 'Dark' : 'Light'}. Click to toggle.`}
+          >
+            {theme === 'system' ? (
+              <Monitor className="h-6 w-6 text-white" />
+            ) : isDark ? (
+              <Moon className="h-6 w-6 text-white" />
+            ) : (
+              <Sun className="h-6 w-6 text-white" />
+            )}
+          </button>
         </div>
         <div className="absolute right-6 top-6 opacity-20">
           {isOwner ? <Building2 className="h-24 w-24" /> : <Home className="h-24 w-24" />}
@@ -346,29 +365,29 @@ export default function Dashboard() {
               onClick={() => navigate(stat.link)}
               className="cursor-pointer transform hover:scale-105 transition-transform duration-200"
             >
-              <div className={`rounded-2xl border-2 p-6 hover:shadow-lg transition-all duration-200 ${stat.bgColor}`}>
+              <div className={`rounded-2xl border-2 p-6 hover:shadow-lg transition-all duration-200 dark:border-gray-700 ${stat.bgColor} dark:bg-gray-800`}>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 rounded-xl bg-white bg-opacity-50 shadow-sm">
-                    <Icon className={`h-6 w-6 ${stat.color}`} />
+                  <div className="p-3 rounded-xl bg-white dark:bg-gray-700 bg-opacity-50 dark:bg-opacity-100 shadow-sm">
+                    <Icon className={`h-6 w-6 ${stat.color} dark:text-gray-200`} />
                   </div>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     stat.status === 'paid' || stat.status === 'clear' || stat.status === 'read' 
-                      ? 'bg-green-100 text-green-800' :
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
                     stat.status === 'pending' 
-                      ? 'bg-yellow-100 text-yellow-800' :
+                      ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
                     stat.status === 'urgent' || stat.status === 'unread' || stat.status === 'overdue'
-                      ? 'bg-red-100 text-red-800' :
+                      ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
                     stat.status === 'expiring'
-                      ? 'bg-orange-100 text-orange-800' :
-                      'bg-blue-100 text-blue-800'
+                      ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
+                      'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
                   }`}>
                     {stat.status.charAt(0).toUpperCase() + stat.status.slice(1)}
                   </span>
                 </div>
                 
-                <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-                <p className="text-lg font-semibold text-gray-900 mb-2">{stat.title}</p>
-                <p className="text-sm text-gray-600">{stat.subtitle}</p>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{stat.value}</h3>
+                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{stat.title}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{stat.subtitle}</p>
               </div>
             </div>
           );
@@ -379,10 +398,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
-              <TrendingUp className="h-5 w-5 text-gray-400" />
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Quick Actions</h2>
+              <TrendingUp className="h-5 w-5 text-gray-400 dark:text-gray-500" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {quickActions.map((action, index) => {
@@ -391,23 +410,23 @@ export default function Dashboard() {
                   <Link
                     key={index}
                     to={action.link}
-                    className="flex items-center p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group transform hover:scale-105"
+                    className="flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group transform hover:scale-105 bg-white dark:bg-gray-700"
                   >
                     <div className={`p-3 rounded-lg ${action.color} text-white mr-4 group-hover:scale-110 transition-transform shadow-md`}>
                       <Icon className="h-6 w-6" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold text-gray-900">{action.title}</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{action.title}</h3>
                         {action.badge && (
-                          <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
+                          <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs rounded-full font-medium">
                             {action.badge}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600">{action.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{action.description}</p>
                     </div>
-                    <Plus className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                    <Plus className="h-5 w-5 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
                   </Link>
                 );
               })}
@@ -416,23 +435,23 @@ export default function Dashboard() {
 
           {/* Rent Overview - Only for Renters */}
           {isRenter && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Rent Overview</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Rent Overview</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Next Payment Card */}
-                <div className={`p-6 rounded-xl border-2 ${
-                  nextRentDue ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'
+                <div className={`p-6 rounded-xl border-2 dark:border-gray-700 ${
+                  nextRentDue ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                 }`}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Next Payment</h3>
-                    <DollarSign className={`h-5 w-5 ${nextRentDue ? 'text-orange-600' : 'text-green-600'}`} />
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Next Payment</h3>
+                    <DollarSign className={`h-5 w-5 ${nextRentDue ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'}`} />
                   </div>
                   <div className="text-center">
-                    <p className="text-3xl font-bold text-gray-900 mb-2">
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                       {nextRentDue ? `$${nextRentDue.amount || '0'}` : 'All Paid'}
                     </p>
                     <p className={`text-sm font-medium ${
-                      nextRentDue ? 'text-orange-600' : 'text-green-600'
+                      nextRentDue ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'
                     }`}>
                       {nextRentDue ? 
                         `Due ${new Date(nextRentDue.dueDate).toLocaleDateString()}` : 
@@ -454,32 +473,32 @@ export default function Dashboard() {
 
                 {/* Payment Summary */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div>
-                      <p className="font-semibold text-gray-900">Total Paid This Year</p>
-                      <p className="text-sm text-gray-600">{new Date().getFullYear()}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">Total Paid This Year</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{new Date().getFullYear()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-gray-900">
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
                         ${rentPayments
                           .filter(p => p.status === 'paid')
                           .reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0)
                           .toLocaleString()}
                       </p>
-                      <p className="text-sm text-green-600">On track</p>
+                      <p className="text-sm text-green-600 dark:text-green-400">On track</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <div>
-                      <p className="font-semibold text-gray-900">Payment History</p>
-                      <p className="text-sm text-gray-600">Last 12 months</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">Payment History</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Last 12 months</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-gray-900">
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
                         {rentPayments.filter(p => p.status === 'paid').length}
                       </p>
-                      <p className="text-sm text-blue-600">Payments</p>
+                      <p className="text-sm text-blue-600 dark:text-blue-400">Payments</p>
                     </div>
                   </div>
                 </div>
@@ -489,26 +508,26 @@ export default function Dashboard() {
 
           {/* Property Overview - Only for Owners */}
           {isOwner && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Property Overview</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Property Overview</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Property Value Card */}
-                <div className="p-6 rounded-xl border-2 bg-blue-50 border-blue-200">
+                <div className="p-6 rounded-xl border-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Property Value</h3>
-                    <Home className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Property Value</h3>
+                    <Home className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="text-center">
-                    <p className="text-3xl font-bold text-gray-900 mb-2">
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                       ${((userProfile?.property?.currentValue || 0) / 1000).toFixed(0)}k
                     </p>
-                    <p className="text-sm font-medium text-blue-600">
+                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
                       Current estimated value
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/profile')}
-                    className="w-full mt-4 py-2 rounded-lg font-semibold transition-colors bg-blue-600 hover:bg-blue-700 text-white"
+                    className="w-full mt-4 py-2 rounded-lg font-semibold transition-colors bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white"
                   >
                     View Details
                   </button>
@@ -518,41 +537,41 @@ export default function Dashboard() {
                 <div className="space-y-4">
                   {userProfile?.property?.mortgage?.hasMortgage ? (
                     <>
-                      <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                      <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                         <div>
-                          <p className="font-semibold text-gray-900">Mortgage Balance</p>
-                          <p className="text-sm text-gray-600">Remaining loan</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">Mortgage Balance</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Remaining loan</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-gray-900">
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">
                             ${((userProfile?.property?.mortgage?.loanAmount || 0) / 1000).toFixed(0)}k
                           </p>
-                          <p className="text-sm text-purple-600">Outstanding</p>
+                          <p className="text-sm text-purple-600 dark:text-purple-400">Outstanding</p>
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                      <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                         <div>
-                          <p className="font-semibold text-gray-900">Monthly Payment</p>
-                          <p className="text-sm text-gray-600">Mortgage payment</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">Monthly Payment</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Mortgage payment</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-gray-900">
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">
                             ${userProfile?.property?.mortgage?.monthlyPayment || 0}
                           </p>
-                          <p className="text-sm text-green-600">Per month</p>
+                          <p className="text-sm text-green-600 dark:text-green-400">Per month</p>
                         </div>
                       </div>
                     </>
                   ) : (
-                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                    <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                       <div>
-                        <p className="font-semibold text-gray-900">Mortgage Status</p>
-                        <p className="text-sm text-gray-600">No active mortgage</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">Mortgage Status</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">No active mortgage</p>
                       </div>
                       <div className="text-right">
-                        <CheckCircle className="h-8 w-8 text-green-600" />
-                        <p className="text-sm text-green-600 mt-1">Owned</p>
+                        <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+                        <p className="text-sm text-green-600 dark:text-green-400 mt-1">Owned</p>
                       </div>
                     </div>
                   )}
@@ -565,10 +584,10 @@ export default function Dashboard() {
         {/* Right Sidebar */}
         <div className="space-y-6">
           {/* Recent Activity */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
-              <Bell className="h-5 w-5 text-gray-400" />
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Activity</h2>
+              <Bell className="h-5 w-5 text-gray-400 dark:text-gray-500" />
             </div>
             <div className="space-y-4">
               {recentActivities.length > 0 ? (
@@ -580,26 +599,26 @@ export default function Dashboard() {
                   return (
                     <div 
                       key={activity.id} 
-                      className="flex items-start space-x-3 group cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                      className="flex items-start space-x-3 group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
                       onClick={() => navigate(`/${activity.type}`)}
                     >
-                      <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-blue-100 transition-colors">
-                        <Icon className="h-4 w-4 text-gray-600" />
+                      <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
+                        <Icon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                           {activity.title}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                           {activity.description}
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                           {new Date(activity.time).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="flex flex-col items-end space-y-1">
-                        <StatusIcon className={`h-3 w-3 ${statusConfig.color.replace('text-', 'text-').replace('bg-', '')}`} />
-                        <span className={`px-2 py-1 text-xs rounded-full ${statusConfig.color}`}>
+                        <StatusIcon className={`h-3 w-3 ${statusConfig.color.replace('text-', 'text-').replace('bg-', '')} dark:text-gray-300`} />
+                        <span className={`px-2 py-1 text-xs rounded-full ${statusConfig.color} dark:bg-opacity-30`}>
                           {statusConfig.text}
                         </span>
                       </div>
@@ -608,9 +627,9 @@ export default function Dashboard() {
                 })
               ) : (
                 <div className="text-center py-4">
-                  <Calendar className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">No recent activity</p>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <Calendar className="h-8 w-8 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No recent activity</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     {isOwner 
                       ? 'Get started by managing your property or viewing maintenance requests'
                       : 'Get started by paying rent or submitting a request'
@@ -622,22 +641,22 @@ export default function Dashboard() {
           </div>
 
           {/* Emergency Section */}
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6 transition-colors duration-200">
             <div className="flex items-center space-x-4 mb-4">
-              <div className="p-3 bg-red-100 rounded-xl">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+              <div className="p-3 bg-red-100 dark:bg-red-900/40 rounded-xl">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-red-800">Emergency Assistance</h3>
-                <p className="text-red-600 text-sm">24/7 support available</p>
+                <h3 className="text-lg font-semibold text-red-800 dark:text-red-300">Emergency Assistance</h3>
+                <p className="text-red-600 dark:text-red-400 text-sm">24/7 support available</p>
               </div>
             </div>
             <div className="space-y-3">
-              <button className="w-full bg-red-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center space-x-2">
+              <button className="w-full bg-red-600 dark:bg-red-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-700 dark:hover:bg-red-600 transition-colors flex items-center justify-center space-x-2">
                 <AlertTriangle className="h-4 w-4" />
                 <span>Emergency Help</span>
               </button>
-              <button className="w-full bg-white text-red-600 border border-red-600 py-2 px-4 rounded-lg font-semibold hover:bg-red-50 transition-colors">
+              <button className="w-full bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 border border-red-600 dark:border-red-700 py-2 px-4 rounded-lg font-semibold hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
                 Emergency Contacts
               </button>
             </div>
@@ -647,20 +666,20 @@ export default function Dashboard() {
 
       {/* Maintenance Alerts */}
       {urgentMaintenance > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6">
+        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-2xl p-6 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-orange-100 rounded-xl">
-                <AlertTriangle className="h-8 w-8 text-orange-600" />
+              <div className="p-3 bg-orange-100 dark:bg-orange-900/40 rounded-xl">
+                <AlertTriangle className="h-8 w-8 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-orange-800">Urgent Maintenance Needed</h3>
-                <p className="text-orange-600">You have {urgentMaintenance} urgent maintenance request(s) requiring attention</p>
+                <h3 className="text-lg font-semibold text-orange-800 dark:text-orange-300">Urgent Maintenance Needed</h3>
+                <p className="text-orange-600 dark:text-orange-400">You have {urgentMaintenance} urgent maintenance request(s) requiring attention</p>
               </div>
             </div>
             <button 
               onClick={() => navigate('/maintenance')}
-              className="bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors"
+              className="bg-orange-600 dark:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors"
             >
               View Requests
             </button>

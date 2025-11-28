@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFamily } from '../contexts/FamilyContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { 
   DollarSign, 
   Wrench, 
@@ -31,6 +32,7 @@ import {
 export default function Dashboard() {
   const { maintenanceRequests = [], rentPayments = [], documents = [], messages = [], loading } = useFamily();
   const { userProfile } = useAuth();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   
   // Determine user type (owner or renter)
@@ -309,7 +311,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 dark:bg-gray-900 min-h-screen">
       {/* Welcome Header */}
       <div className={`bg-gradient-to-r rounded-2xl p-6 text-white relative overflow-hidden ${
         isOwner 

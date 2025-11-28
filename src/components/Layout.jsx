@@ -23,11 +23,15 @@ import {
   Zap,
   ShoppingCart,
   AlertTriangle,
-  UserCog
+  UserCog,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFamily } from '../contexts/FamilyContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 import LangSwitch from './LangSwitch';
 import NotificationCenter from './NotificationCenter';
 
@@ -55,6 +59,7 @@ export default function Layout({ children }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { userProfile, logout } = useAuth();
   const { messages } = useFamily();
+  const { theme, toggleTheme, isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -86,10 +91,15 @@ export default function Layout({ children }) {
     { name: 'Settings', icon: Settings, action: () => navigate('/settings') },
     { name: 'Security', icon: Shield, action: () => navigate('/security') },
     { name: 'Help & Support', icon: HelpCircle, action: () => navigate('/help') },
+    { 
+      name: `Theme: ${theme === 'system' ? 'System' : theme === 'dark' ? 'Dark' : 'Light'}`, 
+      icon: theme === 'system' ? Monitor : isDark ? Moon : Sun, 
+      action: toggleTheme 
+    },
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
@@ -237,49 +247,65 @@ export default function Layout({ children }) {
                   <p className="text-xs text-gray-500 truncate">Family Account</p>
                 </div>
               </div>
-              <div className="relative">
+              <div className="flex items-center gap-2">
+                {/* Theme Toggle Button */}
                 <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="ml-3 p-2 text-gray-400 hover:text-gray-500 transition-colors rounded-lg hover:bg-gray-100"
+                  onClick={toggleTheme}
+                  className="p-2 text-gray-400 hover:text-gray-500 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-300"
+                  title={`Current theme: ${theme === 'system' ? 'System' : theme === 'dark' ? 'Dark' : 'Light'}. Click to toggle.`}
                 >
-                  <Settings className="h-5 w-5" />
+                  {theme === 'system' ? (
+                    <Monitor className="h-5 w-5" />
+                  ) : isDark ? (
+                    <Moon className="h-5 w-5" />
+                  ) : (
+                    <Sun className="h-5 w-5" />
+                  )}
                 </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="p-2 text-gray-400 hover:text-gray-500 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-300"
+                  >
+                    <Settings className="h-5 w-5" />
+                  </button>
 
-                {/* User dropdown menu */}
-                {userMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setUserMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
-                      {userMenuItems.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <button
-                            key={item.name}
-                            onClick={() => {
-                              item.action();
-                              setUserMenuOpen(false);
-                            }}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <Icon className="h-4 w-4 mr-3" />
-                            {item.name}
-                          </button>
-                        );
-                      })}
-                      <div className="border-t border-gray-100 my-1" />
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        <LogOut className="h-4 w-4 mr-3" />
-                        Sign Out
-                      </button>
-                    </div>
-                  </>
-                )}
+                  {/* User dropdown menu */}
+                  {userMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setUserMenuOpen(false)}
+                      />
+                      <div className="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
+                        {userMenuItems.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <button
+                              key={item.name}
+                              onClick={() => {
+                                item.action();
+                                setUserMenuOpen(false);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <Icon className="h-4 w-4 mr-3" />
+                              {item.name}
+                            </button>
+                          );
+                        })}
+                        <div className="border-t border-gray-100 my-1" />
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="h-4 w-4 mr-3" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>

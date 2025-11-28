@@ -1,6 +1,7 @@
 // src/pages/Settings.jsx - Complete Settings Page
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { 
   Bell, 
   Moon, 
@@ -38,6 +39,7 @@ import toast from 'react-hot-toast';
 
 export default function Settings() {
   const { userProfile, updateUserProfile, logout } = useAuth();
+  const { theme, setTheme: setThemeMode, effectiveTheme } = useTheme();
   const [activeSection, setActiveSection] = useState('notifications');
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -55,7 +57,7 @@ export default function Settings() {
       marketingEmails: userProfile?.preferences?.notifications?.marketingEmails ?? false
     },
     appearance: {
-      theme: userProfile?.preferences?.theme || 'system',
+      theme: theme || userProfile?.preferences?.theme || 'system',
       compactMode: userProfile?.preferences?.compactMode ?? false,
       animations: userProfile?.preferences?.animations ?? true,
       highContrast: userProfile?.preferences?.highContrast ?? false
@@ -74,7 +76,7 @@ export default function Settings() {
     }
   });
 
-  // Update settings when userProfile changes
+  // Update settings when userProfile or theme changes
   useEffect(() => {
     if (userProfile?.preferences) {
       setSettings(prev => ({
@@ -84,7 +86,7 @@ export default function Settings() {
           ...userProfile.preferences.notifications
         },
         appearance: {
-          theme: userProfile.preferences.theme || prev.appearance.theme,
+          theme: theme || userProfile.preferences.theme || prev.appearance.theme,
           ...prev.appearance
         },
         preferences: {
@@ -94,7 +96,7 @@ export default function Settings() {
         }
       }));
     }
-  }, [userProfile]);
+  }, [userProfile, theme]);
 
   // Save settings to Firebase
   const saveSettings = async () => {
@@ -158,7 +160,7 @@ export default function Settings() {
   };
 
   // Set theme
-  const setTheme = (theme) => {
+  const handleSetTheme = (newTheme) => {
     setSettings(prev => ({
       ...prev,
       appearance: {
@@ -451,18 +453,27 @@ export default function Settings() {
                     ].map((theme) => (
                       <button
                         key={theme.id}
-                        onClick={() => setTheme(theme.id)}
-                        className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
-                          settings.appearance.theme === theme.id
-                            ? 'border-blue-500 shadow-lg shadow-blue-100'
-                            : 'border-gray-200 hover:border-gray-300'
+                        onClick={() => {
+                          setThemeMode(theme.id);
+                          setSettings(prev => ({
+                            ...prev,
+                            appearance: {
+                              ...prev.appearance,
+                              theme: theme.id
+                            }
+                          }));
+                        }}
+                        className={`relative p-4 rounded-xl border-2 transition-all duration-200 dark:border-gray-700 ${
+                          (theme || settings.appearance.theme) === theme.id
+                            ? 'border-blue-500 shadow-lg shadow-blue-100 dark:border-blue-400'
+                            : 'border-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                         }`}
                       >
                         <div className={`w-full h-20 rounded-lg bg-gradient-to-br ${theme.gradient} mb-3 flex items-center justify-center`}>
                           <theme.icon className={`h-8 w-8 ${theme.id === 'dark' ? 'text-white' : 'text-gray-700'}`} />
                         </div>
-                        <p className="font-medium text-gray-900">{theme.label}</p>
-                        {settings.appearance.theme === theme.id && (
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{theme.label}</p>
+                        {(theme || settings.appearance.theme) === theme.id && (
                           <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
                             <Check className="h-3 w-3" />
                           </div>

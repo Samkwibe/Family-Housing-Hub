@@ -320,15 +320,15 @@ export default function Layout({ children }) {
             <div className="flex items-center">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                <Menu className="h-6 w-6 text-gray-600" />
+                <Menu className="h-6 w-6 text-gray-600 dark:text-gray-300" />
               </button>
               <div className="ml-4">
                 <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
                   {navigation.find(item => item.href === location.pathname)?.name || 'Dashboard'}
                 </h1>
-                <p className="text-sm text-gray-600 hidden sm:block">
+                <p className="text-sm text-gray-600 dark:text-gray-400 hidden sm:block">
                   {location.pathname === '/' && 'Your housing overview'}
                   {location.pathname === '/rent' && 'Manage rent payments'}
                   {location.pathname === '/maintenance' && 'Track repair requests'}
@@ -354,10 +354,10 @@ export default function Layout({ children }) {
                   className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <div className="text-right hidden sm:block">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {userProfile?.firstName} {userProfile?.lastName}
                     </p>
-                    <p className="text-xs text-gray-500">Family</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Family</p>
                   </div>
                   {userProfile?.photoURL ? (
                     <img
@@ -419,7 +419,7 @@ export default function Layout({ children }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
           {children}
         </main>
 

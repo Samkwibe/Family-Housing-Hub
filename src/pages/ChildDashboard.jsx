@@ -1,6 +1,7 @@
 // src/pages/ChildDashboard.jsx - Comprehensive Child Dashboard with All Features
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   childrenService,
   savingsService,
@@ -21,12 +22,14 @@ import {
   PartyPopper, BookOpen, ClipboardCheck, Home, MessageSquare, Phone, MapPin, AlertTriangle,
   Clock, Play, Pause, Lock, Unlock, Upload, Image, Video, Gamepad2, Settings, User, Smile,
   Activity, Pill, Bell, Shield, GamepadIcon, Menu, X, ChevronRight, Plus, Minus, Edit3,
-  LogOut, Camera, Mail, Volume2, VolumeX, Globe, Eye, EyeOff, Palette, Sparkles as SparklesIcon
+  LogOut, Camera, Mail, Volume2, VolumeX, Globe, Eye, EyeOff, Palette, Sparkles as SparklesIcon,
+  Monitor
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ChildDashboard() {
   const { currentUser, userProfile, logout, uploadProfilePhoto } = useAuth();
+  const { theme, setTheme: setThemeMode, effectiveTheme, isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   const [childData, setChildData] = useState(null);
@@ -347,7 +350,7 @@ export default function ChildDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
       <div className={`bg-gradient-to-r ${currentTheme.colors.join(' ')} text-white p-6 rounded-b-3xl shadow-xl`}>
         <div className="flex items-center justify-between mb-4">
@@ -1011,9 +1014,9 @@ export default function ChildDashboard() {
         {activeTab === 'settings' && (
           <div className="space-y-6">
             {/* Profile Section */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg">
-              <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
-                <User className="h-8 w-8 text-purple-600" />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <h2 className="text-3xl font-bold mb-6 flex items-center gap-2 dark:text-white">
+                <User className="h-8 w-8 text-purple-600 dark:text-purple-400" />
                 My Profile
               </h2>
               <div className="flex items-center gap-6 mb-6">
@@ -1052,10 +1055,10 @@ export default function ChildDashboard() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                     {userProfile?.firstName || 'Child'} {userProfile?.lastName || ''}
                   </h3>
-                  <p className="text-gray-600 mb-2">{userProfile?.email || 'No email'}</p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">{userProfile?.email || 'No email'}</p>
                   <div className="flex items-center gap-2">
                     <div className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
                       ⭐ Super Star
@@ -1127,18 +1130,18 @@ export default function ChildDashboard() {
             </div>
 
             {/* Preferences */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg">
-              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                <SparklesIcon className="h-6 w-6 text-yellow-600" />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 dark:text-white">
+                <SparklesIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
                 Preferences
               </h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Bell className="h-5 w-5 text-blue-600" />
+                    <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     <div>
-                      <p className="font-semibold">Notifications</p>
-                      <p className="text-sm text-gray-500">Get alerts for tasks and rewards</p>
+                      <p className="font-semibold dark:text-white">Notifications</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Get alerts for tasks and rewards</p>
                     </div>
                   </div>
                   <button
@@ -1156,16 +1159,16 @@ export default function ChildDashboard() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center gap-3">
                     {soundEnabled ? (
-                      <Volume2 className="h-5 w-5 text-green-600" />
+                      <Volume2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                     ) : (
-                      <VolumeX className="h-5 w-5 text-gray-400" />
+                      <VolumeX className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                     )}
                     <div>
-                      <p className="font-semibold">Sounds</p>
-                      <p className="text-sm text-gray-500">Play sounds for actions</p>
+                      <p className="font-semibold dark:text-white">Sounds</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Play sounds for actions</p>
                     </div>
                   </div>
                   <button
@@ -1186,9 +1189,9 @@ export default function ChildDashboard() {
             </div>
 
             {/* Achievements & Stats */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg">
-              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                <Trophy className="h-6 w-6 text-yellow-600" />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 dark:text-white">
+                <Trophy className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
                 My Achievements
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1216,8 +1219,8 @@ export default function ChildDashboard() {
             </div>
 
             {/* Sign Out */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-red-100">
-              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 text-red-600">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border-2 border-red-100 dark:border-red-900">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 text-red-600 dark:text-red-400">
                 <Shield className="h-6 w-6" />
                 Account
               </h3>
@@ -1228,7 +1231,7 @@ export default function ChildDashboard() {
                 <LogOut className="h-5 w-5" />
                 Sign Out
               </button>
-              <p className="text-sm text-gray-500 text-center mt-3">
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-3">
                 You'll need to sign in again to access your dashboard
               </p>
             </div>

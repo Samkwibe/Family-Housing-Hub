@@ -7,7 +7,7 @@ import {
   Clock, ChevronRight, Mic, Upload, X, AlertCircle, Zap, Download, Play, Square,
   Plus, Minus, MapPin, Search, Star, History, Save, Share2, Volume2, VolumeX,
   ExternalLink, Calendar, Users, Shield, Briefcase, Phone, Mail, Globe, Filter,
-  ChevronDown, ChevronUp, Bookmark, BookmarkCheck, Settings, Bot
+  ChevronDown, ChevronUp, Bookmark, BookmarkCheck, Settings, Bot, Image as ImageIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, serverTimestamp } from 'firebase/firestore';
@@ -637,10 +637,14 @@ export default function AIAssistant() {
   const [isMuted, setIsMuted] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [bookmarkedMessages, setBookmarkedMessages] = useState(new Set());
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [uploadedAudio, setUploadedAudio] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const imageInputRef = useRef(null);
+  const audioInputRef = useRef(null);
 
   // Initialize with welcome message
   useEffect(() => {
@@ -769,36 +773,122 @@ How can I help your family today?`,
     }
     
     // Default to help
-    return AI_RESPONSES['help'];
+      return AI_RESPONSES['help'];
   }, [userLocation]);
+
+  // Handle image upload
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    imageFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = {
+          id: Date.now() + Math.random(),
+          file: file,
+          url: e.target.result,
+          name: file.name
+        };
+        setUploadedImages(prev => [...prev, imageData]);
+        toast.success(`${file.name} added`);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Reset input
+    e.target.value = '';
+  };
+
+  // Remove uploaded image
+  const removeImage = (id) => {
+    setUploadedImages(prev => prev.filter(img => img.id !== id));
+  };
+
+  // Analyze image (simulated AI vision)
+  const analyzeImage = async (imageUrl) => {
+    // Simulate AI image analysis
+    // In a real app, you would call an AI vision API here (Google Vision, OpenAI Vision, etc.)
+    toast.info('Analyzing image...');
+    
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Enhanced image analysis description
+    // This is a placeholder - in production, integrate with actual AI vision API
+    const analysis = {
+      description: "I can see the image you've shared. To provide the most helpful response, please tell me what you see in the image or what specific help you need related to it. For example: 'This is a document about rent' or 'This is my child's homework' or 'This is a medical bill'. I'll then provide targeted assistance based on your description.",
+      detectedObjects: ["image"],
+      context: "general",
+      suggestions: [
+        "If it's a document, I can help you understand it",
+        "If it's homework, I can provide study tips",
+        "If it's a bill, I can help with payment assistance",
+        "If it's a form, I can guide you through filling it out"
+      ]
+    };
+    
+    return analysis;
+  };
 
   // Optimized message handler
   const handleSend = useCallback(async (text = inputValue) => {
     const query = text.trim();
-    if (!query) return;
+    const hasImages = uploadedImages.length > 0;
+    const hasAudio = uploadedAudio !== null;
+    
+    if (!query && !hasImages && !hasAudio) return;
 
-    // Add user message
+    setIsTyping(true);
+
+    // Analyze images if any
+    let imageAnalysis = null;
+    if (hasImages) {
+      try {
+        imageAnalysis = await analyzeImage(uploadedImages[0].url);
+      } catch (error) {
+        console.error('Error analyzing image:', error);
+        toast.error('Failed to analyze image');
+      }
+    }
+
+    // Add user message with attachments
     const userMessage = {
       id: Date.now(),
       type: 'user',
-      content: query,
+      content: query || (hasImages ? '📷 [Image attached]' : '') || (hasAudio ? '🎤 [Audio message]' : ''),
+      images: uploadedImages.map(img => ({ url: img.url, name: img.name })),
+      audio: uploadedAudio ? { url: uploadedAudio.url, blob: uploadedAudio.blob } : null,
+      imageAnalysis: imageAnalysis,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
-    setIsTyping(true);
+    setUploadedImages([]);
+    setUploadedAudio(null);
 
     // Simulate AI processing with variable delay
     await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
 
-    const response = findResponse(query);
+    // Build response query considering image context
+    let responseQuery = query;
+    if (imageAnalysis && imageAnalysis.description) {
+      responseQuery = `${query} ${imageAnalysis.description}`.trim();
+    }
+
+    const response = findResponse(responseQuery || 'help');
+    
+    // Create assistant response with image context
+    let assistantContent = response.content;
+    if (imageAnalysis && hasImages) {
+      assistantContent = `**Image Analysis:**\n${imageAnalysis.description}\n\n---\n\n**Response:**\n${response.content}`;
+    }
     
     const assistantMessage = {
       id: Date.now() + 1,
       type: 'assistant',
       title: response.title,
-      content: response.content,
+      content: assistantContent,
       homework: response.homework,
       childrenActivity: response.childrenActivity,
       audioPrompt: response.audioPrompt,
@@ -817,7 +907,7 @@ How can I help your family today?`,
     setMessages(prev => [...prev, assistantMessage]);
 
     // Don't auto-play audio - user can click play button if they want
-  }, [inputValue, findResponse]);
+  }, [inputValue, findResponse, uploadedImages, uploadedAudio]);
 
   // Stop speaking
   const stopSpeaking = useCallback(() => {
@@ -867,7 +957,7 @@ How can I help your family today?`,
     setMessages(prev => [...prev, assistantMessage]);
 
     // Don't auto-play audio - user can click play button if they want
-  }, [findResponse]);
+  }, [inputValue, findResponse, uploadedImages, uploadedAudio]);
 
   // Audio recording functionality
   const startRecording = async () => {
@@ -881,10 +971,14 @@ How can I help your family today?`,
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        setAudioBlob(audioBlob);
-        toast.success('Audio recorded! Processing...');
-        // Here you would send the audio to your speech-to-text API
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setUploadedAudio({
+          blob: audioBlob,
+          url: audioUrl,
+          timestamp: new Date()
+        });
+        toast.success('Audio recorded! Click send to include it in your message.');
       };
 
       mediaRecorderRef.current.start();
@@ -996,12 +1090,12 @@ How can I help your family today?`,
   const clearChat = () => {
     if (window.confirm('Clear conversation history?')) {
       stopSpeaking();
-      setMessages([{
-        id: Date.now(),
-        type: 'assistant',
+    setMessages([{
+      id: Date.now(),
+      type: 'assistant',
         content: `Chat cleared! How can I help your family in ${userLocation} today?`,
-        timestamp: new Date()
-      }]);
+      timestamp: new Date()
+    }]);
       toast.success('Conversation cleared');
     }
   };
@@ -1010,9 +1104,9 @@ How can I help your family today?`,
   const formatContent = useCallback((content) => {
     return content.split('\n').map((line, i) => {
       if (!line.trim()) return <br key={i} />;
-      
-      // Headers
-      if (line.startsWith('**') && line.endsWith('**')) {
+        
+        // Headers
+        if (line.startsWith('**') && line.endsWith('**')) {
         return <h4 key={i} className="font-semibold text-gray-900 mt-4 mb-2 text-lg" dangerouslySetInnerHTML={{ __html: line.replace(/\*\*/g, '') }} />;
       }
       
@@ -1068,8 +1162,8 @@ How can I help your family today?`,
               >
                 Change
               </button>
-            </div>
           </div>
+        </div>
         </div>
         
         <div className="flex items-center gap-2 flex-wrap">
@@ -1101,13 +1195,13 @@ How can I help your family today?`,
           >
             <Settings className="h-5 w-5" />
           </button>
-          <button
-            onClick={clearChat}
+        <button
+          onClick={clearChat}
             className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            title="Clear chat"
-          >
+          title="Clear chat"
+        >
             <Trash2 className="h-5 w-5" />
-          </button>
+        </button>
         </div>
       </div>
 
@@ -1207,9 +1301,9 @@ How can I help your family today?`,
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
           {filteredQuickActions.map((action) => (
-            <button
-              key={action.id}
-              onClick={() => handleQuickAction(action.query)}
+          <button
+            key={action.id}
+            onClick={() => handleQuickAction(action.query)}
               className={`flex flex-col items-center gap-2 p-3 bg-white border-2 rounded-xl text-sm font-medium hover:shadow-md transition-all duration-200 ${
                 action.color === 'blue' ? 'border-blue-200 hover:border-blue-300' :
                 action.color === 'red' ? 'border-red-200 hover:border-red-300' :
@@ -1230,8 +1324,8 @@ How can I help your family today?`,
                 'text-gray-600'
               }`} />
               <span className="text-xs text-center">{action.label}</span>
-            </button>
-          ))}
+          </button>
+        ))}
         </div>
       </div>
 
@@ -1242,28 +1336,63 @@ How can I help your family today?`,
           {(searchQuery ? searchMessages : messages).map((message) => (
             <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
-                {message.type === 'assistant' && (
+              {message.type === 'assistant' && (
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                       <Zap className="h-3 w-3 text-white" />
-                    </div>
-                    <span className="text-xs text-gray-500 font-medium">Family Assistant</span>
                   </div>
-                )}
-                
+                    <span className="text-xs text-gray-500 font-medium">Family Assistant</span>
+                </div>
+              )}
+              
                 {/* Message Bubble */}
-                <div className={`rounded-2xl p-4 ${
-                  message.type === 'user'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
+              <div className={`rounded-2xl p-4 ${
+                message.type === 'user'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
                     : 'bg-gray-50 border border-gray-100'
-                }`}>
-                  {message.title && (
+              }`}>
+                {message.title && (
                     <h3 className="font-semibold mb-3 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-purple-500" />
-                      {message.title}
-                    </h3>
-                  )}
+                    <Sparkles className="h-4 w-4 text-purple-500" />
+                    {message.title}
+                  </h3>
+                )}
                   
+                  {/* Display Images */}
+                  {message.images && message.images.length > 0 && (
+                    <div className="mb-3 space-y-2">
+                      {message.images.map((img, idx) => (
+                        <div key={idx} className="relative">
+                          <img 
+                            src={img.url} 
+                            alt={img.name || 'Uploaded image'} 
+                            className="max-w-full h-auto rounded-lg border border-gray-200"
+                            style={{ maxHeight: '300px' }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Display Audio */}
+                  {message.audio && (
+                    <div className={`mb-3 flex items-center gap-3 p-3 rounded-lg ${message.type === 'user' ? 'bg-white/10' : 'bg-purple-50 border border-purple-200'}`}>
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Mic className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <audio src={message.audio.url} controls className="flex-1" />
+                    </div>
+                  )}
+
+                  {/* Image Analysis */}
+                  {message.imageAnalysis && (
+                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-900">
+                        <strong>📷 Image Analysis:</strong> {message.imageAnalysis.description}
+                      </p>
+                    </div>
+                  )}
+
                   <div className={message.type === 'user' ? 'text-white' : 'text-gray-800'}>
                     {message.type === 'user' ? message.content : formatContent(message.content)}
                   </div>
@@ -1284,7 +1413,7 @@ How can I help your family today?`,
                             {link.label}
                           </a>
                         ))}
-                      </div>
+              </div>
                     </div>
                   )}
 
@@ -1362,7 +1491,7 @@ How can I help your family today?`,
 
                 {/* Message Actions */}
                 <div className={`flex items-center gap-3 mt-2 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {message.type === 'assistant' && (
+              {message.type === 'assistant' && (
                     <>
                       <button
                         onClick={() => toggleBookmark(message.id)}
@@ -1371,17 +1500,17 @@ How can I help your family today?`,
                       >
                         <Bookmark className={`h-4 w-4 ${bookmarkedMessages.has(message.id) ? 'text-yellow-500 fill-yellow-500' : ''}`} />
                       </button>
-                      <button
-                        onClick={() => copyMessage(message.id, message.content)}
+                  <button
+                    onClick={() => copyMessage(message.id, message.content)}
                         className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        {copiedId === message.id ? (
+                  >
+                    {copiedId === message.id ? (
                           <Check className="h-3 w-3 text-green-500" />
-                        ) : (
+                    ) : (
                           <Copy className="h-3 w-3" />
-                        )}
+                    )}
                         {copiedId === message.id ? 'Copied!' : 'Copy'}
-                      </button>
+                  </button>
                       <button 
                         onClick={() => {
                           const shareText = `${message.title || 'AI Assistant Response'}\n\n${message.content}`;
@@ -1402,32 +1531,69 @@ How can I help your family today?`,
                     {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-              </div>
             </div>
-          ))}
+          </div>
+        ))}
 
           {/* Enhanced Typing Indicator */}
-          {isTyping && (
+        {isTyping && (
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 <Zap className="h-4 w-4 text-white" />
-              </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Finding the best resources for {userLocation}...</p>
-              </div>
             </div>
-          )}
+              <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
+              <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+                <p className="text-xs text-gray-500 mt-1">Finding the best resources for {userLocation}...</p>
+            </div>
+          </div>
+        )}
 
-          <div ref={messagesEndRef} />
-        </div>
+        <div ref={messagesEndRef} />
+      </div>
 
         {/* Enhanced Input Area */}
         <div className="border-t border-gray-200 p-4 bg-white">
+          {/* Show uploaded images preview */}
+          {uploadedImages.length > 0 && (
+            <div className="mb-3 flex gap-2 overflow-x-auto pb-2">
+              {uploadedImages.map((img) => (
+                <div key={img.id} className="relative flex-shrink-0">
+                  <img 
+                    src={img.url} 
+                    alt={img.name} 
+                    className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                  />
+                  <button
+                    onClick={() => removeImage(img.id)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Show audio preview */}
+          {uploadedAudio && (
+            <div className="mb-3 flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <Mic className="h-5 w-5 text-purple-600" />
+              </div>
+              <audio src={uploadedAudio.url} controls className="flex-1" />
+              <button
+                onClick={() => setUploadedAudio(null)}
+                className="p-1 text-red-600 hover:text-red-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mb-2">
             <button
               onClick={isRecording ? stopRecording : startRecording}
@@ -1436,26 +1602,42 @@ How can I help your family today?`,
                   ? 'text-red-600 bg-red-50 animate-pulse' 
                   : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
               }`}
-              title={isRecording ? 'Stop recording' : 'Voice message'}
+              title={isRecording ? 'Stop recording' : 'Record audio message'}
             >
               {isRecording ? <Square className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
             </button>
             
             <button
-              onClick={() => document.getElementById('file-upload').click()}
+              onClick={() => imageInputRef.current?.click()}
               className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+              title="Upload image"
+            >
+              <ImageIcon className="h-5 w-5" />
+            </button>
+            <input 
+              ref={imageInputRef}
+              type="file" 
+              accept="image/*" 
+              multiple
+              onChange={handleImageUpload}
+              className="hidden" 
+            />
+            
+            <button
+              onClick={() => document.getElementById('file-upload').click()}
+              className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
               title="Upload documents"
             >
               <Upload className="h-5 w-5" />
             </button>
-            <input type="file" id="file-upload" className="hidden" accept=".pdf,.doc,.docx,.txt,.jpg,.png" />
+            <input type="file" id="file-upload" className="hidden" accept=".pdf,.doc,.docx,.txt" />
             
             <div className="flex-1">
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -1467,17 +1649,17 @@ How can I help your family today?`,
               />
             </div>
             
-            <button
+          <button
               onClick={() => handleSend()}
-              disabled={!inputValue.trim() || isTyping}
+            disabled={!inputValue.trim() || isTyping}
               className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-            >
-              <Send className="h-5 w-5" />
-            </button>
-          </div>
+          >
+            <Send className="h-5 w-5" />
+          </button>
+        </div>
           
           <div className="flex justify-between items-center text-xs text-gray-500">
-            <span>💡 Try: "help with rent in {userLocation}" or "create homework about budget"</span>
+            <span>💡 Try: "help with rent in {userLocation}", upload a photo, or record audio</span>
             <span>{messages.length} messages</span>
           </div>
         </div>

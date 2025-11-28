@@ -50,8 +50,15 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Redirect child users to child dashboard if they try to access main dashboard
-  if (userProfile?.role === 'child' && location.pathname === '/') {
+  // Block child users from accessing any parent routes (routes with Layout)
+  const parentOnlyRoutes = [
+    '/', '/rent', '/maintenance', '/documents', '/messages', '/landlord',
+    '/profile', '/settings', '/help', '/children', '/health', '/budget',
+    '/calendar', '/resources', '/assistant', '/shopping', '/safety', '/security',
+    '/parent-children', '/onboarding'
+  ];
+  
+  if (userProfile?.role === 'child' && parentOnlyRoutes.includes(location.pathname)) {
     return <Navigate to="/child-dashboard" replace />;
   }
 

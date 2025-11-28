@@ -72,17 +72,38 @@ export function AuthProvider({ children }) {
       });
 
       // Create initial user document in Firestore
-      const userDoc = {
+      // Optimize for child accounts - only store essential data
+      const isChild = userData.role === 'child';
+      
+      const userDoc = isChild ? {
+        // Minimal data for child accounts
         uid: user.uid,
         email: user.email,
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
         phone: userData.phone || '',
-        role: userData.role || 'family', // Support 'family' (parent) or 'child'
+        role: 'child',
         parentId: userData.parentId || null,
         parentEmail: userData.parentEmail || null,
-
-        // Address information (empty for new users)
+        profileComplete: true, // Children skip onboarding
+        onboardingComplete: true,
+        preferences: {
+          language: 'en',
+          theme: 'light'
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLogin: new Date()
+      } : {
+        // Full data for parent/family accounts
+        uid: user.uid,
+        email: user.email,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        phone: userData.phone || '',
+        role: userData.role || 'family',
+        parentId: userData.parentId || null,
+        parentEmail: userData.parentEmail || null,
         address: {
           street: '',
           unit: '',
@@ -91,11 +112,7 @@ export function AuthProvider({ children }) {
           zipCode: '',
           country: 'USA'
         },
-
-        // Family members (empty array for new users)
         familyMembers: [],
-
-        // Lease information
         lease: {
           startDate: null,
           endDate: null,
@@ -103,8 +120,6 @@ export function AuthProvider({ children }) {
           securityDeposit: 0,
           landlordId: null
         },
-
-        // User preferences
         preferences: {
           language: 'en',
           notifications: {
@@ -117,12 +132,8 @@ export function AuthProvider({ children }) {
           theme: 'light',
           currency: 'USD'
         },
-
-        // Profile completion status
         profileComplete: false,
         onboardingComplete: false,
-
-        // Timestamps
         createdAt: new Date(),
         updatedAt: new Date(),
         lastLogin: new Date()
@@ -130,7 +141,12 @@ export function AuthProvider({ children }) {
 
       await userService.createUserProfile(user.uid, userDoc);
 
-      toast.success('Account created successfully! Please complete your profile.');
+      // Different success message for children vs parents
+      if (isChild) {
+        toast.success('Account created successfully! Welcome!');
+      } else {
+        toast.success('Account created successfully! Please complete your profile.');
+      }
       return userCredential;
     } catch (error) {
       console.error('Signup error:', error);

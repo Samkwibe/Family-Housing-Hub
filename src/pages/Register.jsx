@@ -66,36 +66,41 @@ export default function Register() {
 
     try {
       setLoading(true);
+      toast.loading(selectedRole === 'child' ? 'Creating your account...' : 'Creating account...', { id: 'signup' });
 
-      // Check for pending invitations by email
-      const invitations = await familyInvitationService.getInvitationsByEmail(formData.email);
-
-      // If child account, try to find parent by email
+      // For child accounts, skip invitation check to speed up signup
+      let invitations = [];
       let parentId = null;
-      if (selectedRole === 'child' && formData.parentEmail) {
-        // In a real app, you'd query users by email to find parent
-        // For now, we'll store the parent email and link later
-        // This would require a users query by email service
+      
+      if (selectedRole !== 'child') {
+        // Only check invitations for parent accounts
+        invitations = await familyInvitationService.getInvitationsByEmail(formData.email);
+      } else if (selectedRole === 'child' && formData.parentEmail) {
+        // For children, just store parent email - linking can happen later
+        // This speeds up the signup process
       }
 
+      // Create account with optimized data
       const userCredential = await signup(formData.email, formData.password, {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        phone: formData.phone,
-        role: selectedRole, // 'family' for parent, 'child' for child
+        phone: formData.phone || '', // Make phone optional for children
+        role: selectedRole,
         parentId: parentId,
         parentEmail: selectedRole === 'child' ? formData.parentEmail : null,
-        familyMembers: []
+        familyMembers: selectedRole === 'child' ? undefined : [] // Don't store for children
       });
 
-      // If there's a pending invitation, accept it automatically
-      if (invitations.length > 0) {
+      // If there's a pending invitation, accept it automatically (only for parents)
+      if (invitations.length > 0 && selectedRole !== 'child') {
         try {
           await familyInvitationService.acceptInvitation(invitations[0].id, userCredential.user.uid);
-          toast.success('Welcome! You\'ve been added to the family account.');
+          toast.success('Welcome! You\'ve been added to the family account.', { id: 'signup' });
         } catch (invError) {
           console.error('Error accepting invitation:', invError);
         }
+      } else {
+        toast.success(selectedRole === 'child' ? 'Account created! Welcome!' : 'Account created successfully!', { id: 'signup' });
       }
 
       // Redirect based on role
@@ -108,7 +113,7 @@ export default function Register() {
       }
     } catch (error) {
       console.error('Signup error:', error);
-      toast.error(error.message || 'Failed to create account');
+      toast.error(error.message || 'Failed to create account', { id: 'signup' });
     } finally {
       setLoading(false);
     }

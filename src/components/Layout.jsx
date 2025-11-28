@@ -1,5 +1,5 @@
 // src/components/Layout.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -57,6 +57,17 @@ export default function Layout({ children }) {
   const { messages } = useFamily();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Block children from accessing Layout (parent-only routes)
+  useEffect(() => {
+    if (userProfile?.role === 'child') {
+      navigate('/child-dashboard', { replace: true });
+    }
+  }, [userProfile?.role, navigate]);
+
+  if (userProfile?.role === 'child') {
+    return null; // Don't render Layout for children
+  }
 
   // FIX: Add null check for messages to prevent the filter error
   const unreadMessages = messages?.filter(m => !m.read).length || 0;

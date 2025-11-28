@@ -20,12 +20,13 @@ import {
   Heart, Zap, Calendar, CheckCircle, Coins, Gem, Crown, Rainbow, Sun, Moon, Cloud, Flower2,
   PartyPopper, BookOpen, ClipboardCheck, Home, MessageSquare, Phone, MapPin, AlertTriangle,
   Clock, Play, Pause, Lock, Unlock, Upload, Image, Video, Gamepad2, Settings, User, Smile,
-  Activity, Pill, Bell, Shield, GamepadIcon, Menu, X, ChevronRight, Plus, Minus, Edit3
+  Activity, Pill, Bell, Shield, GamepadIcon, Menu, X, ChevronRight, Plus, Minus, Edit3,
+  LogOut, Camera, Mail, Volume2, VolumeX, Globe, Eye, EyeOff, Palette, Sparkles as SparklesIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ChildDashboard() {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, logout, uploadProfilePhoto } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   const [childData, setChildData] = useState(null);
@@ -43,6 +44,11 @@ export default function ChildDashboard() {
   const [screenTimeSettings, setScreenTimeSettings] = useState(null);
   const [safeLocations, setSafeLocations] = useState([]);
   const [mood, setMood] = useState('happy');
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showAccountInfo, setShowAccountInfo] = useState(false);
 
   // Modal states
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -62,7 +68,11 @@ export default function ChildDashboard() {
     { name: 'Rainbow', colors: ['from-pink-500', 'via-purple-500', 'to-blue-500'], icon: Rainbow },
     { name: 'Sunshine', colors: ['from-yellow-400', 'to-orange-500'], icon: Sun },
     { name: 'Ocean', colors: ['from-cyan-400', 'to-blue-600'], icon: Cloud },
-    { name: 'Garden', colors: ['from-green-400', 'to-emerald-600'], icon: Flower2 }
+    { name: 'Garden', colors: ['from-green-400', 'to-emerald-600'], icon: Flower2 },
+    { name: 'Space', colors: ['from-indigo-500', 'via-purple-500', 'to-pink-500'], icon: Rocket },
+    { name: 'Sunset', colors: ['from-orange-400', 'via-pink-500', 'to-red-500'], icon: Sun },
+    { name: 'Forest', colors: ['from-green-500', 'to-teal-600'], icon: Flower2 },
+    { name: 'Galaxy', colors: ['from-purple-600', 'via-pink-500', 'to-blue-600'], icon: Sparkles }
   ];
   const [currentTheme, setCurrentTheme] = useState(themes[0]);
 
@@ -250,6 +260,48 @@ export default function ChildDashboard() {
   const formatDate = (date) => {
     if (!date) return 'No date';
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Handle profile photo upload
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const previewURL = URL.createObjectURL(file);
+      setPhotoPreview(previewURL);
+      await uploadProfilePhoto(file);
+      toast.success('Profile picture updated! 🎉');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast.error('Failed to upload profile picture');
+      setPhotoPreview(null);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to sign out?')) {
+      try {
+        await logout();
+        toast.success('Signed out successfully! 👋');
+      } catch (error) {
+        toast.error('Failed to sign out');
+      }
+    }
   };
 
   if (loading) {
@@ -957,31 +1009,228 @@ export default function ChildDashboard() {
 
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
-          <div className="bg-white rounded-2xl p-6 shadow-lg">
-            <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
-              <Settings className="h-8 w-8 text-gray-600" />
-              Settings
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-bold mb-2">Theme</h3>
-                <div className="flex gap-2">
-                  {themes.map((theme, idx) => {
-                    const ThemeIcon = theme.icon;
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => setCurrentTheme(theme)}
-                        className={`p-3 rounded-lg border-2 ${
-                          currentTheme.name === theme.name ? 'border-purple-500' : 'border-gray-200'
-                        }`}
-                      >
-                        <ThemeIcon className="h-6 w-6" />
-                      </button>
-                    );
-                  })}
+          <div className="space-y-6">
+            {/* Profile Section */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg">
+              <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
+                <User className="h-8 w-8 text-purple-600" />
+                My Profile
+              </h2>
+              <div className="flex items-center gap-6 mb-6">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-purple-300 bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
+                    {userProfile?.photoURL || photoPreview ? (
+                      <img
+                        src={photoPreview || userProfile.photoURL}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-3xl font-bold text-purple-600">
+                        {userProfile?.firstName?.[0] || 'C'}{userProfile?.lastName?.[0] || ''}
+                      </span>
+                    )}
+                  </div>
+                  <label
+                    htmlFor="child-photo-upload"
+                    className="absolute -bottom-1 -right-1 bg-purple-500 text-white p-2 rounded-full cursor-pointer hover:bg-purple-600 transition-all shadow-lg hover:scale-110"
+                  >
+                    <Camera className="h-4 w-4" />
+                    <input
+                      id="child-photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      disabled={uploadingPhoto}
+                    />
+                  </label>
+                  {uploadingPhoto && (
+                    <div className="absolute inset-0 bg-white/80 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 border-3 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                    {userProfile?.firstName || 'Child'} {userProfile?.lastName || ''}
+                  </h3>
+                  <p className="text-gray-600 mb-2">{userProfile?.email || 'No email'}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
+                      ⭐ Super Star
+                    </div>
+                    <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                      {stats.walletPoints || 0} Points
+                    </div>
+                  </div>
                 </div>
               </div>
+              <button
+                onClick={() => setShowAccountInfo(!showAccountInfo)}
+                className="w-full py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold transition-colors flex items-center justify-between px-4"
+              >
+                <span>Account Information</span>
+                <ChevronRight className={`h-5 w-5 transition-transform ${showAccountInfo ? 'rotate-90' : ''}`} />
+              </button>
+              {showAccountInfo && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-gray-500" />
+                    <span className="text-gray-700">Email: {userProfile?.email || 'Not set'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    <span className="text-gray-700">Phone: {userProfile?.phone || 'Not set'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="h-4 w-4 text-gray-500" />
+                    <span className="text-gray-700">Account Type: Child Account</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Theme Customization */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <Palette className="h-6 w-6 text-pink-600" />
+                Choose Your Theme
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {themes.map((theme, idx) => {
+                  const ThemeIcon = theme.icon;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setCurrentTheme(theme);
+                        toast.success(`${theme.name} theme activated! 🌈`);
+                      }}
+                      className={`p-4 rounded-xl border-2 transition-all transform hover:scale-105 ${
+                        currentTheme.name === theme.name
+                          ? 'border-purple-500 bg-purple-50 shadow-lg scale-105'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <ThemeIcon className={`h-8 w-8 mx-auto mb-2 ${
+                        currentTheme.name === theme.name ? 'text-purple-600' : 'text-gray-400'
+                      }`} />
+                      <p className="font-semibold text-sm">{theme.name}</p>
+                      {currentTheme.name === theme.name && (
+                        <CheckCircle className="h-5 w-5 text-purple-600 mx-auto mt-2" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Preferences */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <SparklesIcon className="h-6 w-6 text-yellow-600" />
+                Preferences
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Bell className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="font-semibold">Notifications</p>
+                      <p className="text-sm text-gray-500">Get alerts for tasks and rewards</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setNotificationsEnabled(!notificationsEnabled);
+                      toast.success(notificationsEnabled ? 'Notifications turned off' : 'Notifications turned on');
+                    }}
+                    className={`relative w-14 h-7 rounded-full transition-colors ${
+                      notificationsEnabled ? 'bg-purple-500' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                      notificationsEnabled ? 'translate-x-7' : ''
+                    }`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {soundEnabled ? (
+                      <Volume2 className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <VolumeX className="h-5 w-5 text-gray-400" />
+                    )}
+                    <div>
+                      <p className="font-semibold">Sounds</p>
+                      <p className="text-sm text-gray-500">Play sounds for actions</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSoundEnabled(!soundEnabled);
+                      toast.success(soundEnabled ? 'Sounds turned off' : 'Sounds turned on');
+                    }}
+                    className={`relative w-14 h-7 rounded-full transition-colors ${
+                      soundEnabled ? 'bg-green-500' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                      soundEnabled ? 'translate-x-7' : ''
+                    }`} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Achievements & Stats */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <Trophy className="h-6 w-6 text-yellow-600" />
+                My Achievements
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl">
+                  <Trophy className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-yellow-700">{stats.completedTasks}</p>
+                  <p className="text-sm text-gray-600">Tasks Done</p>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl">
+                  <Star className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-green-700">{stats.walletPoints}</p>
+                  <p className="text-sm text-gray-600">Total Points</p>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl">
+                  <PiggyBank className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-blue-700">{formatCurrency(stats.totalSaved)}</p>
+                  <p className="text-sm text-gray-600">Total Saved</p>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl">
+                  <Award className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-purple-700">{rewards.filter(r => r.status === 'approved').length}</p>
+                  <p className="text-sm text-gray-600">Rewards</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sign Out */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-red-100">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 text-red-600">
+                <Shield className="h-6 w-6" />
+                Account
+              </h3>
+              <button
+                onClick={handleLogout}
+                className="w-full py-4 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all font-bold text-lg flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+              >
+                <LogOut className="h-5 w-5" />
+                Sign Out
+              </button>
+              <p className="text-sm text-gray-500 text-center mt-3">
+                You'll need to sign in again to access your dashboard
+              </p>
             </div>
           </div>
         )}

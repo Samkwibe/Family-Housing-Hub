@@ -9,7 +9,7 @@ const LoadingScreen = ({
   fullScreen = true 
 }) => {
   const containerClasses = fullScreen 
-    ? "min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4"
+    ? "min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 transition-colors duration-200"
     : "flex items-center justify-center p-8";
 
   return (
@@ -19,8 +19,8 @@ const LoadingScreen = ({
         <div className="flex justify-center mb-6">
           <div className="relative">
             <div className="absolute inset-0 bg-blue-500 rounded-full opacity-20 animate-ping"></div>
-            <div className="relative bg-white p-4 rounded-2xl shadow-lg">
-              <Home className="h-12 w-12 text-blue-600 animate-pulse" />
+            <div className="relative bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-lg">
+              <Home className="h-12 w-12 text-blue-600 dark:text-blue-400 animate-pulse" />
             </div>
             <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
               <Loader className="h-5 w-5 text-white animate-spin" />
@@ -34,7 +34,7 @@ const LoadingScreen = ({
         </h2>
         
         {/* Loading Message */}
-        <p className="text-gray-600 mb-6 font-medium">{message}</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-6 font-medium">{message}</p>
         
         {/* Progress Bar */}
         {showProgress && (
@@ -56,7 +56,7 @@ const LoadingScreen = ({
         </div>
         
         {/* Loading Tips (optional) */}
-        <div className="mt-6 text-xs text-gray-500 italic">
+        <div className="mt-6 text-xs text-gray-500 dark:text-gray-400 italic">
           <p>💡 Tip: Keep your documents organized for easy access</p>
         </div>
       </div>

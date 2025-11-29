@@ -108,8 +108,8 @@ const getYouTubeVideoId = (recipeName) => {
   return null;
 };
 
-// Free AI API Integration - Google Gemini (Free Tier) + OpenAI (Optional Premium)
-const callFreeAI = async (userMessage, pantryItems = []) => {
+// Free AI API Integration with Image Analysis - Google Gemini Vision (Free Tier)
+const callFreeAI = async (userMessage, pantryItems = [], imageBase64 = null) => {
   const pantryContext = pantryItems.length > 0
     ? `User's pantry contains: ${pantryItems.map(item => item.name).join(', ')}. `
     : '';
@@ -132,42 +132,61 @@ IMPORTANT FORMATTING RULES:
   // Note: For production, you'd want to use an API key, but this works for free tier
   try {
     const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    
+
     if (geminiApiKey) {
-      // Use Gemini API with API key (recommended)
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `${systemPrompt}\n\nUser question: ${userMessage}`
-              }]
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              topK: 40,
-              topP: 0.95,
-              maxOutputTokens: 800,
-            }
-          })
-        }
-      );
+      // Use Gemini API with Vision support if image is provided
+      // Note: Gemini 1.5 uses 'gemini-1.5-flash' or 'gemini-1.5-pro' for vision
+      const model = imageBase64 ? 'gemini-1.5-flash' : 'gemini-pro';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+      
+      // Build parts array
+      const parts = [];
+      
+      // Add image if provided
+      if (imageBase64) {
+        parts.push({
+          inline_data: {
+            mime_type: "image/jpeg",
+            data: imageBase64
+          }
+        });
+      }
+      
+      // Add text prompt
+      parts.push({
+        text: imageBase64 
+          ? `${systemPrompt}\n\nUser uploaded a food image. Analyze this image and:\n1. Describe what food/dish you see\n2. Identify the ingredients\n3. Provide step-by-step instructions on how to make it\n4. Include cooking time and serving size\n5. Add a YouTube tutorial link\n\nUser question: ${userMessage || 'What is this food and how do I make it?'}`
+          : `${systemPrompt}\n\nUser question: ${userMessage}`
+      });
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: parts
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1000,
+          }
+        })
+      });
 
       if (response.ok) {
         const data = await response.json();
         let content = data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-        
+
         if (content) {
           // Add YouTube link if it's a recipe question
           if (userMessage.toLowerCase().includes('how to') || userMessage.toLowerCase().includes('recipe') || userMessage.toLowerCase().includes('cook') || userMessage.toLowerCase().includes('make')) {
             const recipeName = userMessage.replace(/how to|recipe|cook|make|how can i|/gi, '').trim();
             const youtubeUrl = getYouTubeSearchUrl(`${recipeName} tutorial`);
-            
+
             if (!content.includes('youtube.com') && !content.includes('Watch Video')) {
               content += `\n\n📺 **Watch Video Tutorial:**\n[${recipeName} Tutorial on YouTube](${youtubeUrl})`;
             }
@@ -183,7 +202,7 @@ IMPORTANT FORMATTING RULES:
   // Try OpenAI as premium option (if API key is provided)
   try {
     const openAIApiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    
+
     if (openAIApiKey) {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -211,13 +230,13 @@ IMPORTANT FORMATTING RULES:
       if (response.ok) {
         const data = await response.json();
         let content = data.choices[0]?.message?.content || null;
-        
+
         if (content) {
           // Add YouTube link if it's a recipe question
           if (userMessage.toLowerCase().includes('how to') || userMessage.toLowerCase().includes('recipe') || userMessage.toLowerCase().includes('cook') || userMessage.toLowerCase().includes('make')) {
             const recipeName = userMessage.replace(/how to|recipe|cook|make|how can i|/gi, '').trim();
             const youtubeUrl = getYouTubeSearchUrl(`${recipeName} tutorial`);
-            
+
             if (!content.includes('youtube.com') && !content.includes('Watch Video')) {
               content += `\n\n📺 **Watch Video Tutorial:**\n[${recipeName} Tutorial on YouTube](${youtubeUrl})`;
             }
@@ -234,13 +253,51 @@ IMPORTANT FORMATTING RULES:
   return null;
 };
 
-// Enhanced AI Chat Component with OpenAI Integration and Fast Responses
+// Helper function to format markdown text (remove ** and format nicely)
+const formatMessage = (text) => {
+  if (!text) return '';
+  
+  // Split by lines and process
+  const lines = text.split('\n');
+  const formattedLines = lines.map(line => {
+    // Remove ** markdown and make text bold with CSS
+    let formatted = line
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`(.*?)`/g, '<code>$1</code>');
+    
+    // Handle headers
+    if (line.startsWith('### ')) {
+      formatted = `<h3 class="text-lg font-bold mt-4 mb-2">${line.replace('### ', '')}</h3>`;
+    } else if (line.startsWith('## ')) {
+      formatted = `<h2 class="text-xl font-bold mt-4 mb-2">${line.replace('## ', '')}</h2>`;
+    } else if (line.startsWith('# ')) {
+      formatted = `<h1 class="text-2xl font-bold mt-4 mb-2">${line.replace('# ', '')}</h1>`;
+    }
+    
+    return formatted;
+  });
+  
+  return formattedLines.join('<br>');
+};
+
+// Convert image to base64 for Gemini Vision API
+const imageToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+// Enhanced AI Chat Component with Image Scanning and Better Design
 const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
   const { isDark } = useTheme();
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hi! I'm your AI cooking assistant powered by advanced AI. I can help you with meal ideas, recipes, cooking tips, and even suggest meals based on what's in your pantry. What would you like to know?",
+      text: "Hi! I'm your AI cooking assistant powered by advanced AI. I can help you with meal ideas, recipes, cooking tips, and even analyze food photos to tell you how to make them. What would you like to know?",
       isAI: true,
       timestamp: new Date()
     }
@@ -249,8 +306,11 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isUsingAI, setIsUsingAI] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const imageInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -370,21 +430,70 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
     return "I'd be happy to help! I can assist you with:\n\n✨ **Recipe suggestions** based on ingredients, time, or dietary needs\n📋 **Meal planning** for the week\n🥘 **Cooking tips** and techniques\n🛒 **Shopping lists** from recipes\n⏱️ **Quick meals** under 30 minutes\n🌱 **Dietary options** (vegan, keto, etc.)\n\nWhat would you like to explore? Try asking:\n- \"What can I make for dinner?\"\n- \"Quick healthy breakfast ideas\"\n- \"Recipes using chicken\"\n- \"Vegetarian meal prep\"\n- \"What's in my pantry?\"";
   }, [pantryItems]);
 
+  // Handle image upload
+  const handleImageSelect = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB');
+      return;
+    }
+
+    setUploadedImage(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+    toast.success('Image ready! Click send to analyze.');
+  }, []);
+
+  // Remove uploaded image
+  const removeImage = useCallback(() => {
+    setUploadedImage(null);
+    setImagePreview(null);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+  }, []);
+
   const handleSendMessage = useCallback(async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() && !uploadedImage) return;
+
+    // Convert image to base64 if present
+    let imageBase64 = null;
+    if (uploadedImage) {
+      try {
+        imageBase64 = await imageToBase64(uploadedImage);
+      } catch (error) {
+        console.error('Error converting image:', error);
+        toast.error('Failed to process image');
+        return;
+      }
+    }
 
     const userMessage = {
       id: Date.now(),
-      text: inputMessage,
+      text: inputMessage || (uploadedImage ? 'What is this food and how do I make it?' : ''),
       isAI: false,
-      timestamp: new Date()
+      timestamp: new Date(),
+      image: imagePreview
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = inputMessage;
+    const currentInput = inputMessage || (uploadedImage ? 'What is this food and how do I make it?' : '');
     setInputMessage('');
     setIsTyping(true);
     setIsUsingAI(false);
+
+    // Clear image after sending
+    const imageToSend = imageBase64;
+    setUploadedImage(null);
+    setImagePreview(null);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
 
     // Try free AI APIs first (Gemini or OpenAI), then fallback to contextual
     let aiResponse = null;
@@ -392,7 +501,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
     try {
       // Show AI indicator
       setIsUsingAI(true);
-      aiResponse = await callFreeAI(currentInput, pantryItems);
+      aiResponse = await callFreeAI(currentInput, pantryItems, imageToSend);
     } catch (error) {
       console.warn('AI API error:', error);
     }
@@ -514,31 +623,44 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                     <span>AI Enhanced</span>
                   </div>
                 )}
-                <div className="whitespace-pre-wrap leading-relaxed">
-                  {message.text.split('\n').map((line, idx) => {
-                    // Check if line contains YouTube link
-                    const youtubeMatch = line.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/);
-                    if (youtubeMatch) {
-                      const [, linkText, url] = youtubeMatch;
-                      return (
-                        <div key={idx} className="my-3">
+                {message.image && (
+                  <div className="mb-3 rounded-lg overflow-hidden">
+                    <img 
+                      src={message.image} 
+                      alt="Uploaded food" 
+                      className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-gray-700"
+                    />
+                  </div>
+                )}
+                <div 
+                  className="leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: formatMessage(message.text) }}
+                />
+                {/* YouTube links */}
+                {message.text.includes('youtube.com') && (
+                  <div className="mt-3">
+                    {message.text.split('\n').map((line, idx) => {
+                      const youtubeMatch = line.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/);
+                      if (youtubeMatch) {
+                        const [, linkText, url] = youtubeMatch;
+                        return (
                           <a
+                            key={idx}
                             href={url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg mt-2"
                           >
                             <span>📺</span>
                             <span>{linkText}</span>
                             <ExternalLink className="h-4 w-4" />
                           </a>
-                        </div>
-                      );
-                    }
-                    // Regular text line
-                    return <p key={idx}>{line || '\n'}</p>;
-                  })}
-                </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                )}
                 {message.hasActions && (
                   <div className="flex gap-2 mt-3">
                     <button
@@ -597,21 +719,56 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
               </button>
             ))}
           </div>
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="mb-3 relative">
+              <div className="relative inline-block">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="w-32 h-32 object-cover rounded-lg border-2 border-purple-300 dark:border-purple-700"
+                />
+                <button
+                  onClick={removeImage}
+                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-colors"
+                  title="Remove image"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Food image ready to analyze</p>
+            </div>
+          )}
+          
           {/* Input */}
-          <div className="flex gap-3">
+          <div className="flex gap-2">
+            <button
+              onClick={() => imageInputRef.current?.click()}
+              className="p-3 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-all"
+              title="Scan food image"
+            >
+              <Camera className="h-5 w-5" />
+            </button>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
             <input
               ref={inputRef}
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask about recipes, ingredients, or cooking tips..."
+              placeholder={uploadedImage ? "Ask about this food..." : "Ask about recipes, ingredients, or cooking tips..."}
               className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               disabled={isTyping}
             />
             <button
               onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isTyping}
+              disabled={(!inputMessage.trim() && !uploadedImage) || isTyping}
               className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
             >
               {isTyping ? (
@@ -1008,26 +1165,26 @@ export default function ShoppingMeals() {
 
   const loadData = async () => {
     setLoading(true);
-    try {
-      const itemsSnap = await getDocs(query(
-        collection(db, 'shoppingItems'),
-        where('userId', '==', currentUser.uid)
-      ));
+      try {
+        const itemsSnap = await getDocs(query(
+          collection(db, 'shoppingItems'), 
+          where('userId', '==', currentUser.uid)
+        ));
       const items = itemsSnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate()
-      }));
-      const mealsSnap = await getDocs(query(
-        collection(db, 'meals'),
-        where('userId', '==', currentUser.uid)
-      ));
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate()
+        }));
+        const mealsSnap = await getDocs(query(
+          collection(db, 'meals'), 
+          where('userId', '==', currentUser.uid)
+        ));
       const mealsList = mealsSnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        date: doc.data().date?.toDate(),
-        createdAt: doc.data().createdAt?.toDate()
-      }));
+          id: doc.id,
+          ...doc.data(),
+          date: doc.data().date?.toDate(),
+          createdAt: doc.data().createdAt?.toDate()
+        }));
       setShoppingItems(items);
       setMeals(mealsList);
     } catch (error) {
@@ -1064,7 +1221,7 @@ export default function ShoppingMeals() {
         checked: false,
         createdAt: serverTimestamp()
       });
-      toast.success('Item added!');
+        toast.success('Item added!');
       setShowAddItem(false);
       setItemForm({
         name: '',
@@ -1192,22 +1349,22 @@ export default function ShoppingMeals() {
           <div className="p-3 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-2xl shadow-lg">
             <ShoppingCart className="h-8 w-8 text-orange-600 dark:text-orange-400" />
           </div>
-          <div>
+        <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Smart Shopping List</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">AI-powered grocery management</p>
-          </div>
+            </div>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button
+            <button
             onClick={() => setShowAIChat(true)}
             className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-500 dark:to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 dark:hover:from-purple-600 dark:hover:to-pink-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
           >
             <Brain className="h-5 w-5" />
             AI Assistant
-          </button>
+            </button>
 
-          <button
+            <button
             onClick={() => setShowNearbyStores(true)}
             className="px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
           >
@@ -1220,58 +1377,58 @@ export default function ShoppingMeals() {
       {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
-          <div className="flex items-center justify-between">
-            <div>
+              <div className="flex items-center justify-between">
+                <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Items</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{shoppingStats.total}</p>
-            </div>
+                </div>
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
               <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
             </div>
-          </div>
         </div>
 
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
-          <div className="flex items-center justify-between">
-            <div>
+              <div className="flex items-center justify-between">
+                <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Checked</p>
               <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{shoppingStats.checked}</p>
-            </div>
+                </div>
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
               <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
             </div>
-          </div>
         </div>
 
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
-          <div className="flex items-center justify-between">
-            <div>
+              <div className="flex items-center justify-between">
+                <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Remaining</p>
               <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{shoppingStats.remaining}</p>
-            </div>
+                </div>
             <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
               <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
             </div>
           </div>
-        </div>
 
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Cost</p>
               <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">${shoppingStats.totalCost.toFixed(2)}</p>
-            </div>
+              </div>
             <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
               <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
-        </div>
-      </div>
+              </div>
+                        </div>
 
       {/* Enhanced Controls */}
       <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm transition-colors duration-200`}>
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
+                        <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
               <input
@@ -1282,30 +1439,30 @@ export default function ShoppingMeals() {
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
               />
             </div>
-          </div>
+                        </div>
 
-          <button
+                        <button
             onClick={() => setShowAddItem(true)}
             className="px-6 py-3 bg-orange-600 dark:bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-all flex items-center gap-2 justify-center shadow-lg hover:shadow-xl"
-          >
+                        >
             <Plus className="h-5 w-5" />
             Add Item
-          </button>
+                        </button>
 
           {shoppingStats.checked > 0 && (
-            <button
+                    <button
               onClick={handleClearChecked}
               className="px-6 py-3 bg-red-600 dark:bg-red-500 text-white rounded-xl font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
-            >
+                    >
               <Trash2 className="h-5 w-5" />
               Clear Checked
-            </button>
-          )}
-        </div>
+                    </button>
+                )}
+              </div>
         {/* Enhanced Categories */}
         <div className="flex flex-wrap gap-2 mt-4">
           {SHOPPING_CATEGORIES.map(cat => (
-            <button
+              <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 border ${selectedCategory === cat.id
@@ -1315,10 +1472,10 @@ export default function ShoppingMeals() {
             >
               <cat.icon className="h-4 w-4" />
               {cat.label}
-            </button>
+              </button>
           ))}
-        </div>
-      </div>
+            </div>
+          </div>
 
       {/* Enhanced Items List */}
       <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm transition-colors duration-200`}>
@@ -1340,7 +1497,7 @@ export default function ShoppingMeals() {
                     }`}
                 >
                   <div className="flex items-center gap-4">
-                    <button
+                                <button
                       onClick={() => toggleItemChecked(item.id, item.checked)}
                       className={`flex-shrink-0 w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${item.checked
                         ? 'bg-green-600 dark:bg-green-500 border-green-600 dark:border-green-500 shadow-md'
@@ -1348,7 +1505,7 @@ export default function ShoppingMeals() {
                         }`}
                     >
                       {item.checked && <Check className="h-4 w-4 text-white" />}
-                    </button>
+                                </button>
                     <div className={`p-3 rounded-xl ${SHOPPING_CATEGORIES.find(c => c.id === item.category)?.color || 'bg-gray-100 dark:bg-gray-700'
                       }`}>
                       <CategoryIcon className="h-5 w-5" />
@@ -1369,25 +1526,25 @@ export default function ShoppingMeals() {
                         {item.notes && (
                           <span className="text-gray-400 dark:text-gray-500">• {item.notes}</span>
                         )}
-                      </div>
-                    </div>
+                            </div>
+                          </div>
                     {item.priority === 'high' && !item.checked && (
                       <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full border border-red-200 dark:border-red-800">
                         High Priority
                       </span>
                     )}
-                    <button
+                      <button
                       onClick={() => handleDeleteItem(item.id)}
                       className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all hover:scale-110"
                     >
                       <Trash2 className="h-5 w-5" />
-                    </button>
+                      </button>
                   </div>
                 </div>
               );
             })}
-          </div>
-        )}
+        </div>
+      )}
       </div>
 
       {/* Enhanced Add Item Modal */}
@@ -1457,12 +1614,12 @@ export default function ShoppingMeals() {
                     <option key={cat.id} value={cat.id}>{cat.label}</option>
                   ))}
                 </select>
-              </div>
+                </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Priority
                 </label>
-                <select
+                  <select
                   value={itemForm.priority}
                   onChange={(e) => setItemForm({ ...itemForm, priority: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
@@ -1470,9 +1627,9 @@ export default function ShoppingMeals() {
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
-                </select>
-              </div>
-              <div>
+                  </select>
+                </div>
+                <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Price (optional)
                 </label>

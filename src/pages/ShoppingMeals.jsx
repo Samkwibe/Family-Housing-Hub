@@ -162,48 +162,48 @@ IMPORTANT FORMATTING RULES:
       // Add text prompt with advanced image analysis
       parts.push({
         text: imageBase64
-          ? `You are an advanced food recognition AI. Analyze this food image and provide a comprehensive analysis in the following JSON format:
+          ? `You are an expert food recognition AI with advanced computer vision capabilities. Analyze this food image in detail and provide a comprehensive analysis in the following JSON format:
 
 {
   "isFood": true/false,
-  "foodName": "name of the dish/food",
-  "description": "brief description",
-  "ingredients": ["ingredient1", "ingredient2", ...],
+  "foodName": "exact name of the dish/food item",
+  "description": "detailed description of what you see, including appearance, colors, textures, and presentation",
+  "ingredients": ["complete list of all visible and identifiable ingredients"],
   "nutrition": {
-    "calories": number,
+    "calories": estimated number based on visible portion,
     "protein": "Xg",
     "carbs": "Xg",
     "fat": "Xg",
     "fiber": "Xg"
   },
   "freshness": {
-    "score": number (0-100),
+    "score": number between 0-100 based on visual quality,
     "assessment": "fresh/good/fair/poor",
-    "indicators": ["visual quality indicators"]
+    "indicators": ["specific visual quality indicators like color, texture, appearance"]
   },
-  "allergens": ["common allergens present"],
-  "portionSize": "estimated serving size",
+  "allergens": ["list of common allergens present: nuts, dairy, gluten, shellfish, eggs, soy, etc."],
+  "portionSize": "estimated serving size based on what's visible",
   "recipe": {
-    "instructions": ["step 1", "step 2", ...],
-    "cookTime": "X minutes",
-    "servings": number,
+    "instructions": ["detailed step-by-step cooking instructions"],
+    "cookTime": "estimated cooking time",
+    "servings": estimated number,
     "difficulty": "easy/medium/hard"
   },
-  "youtubeQuery": "search query for tutorial"
+  "youtubeQuery": "search query for YouTube tutorial"
 }
 
-IMPORTANT:
-- If the image does NOT contain food, set "isFood": false and provide helpful suggestions
-- Be accurate with nutrition estimates based on visible portions
-- Identify ALL visible ingredients
-- Assess freshness based on color, texture, and appearance
-- Flag common allergens (nuts, dairy, gluten, shellfish, etc.)
-- Estimate portion size from the image
-- Provide cooking instructions if it's a prepared dish
+CRITICAL INSTRUCTIONS:
+- Look carefully at the image and describe EXACTLY what you see
+- If the image does NOT contain food, set "isFood": false
+- Be VERY detailed in the description - describe colors, textures, presentation style, plating
+- Identify EVERY ingredient you can see in the image
+- Estimate nutrition based on the visible portion size
+- Assess freshness by looking at color vibrancy, texture quality, and overall appearance
+- Flag ALL potential allergens you can identify
+- If it's a prepared dish, provide complete cooking instructions
+- Make the description rich and detailed - describe what makes this food special
 
-User question: ${userMessage || 'Analyze this food image completely'}
-
-Respond ONLY with valid JSON, no additional text.`
+Analyze this image now and provide the JSON response.`
           : `${systemPrompt}\n\nUser question: ${userMessage}`
       });
 
@@ -217,10 +217,10 @@ Respond ONLY with valid JSON, no additional text.`
             parts: parts
           }],
           generationConfig: {
-            temperature: 0.7,
+            temperature: 0.3,
             topK: 40,
             topP: 0.95,
-            maxOutputTokens: 1000,
+            maxOutputTokens: 2000,
           }
         })
       });
@@ -255,7 +255,7 @@ Respond ONLY with valid JSON, no additional text.`
           }
           return content;
         }
-        
+
         return content;
       }
     }
@@ -324,7 +324,7 @@ const formatImageAnalysis = (analysis) => {
   }
 
   let text = `🍽️ **${analysis.foodName || 'Food Item'}**\n\n`;
-  
+
   if (analysis.description) {
     text += `${analysis.description}\n\n`;
   }
@@ -393,7 +393,7 @@ const formatImageAnalysis = (analysis) => {
 // Helper function to format markdown text (remove ** and format nicely)
 const formatMessage = (text) => {
   if (!text) return '';
-  
+
   // Split by lines and process
   const lines = text.split('\n');
   const formattedLines = lines.map(line => {
@@ -402,7 +402,7 @@ const formatMessage = (text) => {
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code>$1</code>');
-    
+
     // Handle headers
     if (line.startsWith('### ')) {
       formatted = `<h3 class="text-lg font-bold mt-4 mb-2">${line.replace('### ', '')}</h3>`;
@@ -411,10 +411,10 @@ const formatMessage = (text) => {
     } else if (line.startsWith('# ')) {
       formatted = `<h1 class="text-2xl font-bold mt-4 mb-2">${line.replace('# ', '')}</h1>`;
     }
-    
+
     return formatted;
   });
-  
+
   return formattedLines.join('<br>');
 };
 
@@ -581,9 +581,17 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target.result);
+      // Auto-send after image is loaded
+      setTimeout(() => {
+        // Use a ref to access the latest handleSendMessage
+        const sendButton = document.querySelector('[data-send-button]');
+        if (sendButton && !sendButton.disabled) {
+          sendButton.click();
+        }
+      }, 800);
     };
     reader.readAsDataURL(file);
-    toast.success('Image ready! Click send to analyze.');
+    toast.success('Image ready! Analyzing automatically...');
   }, []);
 
   // Remove uploaded image
@@ -619,7 +627,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = inputMessage || (uploadedImage ? 'What is this food and how do I make it?' : '');
+    const currentInput = inputMessage || (uploadedImage ? 'Analyze this food image completely and describe everything you see in detail. Identify all ingredients, estimate nutrition, assess freshness, flag allergens, and provide cooking instructions if applicable.' : '');
     setInputMessage('');
     setIsTyping(true);
     setIsUsingAI(false);
@@ -640,7 +648,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
       // Show AI indicator
       setIsUsingAI(true);
       const response = await callFreeAI(currentInput, pantryItems, imageToSend);
-      
+
       // Check if response is structured image analysis
       if (response && typeof response === 'object' && response.type === 'imageAnalysis') {
         imageAnalysis = response.data;
@@ -780,7 +788,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                     />
                   </div>
                 )}
-                
+
                 {/* Advanced Image Analysis Display */}
                 {message.imageAnalysis && message.imageAnalysis.isFood && (
                   <div className="mb-4 space-y-3">
@@ -856,13 +864,12 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                             <Activity className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                             Freshness Assessment
                           </h4>
-                          <div className={`px-3 py-1 rounded-full font-bold ${
-                            message.imageAnalysis.freshness.score >= 80 
+                          <div className={`px-3 py-1 rounded-full font-bold ${message.imageAnalysis.freshness.score >= 80
                               ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                               : message.imageAnalysis.freshness.score >= 60
-                              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                          }`}>
+                                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                            }`}>
                             {message.imageAnalysis.freshness.score}/100
                           </div>
                         </div>
@@ -1106,8 +1113,9 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
               disabled={isTyping}
             />
             <button
+              data-send-button
               onClick={handleSendMessage}
-              disabled={(!inputMessage.trim() && !uploadedImage) || isTyping}
+              disabled={isTyping}
               className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
             >
               {isTyping ? (

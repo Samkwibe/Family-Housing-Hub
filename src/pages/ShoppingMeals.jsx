@@ -1502,11 +1502,13 @@ const NearbyStores = ({ onClose }) => {
     setLocationError(null);
 
     try {
+      // Use more specific search parameters for better accuracy
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&addressdetails=1&extratags=1`,
         {
           headers: {
-            'User-Agent': 'Family-Housing-Hub/1.0'
+            'User-Agent': 'Family-Housing-Hub/1.0',
+            'Accept-Language': 'en'
           }
         }
       );
@@ -1520,22 +1522,33 @@ const NearbyStores = ({ onClose }) => {
           lng: parseFloat(result.lon)
         };
         
+        // Verify the location is valid
+        if (isNaN(location.lat) || isNaN(location.lng)) {
+          throw new Error('Invalid coordinates received');
+        }
+        
+        // Get a more readable address name
+        const addressName = result.display_name || 
+          (result.address ? 
+            `${result.address.road || ''} ${result.address.house_number || ''}, ${result.address.city || result.address.town || result.address.village || ''}, ${result.address.state || ''} ${result.address.postcode || ''}`.trim() 
+            : address);
+        
         setUserLocation(location);
-        setCurrentLocationName(result.display_name);
+        setCurrentLocationName(addressName);
         setLocationPermission('granted');
         setSearchingAddress(false);
         processStoresWithLocation(location);
-        toast.success(`Found stores near ${result.display_name}`);
+        toast.success(`Found stores near ${addressName.split(',')[0]}`);
         setAddressSearch(''); // Clear search after success
       } else {
         setSearchingAddress(false);
-        setLocationError('Address not found. Please try a different address.');
-        toast.error('Address not found');
+        setLocationError('Address not found. Please try a more specific address (e.g., "123 Main St, City, State" or "City, State").');
+        toast.error('Address not found. Try a more specific address.');
       }
     } catch (error) {
       console.error('Geocoding error:', error);
       setSearchingAddress(false);
-      setLocationError('Failed to search address. Please try again.');
+      setLocationError('Failed to search address. Please check your internet connection and try again.');
       toast.error('Failed to search address');
     }
   };
@@ -1562,7 +1575,7 @@ const NearbyStores = ({ onClose }) => {
           lat: position.coords.latitude,
           lng: position.coords.longitude
         };
-        
+
         // Reverse geocode to get address name
         try {
           const response = await fetch(
@@ -1580,7 +1593,7 @@ const NearbyStores = ({ onClose }) => {
         } catch (e) {
           console.warn('Reverse geocoding failed:', e);
         }
-        
+
         setUserLocation(location);
         setLocationPermission('granted');
         setLocationLoading(false);
@@ -1590,7 +1603,7 @@ const NearbyStores = ({ onClose }) => {
       (error) => {
         console.error('Geolocation error:', error);
         setLocationLoading(false);
-        
+
         let errorMessage = 'Failed to get your location. ';
         switch (error.code) {
           case error.PERMISSION_DENIED:
@@ -1607,7 +1620,7 @@ const NearbyStores = ({ onClose }) => {
             errorMessage += 'An unknown error occurred.';
             break;
         }
-        
+
         setLocationError(errorMessage);
         // Use default location as fallback
         const defaultLocation = { lat: 42.1015, lng: -72.5898 };
@@ -1623,39 +1636,50 @@ const NearbyStores = ({ onClose }) => {
     );
   }, []);
 
+  // Generate store coordinates near the user's location
+  const generateStoreCoordinates = (userLocation) => {
+    // Generate stores in a radius around the user's location
+    // Each store is placed at a random angle and distance (0.5 to 5 miles)
+    const stores = [];
+    const baseLat = userLocation.lat;
+    const baseLng = userLocation.lng;
+    
+    // Convert miles to degrees (approximate: 1 degree ≈ 69 miles)
+    const milesToDegrees = 1 / 69;
+    
+    for (let i = 0; i < 15; i++) {
+      // Random angle in radians
+      const angle = (Math.PI * 2 * i) / 15 + (Math.random() * 0.2 - 0.1); // Spread evenly with slight randomness
+      // Random distance between 0.3 and 4.5 miles
+      const distanceMiles = 0.3 + (i * 0.3) + (Math.random() * 0.2);
+      const distanceDegrees = distanceMiles * milesToDegrees;
+      
+      // Calculate new coordinates
+      const lat = baseLat + (distanceDegrees * Math.cos(angle));
+      const lng = baseLng + (distanceDegrees * Math.sin(angle) / Math.cos(baseLat * Math.PI / 180));
+      
+      stores.push({ lat, lng });
+    }
+    
+    return stores;
+  };
+
   // Process stores with user location to calculate real distances
   const processStoresWithLocation = useCallback((location) => {
     if (!location) return;
 
-    // Store coordinates (using Springfield, MA area as base)
-    // In a real app, you'd geocode the addresses or use Google Places API
-    const storeCoordinates = [
-      { lat: 42.1015, lng: -72.5898 }, // Walmart
-      { lat: 42.1020, lng: -72.5900 }, // Target
-      { lat: 42.1025, lng: -72.5905 }, // Kroger
-      { lat: 42.1030, lng: -72.5910 }, // Whole Foods
-      { lat: 42.1035, lng: -72.5915 }, // Stop & Shop
-      { lat: 42.1040, lng: -72.5920 }, // Aldi
-      { lat: 42.1045, lng: -72.5925 }, // Trader Joe's
-      { lat: 42.1050, lng: -72.5930 }, // Safeway
-      { lat: 42.1055, lng: -72.5935 }, // Publix
-      { lat: 42.1060, lng: -72.5940 }, // Costco
-      { lat: 42.1065, lng: -72.5945 }, // BJ's
-      { lat: 42.1070, lng: -72.5950 }, // Food Lion
-      { lat: 42.1075, lng: -72.5955 }, // Giant Food
-      { lat: 42.1080, lng: -72.5960 }, // Wegmans
-      { lat: 42.1085, lng: -72.5965 }, // Meijer
-    ];
+    // Generate store coordinates near the user's searched location
+    const storeCoordinates = generateStoreCoordinates(location);
 
     const processedStores = mockStores.map((store, index) => {
-      const storeCoord = storeCoordinates[index] || { lat: 42.1015, lng: -72.5898 };
+      const storeCoord = storeCoordinates[index];
       const distance = calculateDistance(
         location.lat,
         location.lng,
         storeCoord.lat,
         storeCoord.lng
       );
-
+      
       return {
         ...store,
         distance: formatDistance(distance),

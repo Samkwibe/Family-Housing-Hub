@@ -1633,9 +1633,54 @@ const NearbyStores = ({ onClose }) => {
                 <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               </button>
             </div>
-            <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
-              <MapPin className="h-4 w-4" />
-              <span>Sorted by distance</span>
+            {/* Location Status */}
+            <div className="space-y-2">
+              {locationLoading && (
+                <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Detecting your location...</span>
+                </div>
+              )}
+              
+              {userLocation && !locationLoading && (
+                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                  <MapPin className="h-4 w-4" />
+                  <span>Location detected • Sorted by distance</span>
+                </div>
+              )}
+              
+              {locationError && locationPermission === 'denied' && (
+                <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-800 dark:text-amber-300 mb-2">{locationError}</p>
+                  <button
+                    onClick={handleRetryLocation}
+                    className="text-xs text-amber-700 dark:text-amber-400 hover:underline font-medium"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
+              
+              {locationPermission === 'prompt' && !locationLoading && !userLocation && (
+                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs text-blue-800 dark:text-blue-300 mb-2">
+                    Allow location access to see stores near you
+                  </p>
+                  <button
+                    onClick={getUserLocation}
+                    className="text-xs text-blue-700 dark:text-blue-400 hover:underline font-medium"
+                  >
+                    Enable location
+                  </button>
+                </div>
+              )}
+              
+              {!locationLoading && !userLocation && !locationError && (
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <MapPin className="h-4 w-4" />
+                  <span>Sorted by distance</span>
+                </div>
+              )}
             </div>
           </div>
 

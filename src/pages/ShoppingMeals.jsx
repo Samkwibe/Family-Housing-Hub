@@ -865,10 +865,10 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                             Freshness Assessment
                           </h4>
                           <div className={`px-3 py-1 rounded-full font-bold ${message.imageAnalysis.freshness.score >= 80
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                              : message.imageAnalysis.freshness.score >= 60
-                                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                            : message.imageAnalysis.freshness.score >= 60
+                              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                             }`}>
                             {message.imageAnalysis.freshness.score}/100
                           </div>
@@ -1151,58 +1151,71 @@ const NearbyStores = ({ onClose }) => {
       id: 1,
       name: "Walmart Supercenter",
       distance: "0.8 mi",
-      address: "123 Main St",
+      address: "123 Main Street, Springfield, MA 01103",
+      phone: "(413) 555-0123",
       hours: "6:00 AM - 11:00 PM",
       open: true,
       rating: 4.2,
       prices: {
-        "Milk (1 gal)": 3.29,
-        "Eggs (dozen)": 2.49,
-        "Bread": 2.99,
-        "Chicken Breast (lb)": 5.99,
-        "Apples (lb)": 1.99
+        "Milk (1 gal)": 3.49,
+        "Eggs (dozen)": 2.98,
+        "Bread": 2.50,
+        "Chicken Breast (lb)": 6.99,
+        "Apples (lb)": 1.99,
+        "Bananas (lb)": 0.58,
+        "Ground Beef (lb)": 5.99,
+        "Salmon (lb)": 9.99
       },
-      deals: ["5% off produce today", "BOGO on select cereals"]
+      deals: ["Rollback prices", "Everyday low prices", "Free pickup available"]
     },
     {
       id: 2,
       name: "Target",
       distance: "1.2 mi",
-      address: "456 Oak Ave",
+      address: "456 Oak Avenue, Springfield, MA 01104",
+      phone: "(413) 555-0124",
       hours: "8:00 AM - 10:00 PM",
       open: true,
       rating: 4.4,
       prices: {
-        "Milk (1 gal)": 3.49,
-        "Eggs (dozen)": 2.99,
+        "Milk (1 gal)": 3.99,
+        "Eggs (dozen)": 3.49,
         "Bread": 3.29,
-        "Chicken Breast (lb)": 6.49,
-        "Apples (lb)": 2.29
+        "Chicken Breast (lb)": 7.99,
+        "Apples (lb)": 2.49,
+        "Bananas (lb)": 0.69,
+        "Ground Beef (lb)": 6.49,
+        "Salmon (lb)": 10.99
       },
-      deals: ["Red Card 5% discount", "Weekly circular specials"]
+      deals: ["RedCard 5% off", "Weekly ad specials", "Same-day delivery"]
     },
     {
       id: 3,
       name: "Kroger",
-      distance: "0.5 mi",
-      address: "789 Pine St",
+      distance: "1.5 mi",
+      address: "789 Pine Road, Springfield, MA 01105",
+      phone: "(413) 555-0125",
       hours: "6:00 AM - 12:00 AM",
       open: true,
-      rating: 4.1,
+      rating: 4.3,
       prices: {
-        "Milk (1 gal)": 3.19,
-        "Eggs (dozen)": 2.39,
-        "Bread": 2.79,
-        "Chicken Breast (lb)": 5.79,
-        "Apples (lb)": 1.89
+        "Milk (1 gal)": 3.79,
+        "Eggs (dozen)": 3.19,
+        "Bread": 2.99,
+        "Chicken Breast (lb)": 7.49,
+        "Apples (lb)": 2.29,
+        "Bananas (lb)": 0.59,
+        "Ground Beef (lb)": 6.29,
+        "Salmon (lb)": 10.49
       },
-      deals: ["Fuel points on every purchase", "Digital coupons available"]
+      deals: ["Fuel points", "Digital coupons", "ClickList pickup"]
     },
     {
       id: 4,
       name: "Whole Foods Market",
       distance: "2.1 mi",
-      address: "321 Elm Blvd",
+      address: "321 Elm Boulevard, Springfield, MA 01106",
+      phone: "(413) 555-0126",
       hours: "7:00 AM - 10:00 PM",
       open: true,
       rating: 4.6,
@@ -1211,9 +1224,243 @@ const NearbyStores = ({ onClose }) => {
         "Eggs (dozen)": 4.49,
         "Bread": 4.99,
         "Chicken Breast (lb)": 8.99,
-        "Apples (lb)": 2.99
+        "Apples (lb)": 2.99,
+        "Bananas (lb)": 0.79,
+        "Ground Beef (lb)": 7.99,
+        "Salmon (lb)": 12.99
       },
-      deals: ["Prime member 10% off", "Weekly sale items"]
+      deals: ["Prime member 10% off", "Weekly sale items", "Organic selection"]
+    },
+    {
+      id: 5,
+      name: "Stop & Shop",
+      distance: "2.3 mi",
+      address: "567 Maple Drive, Springfield, MA 01107",
+      phone: "(413) 555-0127",
+      hours: "7:00 AM - 11:00 PM",
+      open: true,
+      rating: 4.1,
+      prices: {
+        "Milk (1 gal)": 3.69,
+        "Eggs (dozen)": 3.09,
+        "Bread": 2.79,
+        "Chicken Breast (lb)": 7.29,
+        "Apples (lb)": 2.19,
+        "Bananas (lb)": 0.62,
+        "Ground Beef (lb)": 6.19,
+        "Salmon (lb)": 10.29
+      },
+      deals: ["GO Rewards program", "Weekly circular", "Pharmacy services"]
+    },
+    {
+      id: 6,
+      name: "Aldi",
+      distance: "2.5 mi",
+      address: "890 Cedar Lane, Springfield, MA 01108",
+      phone: "(413) 555-0128",
+      hours: "9:00 AM - 8:00 PM",
+      open: true,
+      rating: 4.5,
+      prices: {
+        "Milk (1 gal)": 2.99,
+        "Eggs (dozen)": 2.49,
+        "Bread": 1.99,
+        "Chicken Breast (lb)": 5.99,
+        "Apples (lb)": 1.79,
+        "Bananas (lb)": 0.49,
+        "Ground Beef (lb)": 5.49,
+        "Salmon (lb)": 8.99
+      },
+      deals: ["Everyday low prices", "Weekly specials", "Quarter for cart"]
+    },
+    {
+      id: 7,
+      name: "Trader Joe's",
+      distance: "2.8 mi",
+      address: "234 Birch Street, Springfield, MA 01109",
+      phone: "(413) 555-0129",
+      hours: "8:00 AM - 9:00 PM",
+      open: true,
+      rating: 4.7,
+      prices: {
+        "Milk (1 gal)": 4.49,
+        "Eggs (dozen)": 3.99,
+        "Bread": 3.99,
+        "Chicken Breast (lb)": 7.99,
+        "Apples (lb)": 2.49,
+        "Bananas (lb)": 0.59,
+        "Ground Beef (lb)": 6.99,
+        "Salmon (lb)": 11.99
+      },
+      deals: ["Unique products", "No membership fees", "Friendly staff"]
+    },
+    {
+      id: 8,
+      name: "Safeway",
+      distance: "3.1 mi",
+      address: "456 Willow Way, Springfield, MA 01110",
+      phone: "(413) 555-0130",
+      hours: "6:00 AM - 11:00 PM",
+      open: true,
+      rating: 4.2,
+      prices: {
+        "Milk (1 gal)": 3.89,
+        "Eggs (dozen)": 3.29,
+        "Bread": 3.09,
+        "Chicken Breast (lb)": 7.69,
+        "Apples (lb)": 2.39,
+        "Bananas (lb)": 0.64,
+        "Ground Beef (lb)": 6.49,
+        "Salmon (lb)": 10.79
+      },
+      deals: ["Just for U savings", "Fuel rewards", "Pharmacy"]
+    },
+    {
+      id: 9,
+      name: "Publix",
+      distance: "3.4 mi",
+      address: "678 Spruce Avenue, Springfield, MA 01111",
+      phone: "(413) 555-0131",
+      hours: "7:00 AM - 10:00 PM",
+      open: true,
+      rating: 4.6,
+      prices: {
+        "Milk (1 gal)": 3.99,
+        "Eggs (dozen)": 3.49,
+        "Bread": 3.29,
+        "Chicken Breast (lb)": 7.99,
+        "Apples (lb)": 2.49,
+        "Bananas (lb)": 0.69,
+        "Ground Beef (lb)": 6.79,
+        "Salmon (lb)": 11.49
+      },
+      deals: ["BOGO deals", "Pharmacy services", "Bakery specials"]
+    },
+    {
+      id: 10,
+      name: "Costco Wholesale",
+      distance: "3.7 mi",
+      address: "901 Ash Boulevard, Springfield, MA 01112",
+      phone: "(413) 555-0132",
+      hours: "10:00 AM - 8:30 PM",
+      open: true,
+      rating: 4.5,
+      prices: {
+        "Milk (1 gal)": 2.99,
+        "Eggs (dozen)": 2.99,
+        "Bread": 4.99,
+        "Chicken Breast (lb)": 4.99,
+        "Apples (lb)": 1.49,
+        "Bananas (lb)": 0.39,
+        "Ground Beef (lb)": 4.99,
+        "Salmon (lb)": 9.99
+      },
+      deals: ["Bulk savings", "Member pricing", "Gas station"]
+    },
+    {
+      id: 11,
+      name: "BJ's Wholesale Club",
+      distance: "4.0 mi",
+      address: "123 Hickory Drive, Springfield, MA 01113",
+      phone: "(413) 555-0133",
+      hours: "9:00 AM - 9:00 PM",
+      open: true,
+      rating: 4.4,
+      prices: {
+        "Milk (1 gal)": 3.19,
+        "Eggs (dozen)": 3.19,
+        "Bread": 4.49,
+        "Chicken Breast (lb)": 5.49,
+        "Apples (lb)": 1.59,
+        "Bananas (lb)": 0.44,
+        "Ground Beef (lb)": 5.29,
+        "Salmon (lb)": 9.49
+      },
+      deals: ["Member benefits", "Bulk purchases", "Optical center"]
+    },
+    {
+      id: 12,
+      name: "Food Lion",
+      distance: "4.3 mi",
+      address: "345 Poplar Street, Springfield, MA 01114",
+      phone: "(413) 555-0134",
+      hours: "7:00 AM - 11:00 PM",
+      open: true,
+      rating: 4.0,
+      prices: {
+        "Milk (1 gal)": 3.59,
+        "Eggs (dozen)": 3.09,
+        "Bread": 2.89,
+        "Chicken Breast (lb)": 7.19,
+        "Apples (lb)": 2.09,
+        "Bananas (lb)": 0.57,
+        "Ground Beef (lb)": 6.09,
+        "Salmon (lb)": 10.19
+      },
+      deals: ["MVP savings", "Digital coupons", "Weekly specials"]
+    },
+    {
+      id: 13,
+      name: "Giant Food",
+      distance: "4.6 mi",
+      address: "567 Sycamore Road, Springfield, MA 01115",
+      phone: "(413) 555-0135",
+      hours: "6:00 AM - 12:00 AM",
+      open: true,
+      rating: 4.3,
+      prices: {
+        "Milk (1 gal)": 3.79,
+        "Eggs (dozen)": 3.19,
+        "Bread": 2.99,
+        "Chicken Breast (lb)": 7.49,
+        "Apples (lb)": 2.29,
+        "Bananas (lb)": 0.59,
+        "Ground Beef (lb)": 6.29,
+        "Salmon (lb)": 10.49
+      },
+      deals: ["BonusCard savings", "Pharmacy", "Fuel rewards"]
+    },
+    {
+      id: 14,
+      name: "Wegmans",
+      distance: "4.9 mi",
+      address: "789 Chestnut Avenue, Springfield, MA 01116",
+      phone: "(413) 555-0136",
+      hours: "6:00 AM - 12:00 AM",
+      open: true,
+      rating: 4.8,
+      prices: {
+        "Milk (1 gal)": 3.99,
+        "Eggs (dozen)": 3.49,
+        "Bread": 3.49,
+        "Chicken Breast (lb)": 7.99,
+        "Apples (lb)": 2.49,
+        "Bananas (lb)": 0.69,
+        "Ground Beef (lb)": 6.99,
+        "Salmon (lb)": 11.99
+      },
+      deals: ["Shoppers Club", "Prepared foods", "Pharmacy services"]
+    },
+    {
+      id: 15,
+      name: "Meijer",
+      distance: "5.2 mi",
+      address: "890 Walnut Boulevard, Springfield, MA 01117",
+      phone: "(413) 555-0137",
+      hours: "6:00 AM - 12:00 AM",
+      open: true,
+      rating: 4.3,
+      prices: {
+        "Milk (1 gal)": 3.69,
+        "Eggs (dozen)": 3.09,
+        "Bread": 2.79,
+        "Chicken Breast (lb)": 7.29,
+        "Apples (lb)": 2.19,
+        "Bananas (lb)": 0.62,
+        "Ground Beef (lb)": 6.19,
+        "Salmon (lb)": 10.29
+      },
+      deals: ["mPerks rewards", "Weekly ad", "Pharmacy"]
     }
   ];
 
@@ -1304,12 +1551,20 @@ const NearbyStores = ({ onClose }) => {
           {selectedStore ? (
             <div className="p-6">
               <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{selectedStore.name}</h2>
-                  <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    {selectedStore.address}
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{selectedStore.name}</h2>
+                  <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-1">
+                    <MapPin className="h-4 w-4 flex-shrink-0" />
+                    <span>{selectedStore.address}</span>
                   </p>
+                  {selectedStore.phone && (
+                    <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <Phone className="h-4 w-4 flex-shrink-0" />
+                      <a href={`tel:${selectedStore.phone}`} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                        {selectedStore.phone}
+                      </a>
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1320,8 +1575,9 @@ const NearbyStores = ({ onClose }) => {
                     <Navigation className="h-5 w-5" />
                   </button>
                   <button
+                    onClick={() => window.location.href = `tel:${selectedStore.phone}`}
                     className="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors shadow-sm"
-                    title="Call store"
+                    title={`Call ${selectedStore.phone}`}
                   >
                     <Phone className="h-5 w-5" />
                   </button>

@@ -55,7 +55,14 @@ import {
   Send,
   Sparkle,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  Scale,
+  Flame,
+  Activity,
+  AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -138,10 +145,10 @@ IMPORTANT FORMATTING RULES:
       // Note: Gemini 1.5 uses 'gemini-1.5-flash' or 'gemini-1.5-pro' for vision
       const model = imageBase64 ? 'gemini-1.5-flash' : 'gemini-pro';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
-      
+
       // Build parts array
       const parts = [];
-      
+
       // Add image if provided
       if (imageBase64) {
         parts.push({
@@ -151,14 +158,55 @@ IMPORTANT FORMATTING RULES:
           }
         });
       }
-      
-      // Add text prompt
+
+      // Add text prompt with advanced image analysis
       parts.push({
-        text: imageBase64 
-          ? `${systemPrompt}\n\nUser uploaded a food image. Analyze this image and:\n1. Describe what food/dish you see\n2. Identify the ingredients\n3. Provide step-by-step instructions on how to make it\n4. Include cooking time and serving size\n5. Add a YouTube tutorial link\n\nUser question: ${userMessage || 'What is this food and how do I make it?'}`
+        text: imageBase64
+          ? `You are an advanced food recognition AI. Analyze this food image and provide a comprehensive analysis in the following JSON format:
+
+{
+  "isFood": true/false,
+  "foodName": "name of the dish/food",
+  "description": "brief description",
+  "ingredients": ["ingredient1", "ingredient2", ...],
+  "nutrition": {
+    "calories": number,
+    "protein": "Xg",
+    "carbs": "Xg",
+    "fat": "Xg",
+    "fiber": "Xg"
+  },
+  "freshness": {
+    "score": number (0-100),
+    "assessment": "fresh/good/fair/poor",
+    "indicators": ["visual quality indicators"]
+  },
+  "allergens": ["common allergens present"],
+  "portionSize": "estimated serving size",
+  "recipe": {
+    "instructions": ["step 1", "step 2", ...],
+    "cookTime": "X minutes",
+    "servings": number,
+    "difficulty": "easy/medium/hard"
+  },
+  "youtubeQuery": "search query for tutorial"
+}
+
+IMPORTANT:
+- If the image does NOT contain food, set "isFood": false and provide helpful suggestions
+- Be accurate with nutrition estimates based on visible portions
+- Identify ALL visible ingredients
+- Assess freshness based on color, texture, and appearance
+- Flag common allergens (nuts, dairy, gluten, shellfish, etc.)
+- Estimate portion size from the image
+- Provide cooking instructions if it's a prepared dish
+
+User question: ${userMessage || 'Analyze this food image completely'}
+
+Respond ONLY with valid JSON, no additional text.`
           : `${systemPrompt}\n\nUser question: ${userMessage}`
       });
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -181,7 +229,21 @@ IMPORTANT FORMATTING RULES:
         const data = await response.json();
         let content = data.candidates?.[0]?.content?.parts?.[0]?.text || null;
 
-        if (content) {
+        if (content && imageBase64) {
+          // Try to parse JSON response for structured image analysis
+          try {
+            // Clean the response to extract JSON
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const analysis = JSON.parse(jsonMatch[0]);
+              return { type: 'imageAnalysis', data: analysis };
+            }
+          } catch (e) {
+            console.warn('Failed to parse JSON, using text response');
+          }
+        }
+
+        if (content && !imageBase64) {
           // Add YouTube link if it's a recipe question
           if (userMessage.toLowerCase().includes('how to') || userMessage.toLowerCase().includes('recipe') || userMessage.toLowerCase().includes('cook') || userMessage.toLowerCase().includes('make')) {
             const recipeName = userMessage.replace(/how to|recipe|cook|make|how can i|/gi, '').trim();
@@ -193,6 +255,8 @@ IMPORTANT FORMATTING RULES:
           }
           return content;
         }
+        
+        return content;
       }
     }
   } catch (error) {
@@ -251,6 +315,79 @@ IMPORTANT FORMATTING RULES:
 
   // If all APIs fail, return null to use fallback
   return null;
+};
+
+// Format image analysis data into readable text
+const formatImageAnalysis = (analysis) => {
+  if (!analysis || !analysis.isFood) {
+    return `🚫 **Not a Food Item**\n\nThis doesn't appear to be food. Please try capturing a food item or ingredient.\n\n💡 **Tips for better photos:**\n• Take photos in good lighting\n• Focus on the food item\n• Avoid blurry images\n• Capture the entire dish clearly`;
+  }
+
+  let text = `🍽️ **${analysis.foodName || 'Food Item'}**\n\n`;
+  
+  if (analysis.description) {
+    text += `${analysis.description}\n\n`;
+  }
+
+  // Ingredients
+  if (analysis.ingredients && analysis.ingredients.length > 0) {
+    text += `📋 **Ingredients:**\n${analysis.ingredients.map(ing => `• ${ing}`).join('\n')}\n\n`;
+  }
+
+  // Nutrition
+  if (analysis.nutrition) {
+    text += `📊 **Nutrition (estimated):**\n`;
+    if (analysis.nutrition.calories) text += `• Calories: ${analysis.nutrition.calories}\n`;
+    if (analysis.nutrition.protein) text += `• Protein: ${analysis.nutrition.protein}\n`;
+    if (analysis.nutrition.carbs) text += `• Carbs: ${analysis.nutrition.carbs}\n`;
+    if (analysis.nutrition.fat) text += `• Fat: ${analysis.nutrition.fat}\n`;
+    if (analysis.nutrition.fiber) text += `• Fiber: ${analysis.nutrition.fiber}\n`;
+    text += '\n';
+  }
+
+  // Freshness
+  if (analysis.freshness) {
+    const score = analysis.freshness.score || 0;
+    const emoji = score >= 80 ? '🟢' : score >= 60 ? '🟡' : '🔴';
+    text += `${emoji} **Freshness Score:** ${score}/100 (${analysis.freshness.assessment || 'good'})\n`;
+    if (analysis.freshness.indicators && analysis.freshness.indicators.length > 0) {
+      text += `• ${analysis.freshness.indicators.join('\n• ')}\n`;
+    }
+    text += '\n';
+  }
+
+  // Allergens
+  if (analysis.allergens && analysis.allergens.length > 0) {
+    text += `⚠️ **Allergen Alert:**\n${analysis.allergens.map(all => `• ${all}`).join('\n')}\n\n`;
+  }
+
+  // Portion Size
+  if (analysis.portionSize) {
+    text += `⚖️ **Estimated Portion:** ${analysis.portionSize}\n\n`;
+  }
+
+  // Recipe
+  if (analysis.recipe && analysis.recipe.instructions) {
+    text += `👨‍🍳 **How to Make:**\n`;
+    analysis.recipe.instructions.forEach((step, idx) => {
+      text += `${idx + 1}. ${step}\n`;
+    });
+    if (analysis.recipe.cookTime) {
+      text += `\n⏱️ Cook Time: ${analysis.recipe.cookTime}\n`;
+    }
+    if (analysis.recipe.servings) {
+      text += `👥 Servings: ${analysis.recipe.servings}\n`;
+    }
+    text += '\n';
+  }
+
+  // YouTube link
+  if (analysis.youtubeQuery) {
+    const youtubeUrl = getYouTubeSearchUrl(analysis.youtubeQuery);
+    text += `📺 **Watch Tutorial:**\n[${analysis.youtubeQuery} Tutorial](${youtubeUrl})`;
+  }
+
+  return text;
 };
 
 // Helper function to format markdown text (remove ** and format nicely)
@@ -497,11 +634,21 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
 
     // Try free AI APIs first (Gemini or OpenAI), then fallback to contextual
     let aiResponse = null;
+    let imageAnalysis = null;
 
     try {
       // Show AI indicator
       setIsUsingAI(true);
-      aiResponse = await callFreeAI(currentInput, pantryItems, imageToSend);
+      const response = await callFreeAI(currentInput, pantryItems, imageToSend);
+      
+      // Check if response is structured image analysis
+      if (response && typeof response === 'object' && response.type === 'imageAnalysis') {
+        imageAnalysis = response.data;
+        // Convert analysis to readable text
+        aiResponse = formatImageAnalysis(response.data);
+      } else {
+        aiResponse = response;
+      }
     } catch (error) {
       console.warn('AI API error:', error);
     }
@@ -523,7 +670,8 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
       isAI: true,
       timestamp: new Date(),
       hasActions: aiResponse.includes('Would you like') || aiResponse.includes('Need the full recipe') || aiResponse.includes('Want detailed'),
-      isOpenAI: !!aiResponse && isUsingAI
+      isOpenAI: !!aiResponse && isUsingAI,
+      imageAnalysis: imageAnalysis // Store structured analysis for advanced UI
     };
 
     setMessages(prev => [...prev, aiMessage]);
@@ -625,14 +773,205 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                 )}
                 {message.image && (
                   <div className="mb-3 rounded-lg overflow-hidden">
-                    <img 
-                      src={message.image} 
-                      alt="Uploaded food" 
+                    <img
+                      src={message.image}
+                      alt="Uploaded food"
                       className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-gray-700"
                     />
                   </div>
                 )}
-                <div 
+                
+                {/* Advanced Image Analysis Display */}
+                {message.imageAnalysis && message.imageAnalysis.isFood && (
+                  <div className="mb-4 space-y-3">
+                    {/* Food Name & Description */}
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        {message.imageAnalysis.foodName}
+                      </h3>
+                      {message.imageAnalysis.description && (
+                        <p className="text-gray-700 dark:text-gray-300">{message.imageAnalysis.description}</p>
+                      )}
+                    </div>
+
+                    {/* Ingredients List */}
+                    {message.imageAnalysis.ingredients && message.imageAnalysis.ingredients.length > 0 && (
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                          <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          Identified Ingredients
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {message.imageAnalysis.ingredients.map((ingredient, idx) => (
+                            <span key={idx} className="px-3 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm border border-blue-200 dark:border-blue-800">
+                              {ingredient}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Nutrition Info */}
+                    {message.imageAnalysis.nutrition && (
+                      <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                          <BarChart className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                          Nutrition (Estimated)
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {message.imageAnalysis.nutrition.calories && (
+                            <div className="text-center p-2 bg-white dark:bg-gray-700 rounded-lg">
+                              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{message.imageAnalysis.nutrition.calories}</div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">Calories</div>
+                            </div>
+                          )}
+                          {message.imageAnalysis.nutrition.protein && (
+                            <div className="text-center p-2 bg-white dark:bg-gray-700 rounded-lg">
+                              <div className="text-lg font-bold text-gray-900 dark:text-white">{message.imageAnalysis.nutrition.protein}</div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">Protein</div>
+                            </div>
+                          )}
+                          {message.imageAnalysis.nutrition.carbs && (
+                            <div className="text-center p-2 bg-white dark:bg-gray-700 rounded-lg">
+                              <div className="text-lg font-bold text-gray-900 dark:text-white">{message.imageAnalysis.nutrition.carbs}</div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">Carbs</div>
+                            </div>
+                          )}
+                          {message.imageAnalysis.nutrition.fat && (
+                            <div className="text-center p-2 bg-white dark:bg-gray-700 rounded-lg">
+                              <div className="text-lg font-bold text-gray-900 dark:text-white">{message.imageAnalysis.nutrition.fat}</div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">Fat</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Freshness Score */}
+                    {message.imageAnalysis.freshness && (
+                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Activity className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                            Freshness Assessment
+                          </h4>
+                          <div className={`px-3 py-1 rounded-full font-bold ${
+                            message.imageAnalysis.freshness.score >= 80 
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                              : message.imageAnalysis.freshness.score >= 60
+                              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                          }`}>
+                            {message.imageAnalysis.freshness.score}/100
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 capitalize mb-2">
+                          {message.imageAnalysis.freshness.assessment}
+                        </p>
+                        {message.imageAnalysis.freshness.indicators && message.imageAnalysis.freshness.indicators.length > 0 && (
+                          <ul className="space-y-1">
+                            {message.imageAnalysis.freshness.indicators.map((indicator, idx) => (
+                              <li key={idx} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                <span className="w-1 h-1 bg-amber-600 dark:bg-amber-400 rounded-full"></span>
+                                {indicator}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Allergen Alerts */}
+                    {message.imageAnalysis.allergens && message.imageAnalysis.allergens.length > 0 && (
+                      <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border-2 border-red-300 dark:border-red-800">
+                        <h4 className="font-semibold text-red-900 dark:text-red-300 mb-2 flex items-center gap-2">
+                          <AlertTriangle className="h-5 w-5" />
+                          Allergen Alert
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {message.imageAnalysis.allergens.map((allergen, idx) => (
+                            <span key={idx} className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full text-sm font-medium border border-red-300 dark:border-red-800">
+                              ⚠️ {allergen}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Portion Size */}
+                    {message.imageAnalysis.portionSize && (
+                      <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800 flex items-center gap-3">
+                        <Scale className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">Estimated Portion</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">{message.imageAnalysis.portionSize}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {message.imageAnalysis.ingredients && message.imageAnalysis.ingredients.length > 0 && (
+                        <button
+                          onClick={() => {
+                            const ingredients = message.imageAnalysis.ingredients.map(ing => ({
+                              name: ing,
+                              quantity: '1',
+                              unit: '',
+                              notes: 'From image scan'
+                            }));
+                            onAddMeal?.(ingredients);
+                            toast.success(`Added ${ingredients.length} ingredients to shopping list!`);
+                          }}
+                          className="flex-1 min-w-[200px] px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                          Add Ingredients to List
+                        </button>
+                      )}
+                      {message.imageAnalysis.youtubeQuery && (
+                        <button
+                          onClick={() => window.open(getYouTubeSearchUrl(message.imageAnalysis.youtubeQuery), '_blank')}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Watch Tutorial
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Non-Food Detection */}
+                {message.imageAnalysis && !message.imageAnalysis.isFood && (
+                  <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border-2 border-amber-300 dark:border-amber-800">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-amber-900 dark:text-amber-300 mb-2">Not a Food Item</h4>
+                        <p className="text-sm text-amber-800 dark:text-amber-400 mb-3">
+                          This doesn't appear to be food. Please try capturing a food item or ingredient.
+                        </p>
+                        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">
+                            <Info className="h-3 w-3" />
+                            Tips for better photos:
+                          </p>
+                          <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                            <li>• Take photos in good lighting</li>
+                            <li>• Focus on the food item</li>
+                            <li>• Avoid blurry images</li>
+                            <li>• Capture the entire dish clearly</li>
+                            <li>• Remove background clutter</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div
                   className="leading-relaxed prose prose-sm dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: formatMessage(message.text) }}
                 />
@@ -723,9 +1062,9 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
           {imagePreview && (
             <div className="mb-3 relative">
               <div className="relative inline-block">
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
+                <img
+                  src={imagePreview}
+                  alt="Preview"
                   className="w-32 h-32 object-cover rounded-lg border-2 border-purple-300 dark:border-purple-700"
                 />
                 <button
@@ -739,7 +1078,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Food image ready to analyze</p>
             </div>
           )}
-          
+
           {/* Input */}
           <div className="flex gap-2">
             <button
@@ -1165,26 +1504,26 @@ export default function ShoppingMeals() {
 
   const loadData = async () => {
     setLoading(true);
-      try {
-        const itemsSnap = await getDocs(query(
-          collection(db, 'shoppingItems'), 
-          where('userId', '==', currentUser.uid)
-        ));
+    try {
+      const itemsSnap = await getDocs(query(
+        collection(db, 'shoppingItems'),
+        where('userId', '==', currentUser.uid)
+      ));
       const items = itemsSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate()
-        }));
-        const mealsSnap = await getDocs(query(
-          collection(db, 'meals'), 
-          where('userId', '==', currentUser.uid)
-        ));
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
+      const mealsSnap = await getDocs(query(
+        collection(db, 'meals'),
+        where('userId', '==', currentUser.uid)
+      ));
       const mealsList = mealsSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          date: doc.data().date?.toDate(),
-          createdAt: doc.data().createdAt?.toDate()
-        }));
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().date?.toDate(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
       setShoppingItems(items);
       setMeals(mealsList);
     } catch (error) {
@@ -1221,7 +1560,7 @@ export default function ShoppingMeals() {
         checked: false,
         createdAt: serverTimestamp()
       });
-        toast.success('Item added!');
+      toast.success('Item added!');
       setShowAddItem(false);
       setItemForm({
         name: '',
@@ -1349,22 +1688,22 @@ export default function ShoppingMeals() {
           <div className="p-3 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-2xl shadow-lg">
             <ShoppingCart className="h-8 w-8 text-orange-600 dark:text-orange-400" />
           </div>
-        <div>
+          <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Smart Shopping List</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">AI-powered grocery management</p>
-            </div>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-3">
-            <button
+          <button
             onClick={() => setShowAIChat(true)}
             className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-500 dark:to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 dark:hover:from-purple-600 dark:hover:to-pink-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
           >
             <Brain className="h-5 w-5" />
             AI Assistant
-            </button>
+          </button>
 
-            <button
+          <button
             onClick={() => setShowNearbyStores(true)}
             className="px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
           >
@@ -1377,58 +1716,58 @@ export default function ShoppingMeals() {
       {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
-              <div className="flex items-center justify-between">
-                <div>
+          <div className="flex items-center justify-between">
+            <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Items</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{shoppingStats.total}</p>
-                </div>
+            </div>
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
               <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-        </div>
-
-        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
-              <div className="flex items-center justify-between">
-                <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Checked</p>
-              <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{shoppingStats.checked}</p>
-                </div>
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
-              <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-        </div>
-
-        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
-              <div className="flex items-center justify-between">
-                <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Remaining</p>
-              <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{shoppingStats.remaining}</p>
-                </div>
-            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
-              <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-              </div>
             </div>
           </div>
+        </div>
+
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Checked</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{shoppingStats.checked}</p>
+            </div>
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+              <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Remaining</p>
+              <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{shoppingStats.remaining}</p>
+            </div>
+            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+              <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+            </div>
+          </div>
+        </div>
 
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Cost</p>
               <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">${shoppingStats.totalCost.toFixed(2)}</p>
-              </div>
+            </div>
             <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
               <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
-              </div>
-                        </div>
+        </div>
+      </div>
 
       {/* Enhanced Controls */}
       <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm transition-colors duration-200`}>
         <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1">
+          <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
               <input
@@ -1439,30 +1778,30 @@ export default function ShoppingMeals() {
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
               />
             </div>
-                        </div>
+          </div>
 
-                        <button
+          <button
             onClick={() => setShowAddItem(true)}
             className="px-6 py-3 bg-orange-600 dark:bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-all flex items-center gap-2 justify-center shadow-lg hover:shadow-xl"
-                        >
+          >
             <Plus className="h-5 w-5" />
             Add Item
-                        </button>
+          </button>
 
           {shoppingStats.checked > 0 && (
-                    <button
+            <button
               onClick={handleClearChecked}
               className="px-6 py-3 bg-red-600 dark:bg-red-500 text-white rounded-xl font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
-                    >
+            >
               <Trash2 className="h-5 w-5" />
               Clear Checked
-                    </button>
-                )}
-              </div>
+            </button>
+          )}
+        </div>
         {/* Enhanced Categories */}
         <div className="flex flex-wrap gap-2 mt-4">
           {SHOPPING_CATEGORIES.map(cat => (
-              <button
+            <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 border ${selectedCategory === cat.id
@@ -1472,10 +1811,10 @@ export default function ShoppingMeals() {
             >
               <cat.icon className="h-4 w-4" />
               {cat.label}
-              </button>
+            </button>
           ))}
-            </div>
-          </div>
+        </div>
+      </div>
 
       {/* Enhanced Items List */}
       <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm transition-colors duration-200`}>
@@ -1497,7 +1836,7 @@ export default function ShoppingMeals() {
                     }`}
                 >
                   <div className="flex items-center gap-4">
-                                <button
+                    <button
                       onClick={() => toggleItemChecked(item.id, item.checked)}
                       className={`flex-shrink-0 w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${item.checked
                         ? 'bg-green-600 dark:bg-green-500 border-green-600 dark:border-green-500 shadow-md'
@@ -1505,7 +1844,7 @@ export default function ShoppingMeals() {
                         }`}
                     >
                       {item.checked && <Check className="h-4 w-4 text-white" />}
-                                </button>
+                    </button>
                     <div className={`p-3 rounded-xl ${SHOPPING_CATEGORIES.find(c => c.id === item.category)?.color || 'bg-gray-100 dark:bg-gray-700'
                       }`}>
                       <CategoryIcon className="h-5 w-5" />
@@ -1526,25 +1865,25 @@ export default function ShoppingMeals() {
                         {item.notes && (
                           <span className="text-gray-400 dark:text-gray-500">• {item.notes}</span>
                         )}
-                            </div>
-                          </div>
+                      </div>
+                    </div>
                     {item.priority === 'high' && !item.checked && (
                       <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full border border-red-200 dark:border-red-800">
                         High Priority
                       </span>
                     )}
-                      <button
+                    <button
                       onClick={() => handleDeleteItem(item.id)}
                       className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all hover:scale-110"
                     >
                       <Trash2 className="h-5 w-5" />
-                      </button>
+                    </button>
                   </div>
                 </div>
               );
             })}
-        </div>
-      )}
+          </div>
+        )}
       </div>
 
       {/* Enhanced Add Item Modal */}
@@ -1614,12 +1953,12 @@ export default function ShoppingMeals() {
                     <option key={cat.id} value={cat.id}>{cat.label}</option>
                   ))}
                 </select>
-                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Priority
                 </label>
-                  <select
+                <select
                   value={itemForm.priority}
                   onChange={(e) => setItemForm({ ...itemForm, priority: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
@@ -1627,9 +1966,9 @@ export default function ShoppingMeals() {
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
-                  </select>
-                </div>
-                <div>
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Price (optional)
                 </label>
@@ -1678,9 +2017,36 @@ export default function ShoppingMeals() {
       {showAIChat && (
         <AIChatAssistant
           onClose={() => setShowAIChat(false)}
-          onAddMeal={() => {
-            setShowAIChat(false);
-            toast.success('Meal planning feature coming soon!');
+          onAddMeal={async (ingredients) => {
+            if (ingredients && Array.isArray(ingredients)) {
+              // Add ingredients from image analysis to shopping list
+              try {
+                const batch = writeBatch(db);
+                for (const ingredient of ingredients) {
+                  const docRef = doc(collection(db, 'shoppingItems'));
+                  batch.set(docRef, {
+                    name: ingredient.name || '',
+                    quantity: String(ingredient.quantity || '1'),
+                    unit: ingredient.unit || '',
+                    category: 'produce',
+                    notes: ingredient.notes || 'From AI image scan',
+                    priority: 'medium',
+                    price: '',
+                    userId: currentUser.uid,
+                    checked: false,
+                    createdAt: serverTimestamp()
+                  });
+                }
+                await batch.commit();
+                loadData();
+                toast.success(`Added ${ingredients.length} ingredients to shopping list!`);
+              } catch (error) {
+                console.error('Error adding ingredients:', error);
+                toast.error('Failed to add ingredients');
+              }
+            } else {
+              toast.success('Meal planning feature coming soon!');
+            }
           }}
           pantryItems={pantryItems}
         />

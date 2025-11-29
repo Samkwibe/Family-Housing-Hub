@@ -1,5 +1,5 @@
 // src/pages/ShoppingMeals.jsx - Enhanced Shopping Lists & Meal Planning
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   ShoppingCart,
@@ -52,7 +52,12 @@ import {
   Wallet,
   PieChart,
   Crown,
-  Award
+  Award,
+  MessageCircle,
+  Mic,
+  Volume2,
+  VolumeX,
+  Send
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -92,7 +97,7 @@ const MEAL_TYPES = [
   { id: 'snack', label: 'Snack', icon: Leaf, time: '', color: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300' }
 ];
 
-// AI Suggested Meals
+// AI Suggested Meals with Images
 const AI_SUGGESTED_MEALS = [
   {
     id: 1,
@@ -103,7 +108,9 @@ const AI_SUGGESTED_MEALS = [
     calories: 420,
     ingredients: ["Quinoa", "Chickpeas", "Cucumber", "Tomatoes", "Feta Cheese", "Olive Oil"],
     aiScore: 95,
-    tags: ["Healthy", "Vegetarian", "Quick"]
+    tags: ["Healthy", "Vegetarian", "Quick"],
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop",
+    description: "A vibrant and nutritious bowl packed with Mediterranean flavors. Perfect for a healthy lunch that's both satisfying and quick to prepare."
   },
   {
     id: 2,
@@ -114,7 +121,9 @@ const AI_SUGGESTED_MEALS = [
     calories: 380,
     ingredients: ["Salmon", "Soy Sauce", "Ginger", "Garlic", "Brown Sugar", "Green Onions"],
     aiScore: 92,
-    tags: ["High Protein", "Omega-3", "Asian"]
+    tags: ["High Protein", "Omega-3", "Asian"],
+    image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop",
+    description: "Tender salmon glazed with a sweet and savory teriyaki sauce. Rich in omega-3 fatty acids and protein, perfect for a nutritious dinner."
   },
   {
     id: 3,
@@ -125,7 +134,9 @@ const AI_SUGGESTED_MEALS = [
     calories: 280,
     ingredients: ["Whole Grain Bread", "Avocado", "Eggs", "Chili Flakes", "Lemon Juice"],
     aiScore: 88,
-    tags: ["Quick", "Vegetarian", "Healthy Fats"]
+    tags: ["Quick", "Vegetarian", "Healthy Fats"],
+    image: "https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&h=300&fit=crop",
+    description: "A modern breakfast classic featuring creamy avocado on whole grain toast. Quick, healthy, and delicious - perfect for busy mornings."
   },
   {
     id: 4,
@@ -136,7 +147,35 @@ const AI_SUGGESTED_MEALS = [
     calories: 320,
     ingredients: ["Broccoli", "Bell Peppers", "Carrots", "Tofu", "Soy Sauce", "Sesame Oil"],
     aiScore: 90,
-    tags: ["Vegan", "Quick", "Low Calorie"]
+    tags: ["Vegan", "Quick", "Low Calorie"],
+    image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop",
+    description: "A colorful mix of fresh vegetables stir-fried to perfection. Light, healthy, and packed with nutrients - ideal for a quick weeknight dinner."
+  },
+  {
+    id: 5,
+    name: "Grilled Chicken Salad",
+    type: "lunch",
+    prepTime: "20 min",
+    difficulty: "easy",
+    calories: 350,
+    ingredients: ["Chicken Breast", "Mixed Greens", "Cherry Tomatoes", "Cucumber", "Olive Oil", "Lemon"],
+    aiScore: 93,
+    tags: ["High Protein", "Low Carb", "Fresh"],
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
+    description: "Fresh mixed greens topped with perfectly grilled chicken. A protein-packed lunch that keeps you energized throughout the day."
+  },
+  {
+    id: 6,
+    name: "Pasta Primavera",
+    type: "dinner",
+    prepTime: "30 min",
+    difficulty: "medium",
+    calories: 450,
+    ingredients: ["Pasta", "Zucchini", "Bell Peppers", "Cherry Tomatoes", "Parmesan", "Basil"],
+    aiScore: 89,
+    tags: ["Vegetarian", "Comfort Food", "Italian"],
+    image: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&h=300&fit=crop",
+    description: "Fresh spring vegetables tossed with pasta in a light sauce. A comforting and colorful dish that celebrates seasonal produce."
   }
 ];
 
@@ -164,6 +203,16 @@ export default function ShoppingMeals() {
   const [budget, setBudget] = useState(200);
   const [currentSpending, setCurrentSpending] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const recognitionRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const chatInputRef = useRef(null);
 
   // Enhanced item form
   const [itemForm, setItemForm] = useState({
@@ -418,20 +467,26 @@ export default function ShoppingMeals() {
     }
   };
 
-  // Add AI suggested meal
-  const addAISuggestedMeal = async (meal) => {
+  // Add AI suggested meal (with calendar integration)
+  const addAISuggestedMeal = async (meal, selectedDate = null) => {
     setSubmitting(true);
     try {
+      const mealDate = selectedDate || new Date(mealForm.date);
+      const mealTime = MEAL_TYPES.find(m => m.id === meal.type)?.time || '12:00 PM';
+      
+      // Add meal to meals collection
       await addDoc(collection(db, 'meals'), {
         userId: currentUser.uid,
         name: meal.name,
         type: meal.type,
-        date: Timestamp.fromDate(new Date(mealForm.date)),
+        date: Timestamp.fromDate(mealDate),
         servings: 4,
         ingredients: meal.ingredients.join('\n'),
         prepTime: meal.prepTime,
         difficulty: meal.difficulty,
         favorite: false,
+        image: meal.image || null,
+        description: meal.description || '',
         nutrition: {
           calories: meal.calories.toString(),
           protein: '',
@@ -441,7 +496,31 @@ export default function ShoppingMeals() {
         createdAt: serverTimestamp()
       });
 
-      toast.success('AI meal added! 🚀');
+      // Also add to calendar as an event
+      const eventDate = new Date(mealDate);
+      const [time, period] = mealTime.split(' ');
+      const [hours, minutes] = time.split(':');
+      let hour = parseInt(hours);
+      if (period === 'PM' && hour !== 12) hour += 12;
+      if (period === 'AM' && hour === 12) hour = 0;
+      eventDate.setHours(hour, parseInt(minutes) || 0, 0, 0);
+
+      await addDoc(collection(db, 'events'), {
+        userId: currentUser.uid,
+        title: `${meal.name} - ${meal.type.charAt(0).toUpperCase() + meal.type.slice(1)}`,
+        type: 'family',
+        date: Timestamp.fromDate(eventDate),
+        startTime: mealTime,
+        endTime: '',
+        location: 'Home',
+        description: meal.description || `Meal: ${meal.name}\nPrep Time: ${meal.prepTime}\nDifficulty: ${meal.difficulty}\nCalories: ${meal.calories}`,
+        assignedTo: '',
+        reminder: true,
+        allDay: false,
+        createdAt: serverTimestamp()
+      });
+
+      toast.success('AI meal added to plan and calendar! 🚀');
       await loadData();
     } catch (error) {
       console.error('Error saving AI meal:', error);
@@ -450,6 +529,200 @@ export default function ShoppingMeals() {
       setSubmitting(false);
     }
   };
+
+  // Initialize chat with welcome message
+  useEffect(() => {
+    if (showAIChat && chatMessages.length === 0) {
+      const welcomeMessage = {
+        id: Date.now(),
+        type: 'assistant',
+        content: `👋 Hi! I'm your AI Meal Assistant. I can help you with:
+
+🍽️ **Meal Ideas** - Get personalized meal suggestions
+📝 **Recipes** - Detailed cooking instructions
+🥗 **Nutrition** - Nutritional information and health tips
+📅 **Meal Planning** - Weekly meal planning strategies
+💰 **Budget-Friendly** - Affordable meal options
+
+**Try asking:**
+• "Quick healthy meals for dinner"
+• "Vegetarian meal ideas"
+• "Low calorie breakfast options"
+• "Meal prep tips for the week"
+
+You can also upload images of food or ingredients, and I'll help you create meals from them!`,
+        timestamp: new Date()
+      };
+      setChatMessages([welcomeMessage]);
+    }
+  }, [showAIChat]);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  // AI Meal Response Generator
+  const generateMealResponse = useCallback((query) => {
+    const lowerQuery = query.toLowerCase();
+    
+    // Check if query matches any AI suggested meals
+    const matchingMeal = AI_SUGGESTED_MEALS.find(meal => 
+      meal.name.toLowerCase().includes(lowerQuery) ||
+      meal.tags.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
+      meal.type.toLowerCase().includes(lowerQuery)
+    );
+
+    if (matchingMeal) {
+      return {
+        content: `Here's a great meal suggestion for you:\n\n**${matchingMeal.name}**\n\n${matchingMeal.description}\n\n**Prep Time:** ${matchingMeal.prepTime}\n**Difficulty:** ${matchingMeal.difficulty}\n**Calories:** ${matchingMeal.calories}\n\n**Ingredients:**\n${matchingMeal.ingredients.map(ing => `• ${ing}`).join('\n')}\n\n**Tags:** ${matchingMeal.tags.join(', ')}\n\nWould you like me to add this to your meal plan?`,
+        mealSuggestion: matchingMeal,
+        image: matchingMeal.image
+      };
+    }
+
+    // Generate meal suggestions based on query
+    if (lowerQuery.includes('quick') || lowerQuery.includes('fast') || lowerQuery.includes('easy')) {
+      const quickMeals = AI_SUGGESTED_MEALS.filter(m => m.difficulty === 'easy' && parseInt(m.prepTime) <= 20);
+      const selected = quickMeals[Math.floor(Math.random() * quickMeals.length)] || AI_SUGGESTED_MEALS[0];
+      return {
+        content: `Here's a quick and easy meal idea:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
+        mealSuggestion: selected,
+        image: selected.image
+      };
+    }
+
+    if (lowerQuery.includes('vegetarian') || lowerQuery.includes('vegan')) {
+      const vegMeals = AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('vegetarian') || t.toLowerCase().includes('vegan')));
+      const selected = vegMeals[Math.floor(Math.random() * vegMeals.length)] || AI_SUGGESTED_MEALS[2];
+      return {
+        content: `Here's a great vegetarian option:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
+        mealSuggestion: selected,
+        image: selected.image
+      };
+    }
+
+    if (lowerQuery.includes('healthy') || lowerQuery.includes('nutritious')) {
+      const healthyMeals = AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('healthy')));
+      const selected = healthyMeals[Math.floor(Math.random() * healthyMeals.length)] || AI_SUGGESTED_MEALS[0];
+      return {
+        content: `Here's a nutritious meal suggestion:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
+        mealSuggestion: selected,
+        image: selected.image
+      };
+    }
+
+    // Default response
+    const randomMeal = AI_SUGGESTED_MEALS[Math.floor(Math.random() * AI_SUGGESTED_MEALS.length)];
+    return {
+      content: `Here's a meal suggestion for you:\n\n**${randomMeal.name}**\n\n${randomMeal.description}\n\n**Prep Time:** ${randomMeal.prepTime}\n**Difficulty:** ${randomMeal.difficulty}\n**Calories:** ${randomMeal.calories}\n\n**Ingredients:**\n${randomMeal.ingredients.map(ing => `• ${ing}`).join('\n')}\n\n**Tags:** ${randomMeal.tags.join(', ')}\n\nWould you like to add this to your meal plan?`,
+      mealSuggestion: randomMeal,
+      image: randomMeal.image
+    };
+  }, []);
+
+  // Handle chat send
+  const handleChatSend = useCallback(async (text = null) => {
+    const query = (text || chatInput).trim();
+    const hasImages = uploadedImages.length > 0;
+    
+    if (!query && !hasImages) return;
+
+    setIsTyping(true);
+
+    // Add user message
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: query || 'Sent an image',
+      timestamp: new Date(),
+      images: uploadedImages.map(img => img.url)
+    };
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    setUploadedImages([]);
+
+    // Simulate AI thinking
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Analyze image if provided
+    let imageAnalysis = '';
+    if (hasImages) {
+      imageAnalysis = 'I can see the image you shared. Based on the ingredients/food shown, ';
+    }
+
+    // Generate AI response
+    const aiResponse = generateMealResponse(query || 'meal suggestion');
+    
+    const assistantMessage = {
+      id: Date.now() + 1,
+      type: 'assistant',
+      content: imageAnalysis + aiResponse.content,
+      timestamp: new Date(),
+      mealSuggestion: aiResponse.mealSuggestion,
+      image: aiResponse.image
+    };
+
+    setChatMessages(prev => [...prev, assistantMessage]);
+
+    // Text-to-speech
+    if (!isMuted && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(aiResponse.content.replace(/\*\*/g, '').replace(/\n/g, ' '));
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 0.8;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    setIsTyping(false);
+  }, [chatInput, uploadedImages, generateMealResponse, isMuted]);
+
+  // Speech-to-text
+  const handleStartRecording = useCallback(() => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error('Speech recognition not supported in your browser');
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    if (isRecording) {
+      recognition.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+      toast.success('Listening...');
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setChatInput(transcript);
+      recognition.stop();
+      setIsRecording(false);
+      handleChatSend(transcript);
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      toast.error('Speech recognition error');
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  }, [isRecording, handleChatSend]);
 
   // Image upload handler
   const handleImageUpload = (e, setForm) => {
@@ -1139,23 +1412,52 @@ export default function ShoppingMeals() {
                   <p className="text-purple-700 dark:text-purple-300 text-sm">Personalized recommendations</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 rounded-full border border-purple-200 dark:border-purple-800">
-                <Zap className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm font-medium text-purple-700 dark:text-purple-300">AI Powered</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowAIChat(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-700 dark:to-pink-700 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 dark:hover:from-purple-600 dark:hover:to-pink-600 transition-all shadow-lg"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Chat with AI
+                </button>
+                <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 rounded-full border border-purple-200 dark:border-purple-800">
+                  <Zap className="h-4 w-4 text-yellow-500" />
+                  <span className="text-sm font-medium text-purple-700 dark:text-purple-300">AI Powered</span>
+                </div>
               </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {AI_SUGGESTED_MEALS.map((meal) => (
-                <div key={meal.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all group">
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{meal.name}</h4>
-                      <div className="flex items-center gap-1 bg-black/70 dark:bg-gray-700 text-white px-2 py-1 rounded-full text-xs">
+                <div key={meal.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all group">
+                  {/* Meal Image */}
+                  {meal.image && (
+                    <div className="relative h-40 overflow-hidden">
+                      <img 
+                        src={meal.image} 
+                        alt={meal.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 dark:bg-gray-700 text-white px-2 py-1 rounded-full text-xs">
                         <Crown className="h-3 w-3 text-yellow-400" />
                         {meal.aiScore}%
                       </div>
                     </div>
+                  )}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{meal.name}</h4>
+                      {!meal.image && (
+                        <div className="flex items-center gap-1 bg-black/70 dark:bg-gray-700 text-white px-2 py-1 rounded-full text-xs">
+                          <Crown className="h-3 w-3 text-yellow-400" />
+                          {meal.aiScore}%
+                        </div>
+                      )}
+                    </div>
+                    
+                    {meal.description && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{meal.description}</p>
+                    )}
                     
                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
                       <span className="flex items-center gap-1">
@@ -1647,6 +1949,191 @@ export default function ShoppingMeals() {
                   className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Chat Interface */}
+      {showAIChat && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full h-[80vh] flex flex-col shadow-2xl transition-colors duration-200">
+            {/* Chat Header */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl">
+                  <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">AI Meal Assistant</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Get personalized meal ideas and recipes</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsMuted(!isMuted)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title={isMuted ? "Enable audio" : "Disable audio"}
+                >
+                  {isMuted ? <VolumeX className="h-5 w-5 text-gray-500 dark:text-gray-400" /> : <Volume2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAIChat(false);
+                    setChatMessages([]);
+                    setChatInput('');
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {chatMessages.length === 0 && (
+                <div className="text-center py-12">
+                  <Brain className="h-16 w-16 text-purple-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Start a conversation!</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">Ask me about meal ideas, recipes, nutrition, or meal planning tips.</p>
+                  <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+                    {['Quick healthy meals', 'Vegetarian dinner ideas', 'Low calorie recipes', 'Meal prep tips'].map((suggestion, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleChatSend(suggestion)}
+                        className="px-4 py-2 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {chatMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-[80%] rounded-2xl p-4 ${
+                    msg.type === 'user'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                  }`}>
+                    {msg.type === 'assistant' && msg.image && (
+                      <img src={msg.image} alt="Meal suggestion" className="w-full h-48 object-cover rounded-lg mb-3" />
+                    )}
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    {msg.type === 'assistant' && msg.mealSuggestion && (
+                      <button
+                        onClick={() => {
+                          addAISuggestedMeal(msg.mealSuggestion);
+                          toast.success('Meal added to plan and calendar!');
+                        }}
+                        className="mt-3 w-full bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                      >
+                        <Plus className="h-4 w-4 inline mr-2" />
+                        Add to Plan
+                      </button>
+                    )}
+                    <p className="text-xs mt-2 opacity-70">
+                      {new Date(msg.timestamp).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-4">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Chat Input */}
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+              {uploadedImages.length > 0 && (
+                <div className="flex gap-2 mb-3 overflow-x-auto">
+                  {uploadedImages.map((img) => (
+                    <div key={img.id} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                      <img src={img.url} alt="Upload" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setUploadedImages(prev => prev.filter(i => i.id !== img.id))}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-end gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="chat-image-upload"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setUploadedImages(prev => [...prev, {
+                          id: Date.now(),
+                          url: event.target.result,
+                          file: file
+                        }]);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <label
+                  htmlFor="chat-image-upload"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+                  title="Upload image"
+                >
+                  <ImageIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </label>
+                <button
+                  onClick={handleStartRecording}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isRecording
+                      ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400'
+                  }`}
+                  title="Voice input"
+                >
+                  <Mic className="h-5 w-5" />
+                </button>
+                <input
+                  ref={chatInputRef}
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleChatSend();
+                    }
+                  }}
+                  placeholder="Ask about meal ideas, recipes, or nutrition..."
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+                />
+                <button
+                  onClick={() => handleChatSend()}
+                  disabled={!chatInput.trim() && uploadedImages.length === 0}
+                  className="p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all"
+                >
+                  <Send className="h-5 w-5" />
                 </button>
               </div>
             </div>

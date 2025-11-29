@@ -1,10 +1,8 @@
 # ✅ API Key Successfully Configured!
 
-Your Google Gemini API key has been added to `.env.local`:
+Your Google Gemini API key has been added to `.env.local`.
 
-```
-VITE_GEMINI_API_KEY=AIzaSyAnZ22_1xadxZGeUvI8fLoH5eKa4TOVrvQ
-```
+**⚠️ IMPORTANT:** Never commit your API key to the repository! The `.env.local` file is already in `.gitignore` to protect your keys.
 
 ## 🚀 Next Steps
 

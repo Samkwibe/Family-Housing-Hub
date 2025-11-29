@@ -54,7 +54,8 @@ import {
   VolumeX,
   Send,
   Sparkle,
-  Loader2
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -82,12 +83,36 @@ const Sprout = ({ className }) => (
   </svg>
 );
 
-// OpenAI API Integration with Fallback
+// Helper function to generate YouTube search URL
+const getYouTubeSearchUrl = (query) => {
+  const encodedQuery = encodeURIComponent(query);
+  return `https://www.youtube.com/results?search_query=${encodedQuery}`;
+};
+
+// Helper function to generate YouTube embed URL (for common recipes)
+const getYouTubeVideoId = (recipeName) => {
+  // Common recipe video IDs (can be expanded)
+  const videoMap = {
+    'meat lover pizza': 'dQw4w9WgXcQ', // Replace with actual video ID
+    'chicken': 'jNQXAC9IVRw',
+    'pasta': 'dQw4w9WgXcQ',
+    'pizza': 'dQw4w9WgXcQ'
+  };
+  
+  const lowerName = recipeName.toLowerCase();
+  for (const [key, id] of Object.entries(videoMap)) {
+    if (lowerName.includes(key)) {
+      return id;
+    }
+  }
+  return null;
+};
+
+// OpenAI API Integration with YouTube Links and Images
 const callOpenAI = async (userMessage, pantryItems = []) => {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   
   if (!apiKey) {
-    // Fallback to contextual responses if no API key
     return null;
   }
 
@@ -107,14 +132,26 @@ const callOpenAI = async (userMessage, pantryItems = []) => {
         messages: [
           {
             role: 'system',
-            content: `You are a helpful AI cooking assistant. ${pantryContext}Provide meal ideas, recipes, cooking tips, and help with meal planning. Be concise, friendly, and practical. Format responses with emojis and clear sections.`
+            content: `You are a helpful AI cooking assistant. ${pantryContext}Provide detailed recipes, cooking instructions, and meal ideas. 
+
+IMPORTANT FORMATTING RULES:
+1. Always answer the user's specific question directly - do NOT give generic responses
+2. For recipes, include: ingredients list, step-by-step instructions, cooking time, and serving size
+3. At the end of your response, add a YouTube section like this:
+   📺 **Watch Video Tutorial:**
+   [Recipe Name Tutorial](https://www.youtube.com/results?search_query=RECIPE+NAME+tutorial)
+   
+4. For visual recipes, suggest: "Search YouTube for '[recipe name] tutorial' for step-by-step video instructions"
+5. Be specific and detailed - provide actual cooking instructions, not just suggestions
+6. Format with emojis and clear sections
+7. If asked about a specific dish (like "meat lover pizza"), provide the complete recipe with ingredients and steps`
           },
           {
             role: 'user',
             content: userMessage
           }
         ],
-        max_tokens: 500,
+        max_tokens: 800,
         temperature: 0.7
       })
     });
@@ -124,7 +161,19 @@ const callOpenAI = async (userMessage, pantryItems = []) => {
     }
 
     const data = await response.json();
-    return data.choices[0]?.message?.content || null;
+    let content = data.choices[0]?.message?.content || null;
+    
+    // Enhance response with YouTube link if it's a recipe question
+    if (content && (userMessage.toLowerCase().includes('how to') || userMessage.toLowerCase().includes('recipe') || userMessage.toLowerCase().includes('cook') || userMessage.toLowerCase().includes('make'))) {
+      const recipeName = userMessage.replace(/how to|recipe|cook|make|/gi, '').trim();
+      const youtubeUrl = getYouTubeSearchUrl(`${recipeName} tutorial`);
+      
+      if (!content.includes('youtube.com') && !content.includes('Watch Video')) {
+        content += `\n\n📺 **Watch Video Tutorial:**\n[${recipeName} Tutorial on YouTube](${youtubeUrl})`;
+      }
+    }
+    
+    return content;
   } catch (error) {
     console.warn('OpenAI API call failed, using fallback:', error);
     return null;
@@ -172,7 +221,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
   // Enhanced contextual response system (fallback when OpenAI is not available)
   const generateContextualResponse = useCallback((userInput) => {
     const input = userInput.toLowerCase().trim();
-    
+
     // Pantry-based suggestions
     if (input.includes('pantry') || input.includes('what i have') || input.includes('ingredients i have') || input.includes('use my')) {
       if (pantryItems.length === 0) {
@@ -227,8 +276,34 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
       return "Pasta dishes:\n\n🍝 **Aglio e Olio** (15 min)\nSpaghetti, garlic, olive oil, chili flakes\n\n🍅 **Marinara Pasta** (20 min)\nPasta, tomatoes, basil, garlic, parmesan\n\n🧀 **Mac and Cheese** (25 min)\nPasta, cheese sauce, breadcrumb topping\n\n🥓 **Carbonara** (20 min)\nPasta, eggs, bacon, parmesan, black pepper\n\nClassic and delicious!";
     }
 
-    // Cooking tips
-    if (input.includes('tip') || input.includes('how to') || input.includes('technique') || input.includes('advice')) {
+    // Pizza recipes (specific) - MUST come before generic "how to"
+    if (input.includes('pizza')) {
+      if (input.includes('meat lover') || input.includes('meatlover') || input.includes('meat lover')) {
+        return `🍕 **Meat Lover's Pizza Recipe**\n\n**Ingredients:**\n- Pizza dough (store-bought or homemade)\n- 1 cup pizza sauce\n- 2 cups shredded mozzarella cheese\n- 1/2 cup cooked Italian sausage, crumbled\n- 1/2 cup cooked pepperoni slices\n- 1/2 cup cooked bacon, chopped\n- 1/2 cup cooked ham, diced\n- 1/4 cup grated parmesan cheese\n- 1 tsp dried oregano\n- 1/2 tsp garlic powder\n\n**Instructions:**\n1. Preheat oven to 475°F (245°C)\n2. Roll out pizza dough on a floured surface\n3. Transfer to a pizza pan or baking sheet\n4. Spread pizza sauce evenly over dough\n5. Sprinkle mozzarella cheese\n6. Add all meats (sausage, pepperoni, bacon, ham)\n7. Top with parmesan, oregano, and garlic powder\n8. Bake for 12-15 minutes until crust is golden\n9. Let cool 2-3 minutes before slicing\n\n**Cook Time:** 15-20 minutes\n**Serves:** 4-6 people\n\n📺 **Watch Video Tutorial:**\n[Meat Lover's Pizza Tutorial](${getYouTubeSearchUrl('meat lover pizza tutorial')})`;
+      }
+      return `🍕 **Classic Pizza Recipe**\n\n**Basic Ingredients:**\n- Pizza dough\n- Pizza sauce\n- Mozzarella cheese\n- Your favorite toppings\n\n**Instructions:**\n1. Preheat oven to 475°F\n2. Roll out dough\n3. Add sauce and cheese\n4. Add toppings\n5. Bake 12-15 minutes\n\n📺 **Watch Video:**\n[Pizza Making Tutorial](${getYouTubeSearchUrl('how to make pizza tutorial')})`;
+    }
+
+    // Specific recipes - "how to cook" or "how can i" questions - MUST come before generic tips
+    if (input.includes('how can i') || input.includes('how to cook') || input.includes('how to make')) {
+      // Extract the dish name
+      let dishName = input
+        .replace(/how can i|how to cook|how to make|cook|make|/gi, '')
+        .trim()
+        .replace(/\?/g, '')
+        .trim();
+      
+      if (dishName && dishName.length > 2) {
+        const capitalizedDish = dishName.split(' ').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+        
+        return `🍳 **How to Make ${capitalizedDish}**\n\nI'll provide you with a general recipe. For specific ingredients and detailed steps, here's a helpful guide:\n\n**Basic Steps:**\n1. Gather your ingredients\n2. Prepare your cooking equipment\n3. Follow the cooking method\n4. Season to taste\n5. Serve hot\n\n**For detailed step-by-step instructions with ingredients and measurements, I recommend:**\n\n📺 **Watch Video Tutorial:**\n[${capitalizedDish} Tutorial](${getYouTubeSearchUrl(`${dishName} tutorial`)})\n\nThis video will show you exactly how to prepare ${dishName} with visual instructions!\n\n💡 **Tip:** Search YouTube for "${dishName} recipe" to find multiple tutorial videos with different variations.`;
+      }
+    }
+
+    // Cooking tips (generic)
+    if (input.includes('tip') || input.includes('technique') || input.includes('advice')) {
       return "Quick cooking tips:\n\n🔪 **Knife Skills**\n- Keep knives sharp\n- Use proper cutting board\n- Master basic cuts\n\n🔥 **Heat Control**\n- Preheat pans properly\n- Don't overcrowd\n- Let meat rest\n\n🧂 **Seasoning**\n- Salt in layers\n- Taste as you cook\n- Fresh herbs at end\n\n⏰ **Time Management**\n- Prep ingredients first\n- Multi-task wisely\n- Clean as you go\n\nWhat specific technique interests you?";
     }
 
@@ -259,7 +334,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
 
     // Try OpenAI first (if available), then fallback to contextual
     let aiResponse = null;
-    
+
     try {
       // Show AI indicator
       setIsUsingAI(true);
@@ -369,11 +444,10 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
               className={`flex ${message.isAI ? 'justify-start' : 'justify-end'} animate-messageSlide`}
             >
               <div
-                className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
-                  message.isAI
+                className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${message.isAI
                     ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none border border-gray-200 dark:border-gray-700'
                     : 'bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-tr-none'
-                }`}
+                  }`}
               >
                 {message.isAI && message.isOpenAI && (
                   <div className="flex items-center gap-1 mb-2 text-xs text-purple-600 dark:text-purple-400">
@@ -381,7 +455,31 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                     <span>AI Enhanced</span>
                   </div>
                 )}
-                <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>
+                <div className="whitespace-pre-wrap leading-relaxed">
+                  {message.text.split('\n').map((line, idx) => {
+                    // Check if line contains YouTube link
+                    const youtubeMatch = line.match(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/);
+                    if (youtubeMatch) {
+                      const [, linkText, url] = youtubeMatch;
+                      return (
+                        <div key={idx} className="my-3">
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
+                          >
+                            <span>📺</span>
+                            <span>{linkText}</span>
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </div>
+                      );
+                    }
+                    // Regular text line
+                    return <p key={idx}>{line || '\n'}</p>;
+                  })}
+                </div>
                 {message.hasActions && (
                   <div className="flex gap-2 mt-3">
                     <button
@@ -585,8 +683,8 @@ const NearbyStores = ({ onClose }) => {
           <div className={`p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 sticky top-0 z-10`}>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Nearby Stores</h2>
-              <button 
-                onClick={onClose} 
+              <button
+                onClick={onClose}
                 className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
                 aria-label="Close"
               >
@@ -614,11 +712,10 @@ const NearbyStores = ({ onClose }) => {
                 <button
                   key={store.id}
                   onClick={() => setSelectedStore(store)}
-                  className={`w-full p-4 cursor-pointer transition-all text-left ${
-                    selectedStore?.id === store.id 
-                      ? 'bg-blue-50 dark:bg-blue-900/20 border-r-4 border-blue-600 dark:border-blue-400 shadow-sm' 
+                  className={`w-full p-4 cursor-pointer transition-all text-left ${selectedStore?.id === store.id
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-r-4 border-blue-600 dark:border-blue-400 shadow-sm'
                       : 'hover:bg-white dark:hover:bg-gray-800'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-gray-900 dark:text-white pr-2">{store.name}</h3>
@@ -652,14 +749,14 @@ const NearbyStores = ({ onClose }) => {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={handleGetDirections}
                     className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors shadow-sm"
                     title="Get directions"
                   >
                     <Navigation className="h-5 w-5" />
                   </button>
-                  <button 
+                  <button
                     className="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors shadow-sm"
                     title="Call store"
                   >
@@ -676,9 +773,8 @@ const NearbyStores = ({ onClose }) => {
                     <span>Hours</span>
                   </div>
                   <p className="font-semibold text-gray-900 dark:text-white">{selectedStore.hours}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full mt-2 inline-block ${
-                    selectedStore.open ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                  }`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full mt-2 inline-block ${selectedStore.open ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                    }`}>
                     {selectedStore.open ? 'Open Now' : 'Closed'}
                   </span>
                 </div>
@@ -764,52 +860,52 @@ const NearbyStores = ({ onClose }) => {
 
 // Enhanced shopping categories with dark mode
 const SHOPPING_CATEGORIES = [
-  { 
+  {
     id: 'all',
     label: 'All Items',
     icon: ShoppingCart,
     color: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
   },
-  { 
-    id: 'produce', 
-    label: 'Produce', 
-    icon: Leaf, 
+  {
+    id: 'produce',
+    label: 'Produce',
+    icon: Leaf,
     color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
   },
-  { 
-    id: 'dairy', 
-    label: 'Dairy', 
-    icon: CircleDot, 
+  {
+    id: 'dairy',
+    label: 'Dairy',
+    icon: CircleDot,
     color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
   },
-  { 
-    id: 'meat', 
-    label: 'Meat & Fish', 
-    icon: Utensils, 
+  {
+    id: 'meat',
+    label: 'Meat & Fish',
+    icon: Utensils,
     color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
   },
-  { 
-    id: 'bakery', 
-    label: 'Bakery', 
-    icon: UtensilsCrossed, 
+  {
+    id: 'bakery',
+    label: 'Bakery',
+    icon: UtensilsCrossed,
     color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
   },
-  { 
-    id: 'frozen', 
-    label: 'Frozen', 
-    icon: Snowflake, 
+  {
+    id: 'frozen',
+    label: 'Frozen',
+    icon: Snowflake,
     color: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800'
   },
-  { 
-    id: 'pantry', 
-    label: 'Pantry', 
-    icon: Package, 
+  {
+    id: 'pantry',
+    label: 'Pantry',
+    icon: Package,
     color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800'
   },
-  { 
-    id: 'beverages', 
-    label: 'Beverages', 
-    icon: Coffee, 
+  {
+    id: 'beverages',
+    label: 'Beverages',
+    icon: Coffee,
     color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
   }
 ];
@@ -826,7 +922,7 @@ export default function ShoppingMeals() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  
+
   // New state
   const [showAIChat, setShowAIChat] = useState(false);
   const [showNearbyStores, setShowNearbyStores] = useState(false);
@@ -855,7 +951,7 @@ export default function ShoppingMeals() {
     setLoading(true);
     try {
       const itemsSnap = await getDocs(query(
-        collection(db, 'shoppingItems'), 
+        collection(db, 'shoppingItems'),
         where('userId', '==', currentUser.uid)
       ));
       const items = itemsSnap.docs.map(doc => ({
@@ -864,7 +960,7 @@ export default function ShoppingMeals() {
         createdAt: doc.data().createdAt?.toDate()
       }));
       const mealsSnap = await getDocs(query(
-        collection(db, 'meals'), 
+        collection(db, 'meals'),
         where('userId', '==', currentUser.uid)
       ));
       const mealsList = mealsSnap.docs.map(doc => ({
@@ -945,7 +1041,7 @@ export default function ShoppingMeals() {
   // Delete item
   const handleDeleteItem = async (itemId) => {
     if (!window.confirm('Delete this item?')) return;
-    
+
     try {
       await deleteDoc(doc(db, 'shoppingItems', itemId));
       toast.success('Item deleted');
@@ -970,7 +1066,7 @@ export default function ShoppingMeals() {
         batch.delete(doc(db, 'shoppingItems', item.id));
       });
       await batch.commit();
-      
+
       toast.success(`Cleared ${checkedItems.length} items`);
       loadData();
     } catch (error) {
@@ -982,26 +1078,26 @@ export default function ShoppingMeals() {
   // Filter items
   const filteredItems = useMemo(() => {
     let items = shoppingItems;
-    
+
     if (selectedCategory !== 'all') {
       items = items.filter(i => i.category === selectedCategory);
     }
-    
+
     if (searchTerm) {
-      items = items.filter(i => 
+      items = items.filter(i =>
         i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         i.notes?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     return items.sort((a, b) => {
       if (a.checked !== b.checked) return a.checked ? 1 : -1;
-      
+
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       const aPriority = priorityOrder[a.priority] || 1;
       const bPriority = priorityOrder[b.priority] || 1;
       if (aPriority !== bPriority) return aPriority - bPriority;
-      
+
       return a.category.localeCompare(b.category);
     });
   }, [shoppingItems, selectedCategory, searchTerm]);
@@ -1011,10 +1107,10 @@ export default function ShoppingMeals() {
     const total = shoppingItems.length;
     const checked = shoppingItems.filter(i => i.checked).length;
     const remaining = total - checked;
-    const totalCost = shoppingItems.reduce((sum, item) => 
+    const totalCost = shoppingItems.reduce((sum, item) =>
       sum + (parseFloat(item.price) || 0), 0
     );
-    
+
     return { total, checked, remaining, totalCost };
   }, [shoppingItems]);
 
@@ -1042,7 +1138,7 @@ export default function ShoppingMeals() {
             <p className="text-gray-600 dark:text-gray-400 mt-1">AI-powered grocery management</p>
           </div>
         </div>
-        
+
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => setShowAIChat(true)}
@@ -1051,7 +1147,7 @@ export default function ShoppingMeals() {
             <Brain className="h-5 w-5" />
             AI Assistant
           </button>
-          
+
           <button
             onClick={() => setShowNearbyStores(true)}
             className="px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
@@ -1075,7 +1171,7 @@ export default function ShoppingMeals() {
             </div>
           </div>
         </div>
-        
+
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
             <div>
@@ -1087,7 +1183,7 @@ export default function ShoppingMeals() {
             </div>
           </div>
         </div>
-        
+
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
             <div>
@@ -1099,7 +1195,7 @@ export default function ShoppingMeals() {
             </div>
           </div>
         </div>
-        
+
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
             <div>
@@ -1128,7 +1224,7 @@ export default function ShoppingMeals() {
               />
             </div>
           </div>
-          
+
           <button
             onClick={() => setShowAddItem(true)}
             className="px-6 py-3 bg-orange-600 dark:bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-all flex items-center gap-2 justify-center shadow-lg hover:shadow-xl"
@@ -1136,7 +1232,7 @@ export default function ShoppingMeals() {
             <Plus className="h-5 w-5" />
             Add Item
           </button>
-          
+
           {shoppingStats.checked > 0 && (
             <button
               onClick={handleClearChecked}
@@ -1153,11 +1249,10 @@ export default function ShoppingMeals() {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 border ${
-                selectedCategory === cat.id
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 border ${selectedCategory === cat.id
                   ? cat.color + ' shadow-md scale-105'
                   : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:scale-105'
-              }`}
+                }`}
             >
               <cat.icon className="h-4 w-4" />
               {cat.label}
@@ -1178,34 +1273,30 @@ export default function ShoppingMeals() {
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {filteredItems.map(item => {
               const CategoryIcon = SHOPPING_CATEGORIES.find(c => c.id === item.category)?.icon || ShoppingCart;
-              
+
               return (
                 <div
                   key={item.id}
-                  className={`p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 ${
-                    item.checked ? 'bg-gray-50 dark:bg-gray-700/30' : ''
-                  }`}
+                  className={`p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 ${item.checked ? 'bg-gray-50 dark:bg-gray-700/30' : ''
+                    }`}
                 >
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => toggleItemChecked(item.id, item.checked)}
-                      className={`flex-shrink-0 w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${
-                        item.checked
+                      className={`flex-shrink-0 w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${item.checked
                           ? 'bg-green-600 dark:bg-green-500 border-green-600 dark:border-green-500 shadow-md'
                           : 'border-gray-300 dark:border-gray-600 hover:border-green-600 dark:hover:border-green-500 hover:scale-110'
-                      }`}
+                        }`}
                     >
                       {item.checked && <Check className="h-4 w-4 text-white" />}
                     </button>
-                    <div className={`p-3 rounded-xl ${
-                      SHOPPING_CATEGORIES.find(c => c.id === item.category)?.color || 'bg-gray-100 dark:bg-gray-700'
-                    }`}>
+                    <div className={`p-3 rounded-xl ${SHOPPING_CATEGORIES.find(c => c.id === item.category)?.color || 'bg-gray-100 dark:bg-gray-700'
+                      }`}>
                       <CategoryIcon className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
-                      <h3 className={`font-semibold text-lg ${
-                        item.checked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'
-                      }`}>
+                      <h3 className={`font-semibold text-lg ${item.checked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'
+                        }`}>
                         {item.name}
                       </h3>
                       <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -1263,7 +1354,7 @@ export default function ShoppingMeals() {
                 <input
                   type="text"
                   value={itemForm.name}
-                  onChange={(e) => setItemForm({...itemForm, name: e.target.value})}
+                  onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                   required
                   autoFocus
@@ -1277,7 +1368,7 @@ export default function ShoppingMeals() {
                   <input
                     type="text"
                     value={itemForm.quantity}
-                    onChange={(e) => setItemForm({...itemForm, quantity: e.target.value})}
+                    onChange={(e) => setItemForm({ ...itemForm, quantity: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                   />
                 </div>
@@ -1288,7 +1379,7 @@ export default function ShoppingMeals() {
                   <input
                     type="text"
                     value={itemForm.unit}
-                    onChange={(e) => setItemForm({...itemForm, unit: e.target.value})}
+                    onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })}
                     placeholder="lbs, oz, etc."
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                   />
@@ -1300,7 +1391,7 @@ export default function ShoppingMeals() {
                 </label>
                 <select
                   value={itemForm.category}
-                  onChange={(e) => setItemForm({...itemForm, category: e.target.value})}
+                  onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                 >
                   {SHOPPING_CATEGORIES.filter(c => c.id !== 'all').map(cat => (
@@ -1314,7 +1405,7 @@ export default function ShoppingMeals() {
                 </label>
                 <select
                   value={itemForm.priority}
-                  onChange={(e) => setItemForm({...itemForm, priority: e.target.value})}
+                  onChange={(e) => setItemForm({ ...itemForm, priority: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                 >
                   <option value="low">Low</option>
@@ -1330,7 +1421,7 @@ export default function ShoppingMeals() {
                   type="number"
                   step="0.01"
                   value={itemForm.price}
-                  onChange={(e) => setItemForm({...itemForm, price: e.target.value})}
+                  onChange={(e) => setItemForm({ ...itemForm, price: e.target.value })}
                   placeholder="0.00"
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                 />
@@ -1341,7 +1432,7 @@ export default function ShoppingMeals() {
                 </label>
                 <textarea
                   value={itemForm.notes}
-                  onChange={(e) => setItemForm({...itemForm, notes: e.target.value})}
+                  onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })}
                   rows="2"
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all resize-none"
                 />
@@ -1369,7 +1460,7 @@ export default function ShoppingMeals() {
 
       {/* Modals */}
       {showAIChat && (
-        <AIChatAssistant 
+        <AIChatAssistant
           onClose={() => setShowAIChat(false)}
           onAddMeal={() => {
             setShowAIChat(false);

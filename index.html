@@ -5,8 +5,26 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Family Housing Hub</title>
-    <!-- Google Maps JavaScript API with Places Library -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBfm3u4-vEnsVvHEqjqpoGdlbNgaza8JnA&libraries=places" async defer></script>
+    <!-- Google Maps JavaScript API with Places Library - Using callback for better loading control -->
+    <script>
+      // Load Google Maps API with callback to handle loading errors gracefully
+      window.initGoogleMaps = function() {
+        window.googleMapsLoaded = true;
+        window.dispatchEvent(new Event('googlemapsloaded'));
+      };
+      
+      window.handleGoogleMapsError = function() {
+        console.warn('Google Maps API failed to load. Some features may be limited.');
+        window.googleMapsError = true;
+        window.dispatchEvent(new Event('googlemapserror'));
+      };
+    </script>
+    <script 
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBfm3u4-vEnsVvHEqjqpoGdlbNgaza8JnA&libraries=places&callback=initGoogleMaps" 
+      async 
+      defer
+      onerror="handleGoogleMapsError()"
+    ></script>
   </head>
   <body>
     <div id="root"></div>

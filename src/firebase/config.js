@@ -75,6 +75,26 @@ enableIndexedDbPersistence(db, {
     }
   });
 
+// Global error handler for blocked requests (ad blockers)
+window.addEventListener('error', (event) => {
+  if (event.message && event.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+    console.warn('⚠️ Request blocked by client (likely ad blocker). Some features may not work.');
+    // Don't show error to user as this is expected behavior with ad blockers
+  }
+}, true);
+
+// Handle Firestore connection errors gracefully
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason && (
+    event.reason.message?.includes('ERR_BLOCKED_BY_CLIENT') ||
+    event.reason.message?.includes('network') ||
+    event.reason.code === 'unavailable'
+  )) {
+    console.warn('⚠️ Network request failed (may be blocked):', event.reason);
+    event.preventDefault(); // Prevent unhandled rejection error
+  }
+});
+
 // Initialize Storage
 export const storage = getStorage(app);
 

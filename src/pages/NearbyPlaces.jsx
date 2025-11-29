@@ -331,6 +331,10 @@ export default function NearbyPlaces() {
     // Wait for Google Maps API to load, then fetch nearby places
     useEffect(() => {
         const waitForGoogleMaps = () => {
+            // Check if Google Maps was blocked or failed to load
+            if (window.googleMapsError) {
+                return 'error';
+            }
             if (typeof google !== 'undefined' && google.maps && google.maps.places) {
                 return true;
             }
@@ -342,14 +346,18 @@ export default function NearbyPlaces() {
 
             // Wait for Google Maps API to load (max 10 seconds)
             let attempts = 0;
-            while (!waitForGoogleMaps() && attempts < 20) {
+            let status = waitForGoogleMaps();
+            while (status === false && attempts < 20) {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 attempts++;
+                status = waitForGoogleMaps();
             }
 
-            if (!waitForGoogleMaps()) {
-                toast.error('Google Maps API failed to load. Please refresh the page.');
+            if (status === 'error' || status === false) {
+                console.warn('Google Maps API not available. Using fallback data.');
+                toast.error('Google Maps API is not available. Some features may be limited. Please check if you have an ad blocker enabled.', { duration: 5000 });
                 setIsLoading(false);
+                // Continue with mock data instead of returning
                 return;
             }
 

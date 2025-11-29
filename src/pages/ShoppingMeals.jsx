@@ -113,7 +113,7 @@ const AI_SUGGESTED_MEALS = [
     ingredients: ["Quinoa", "Chickpeas", "Cucumber", "Tomatoes", "Feta Cheese", "Olive Oil"],
     aiScore: 95,
     tags: ["Healthy", "Vegetarian", "Quick"],
-    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop",
+    image: null, // Using placeholder instead
     description: "A vibrant and nutritious bowl packed with Mediterranean flavors. Perfect for a healthy lunch that's both satisfying and quick to prepare."
   },
   {
@@ -126,7 +126,7 @@ const AI_SUGGESTED_MEALS = [
     ingredients: ["Salmon", "Soy Sauce", "Ginger", "Garlic", "Brown Sugar", "Green Onions"],
     aiScore: 92,
     tags: ["High Protein", "Omega-3", "Asian"],
-    image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop",
+    image: null, // Using placeholder instead
     description: "Tender salmon glazed with a sweet and savory teriyaki sauce. Rich in omega-3 fatty acids and protein, perfect for a nutritious dinner."
   },
   {
@@ -139,7 +139,7 @@ const AI_SUGGESTED_MEALS = [
     ingredients: ["Whole Grain Bread", "Avocado", "Eggs", "Chili Flakes", "Lemon Juice"],
     aiScore: 88,
     tags: ["Quick", "Vegetarian", "Healthy Fats"],
-    image: "https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&h=300&fit=crop",
+    image: null, // Using placeholder instead
     description: "A modern breakfast classic featuring creamy avocado on whole grain toast. Quick, healthy, and delicious - perfect for busy mornings."
   },
   {
@@ -152,7 +152,7 @@ const AI_SUGGESTED_MEALS = [
     ingredients: ["Broccoli", "Bell Peppers", "Carrots", "Tofu", "Soy Sauce", "Sesame Oil"],
     aiScore: 90,
     tags: ["Vegan", "Quick", "Low Calorie"],
-    image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop",
+    image: null, // Using placeholder instead
     description: "A colorful mix of fresh vegetables stir-fried to perfection. Light, healthy, and packed with nutrients - ideal for a quick weeknight dinner."
   },
   {
@@ -165,7 +165,7 @@ const AI_SUGGESTED_MEALS = [
     ingredients: ["Chicken Breast", "Mixed Greens", "Cherry Tomatoes", "Cucumber", "Olive Oil", "Lemon"],
     aiScore: 93,
     tags: ["High Protein", "Low Carb", "Fresh"],
-    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
+    image: null, // Using placeholder instead
     description: "Fresh mixed greens topped with perfectly grilled chicken. A protein-packed lunch that keeps you energized throughout the day."
   },
   {
@@ -178,7 +178,7 @@ const AI_SUGGESTED_MEALS = [
     ingredients: ["Pasta", "Zucchini", "Bell Peppers", "Cherry Tomatoes", "Parmesan", "Basil"],
     aiScore: 89,
     tags: ["Vegetarian", "Comfort Food", "Italian"],
-    image: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&h=300&fit=crop",
+    image: null, // Using placeholder instead
     description: "Fresh spring vegetables tossed with pasta in a light sauce. A comforting and colorful dish that celebrates seasonal produce."
   }
 ];
@@ -1538,19 +1538,15 @@ You can also upload images of food or ingredients, and I'll help you create meal
               {AI_SUGGESTED_MEALS.map((meal) => (
                 <div key={meal.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all group">
                   {/* Meal Image */}
-                  {meal.image && (
-                    <div className="relative h-40 overflow-hidden">
-                      <img 
-                        src={meal.image} 
-                        alt={meal.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 dark:bg-gray-700 text-white px-2 py-1 rounded-full text-xs">
-                        <Crown className="h-3 w-3 text-yellow-400" />
-                        {meal.aiScore}%
-                      </div>
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30">
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ChefHat className="h-12 w-12 text-purple-400 dark:text-purple-500" />
                     </div>
-                  )}
+                    <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 dark:bg-gray-700 text-white px-2 py-1 rounded-full text-xs">
+                      <Crown className="h-3 w-3 text-yellow-400" />
+                      {meal.aiScore}%
+                    </div>
+                  </div>
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{meal.name}</h4>
@@ -2129,8 +2125,10 @@ You can also upload images of food or ingredients, and I'll help you create meal
                       ? 'bg-purple-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                   }`}>
-                    {msg.type === 'assistant' && msg.image && (
-                      <img src={msg.image} alt="Meal suggestion" className="w-full h-48 object-cover rounded-lg mb-3" />
+                    {msg.type === 'assistant' && msg.mealSuggestion && (
+                      <div className="w-full h-48 rounded-lg mb-3 overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center">
+                        <ChefHat className="h-16 w-16 text-purple-400 dark:text-purple-500" />
+                      </div>
                     )}
                     <p className="whitespace-pre-wrap">{msg.content}</p>
                     {msg.type === 'assistant' && msg.mealSuggestion && (

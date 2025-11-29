@@ -1139,12 +1139,36 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
   );
 };
 
-// Nearby Stores Component (Enhanced with Dark Mode)
+// Calculate distance between two coordinates (Haversine formula)
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 3959; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in miles
+};
+
+// Convert distance to readable format
+const formatDistance = (miles) => {
+  if (miles < 0.1) return `${Math.round(miles * 5280)} ft`;
+  if (miles < 1) return `${(miles * 10).toFixed(1)} mi`;
+  return `${miles.toFixed(1)} mi`;
+};
+
+// Nearby Stores Component (Enhanced with Dark Mode and Real Location)
 const NearbyStores = ({ onClose }) => {
   const { isDark } = useTheme();
   const [stores, setStores] = useState([]);
   const [selectedStore, setSelectedStore] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+  const [locationPermission, setLocationPermission] = useState('prompt'); // 'prompt', 'granted', 'denied'
 
   const mockStores = [
     {
@@ -1464,13 +1488,121 @@ const NearbyStores = ({ onClose }) => {
     }
   ];
 
-  useEffect(() => {
-    setTimeout(() => {
-      setStores(mockStores);
-      setSelectedStore(mockStores[0]);
-      setLoading(false);
-    }, 1000);
+  // Get user's location
+  const getUserLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser');
+      setLocationPermission('denied');
+      // Use default location (Springfield, MA) as fallback
+      const defaultLocation = { lat: 42.1015, lng: -72.5898 };
+      setUserLocation(defaultLocation);
+      processStoresWithLocation(defaultLocation);
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        setUserLocation(location);
+        setLocationPermission('granted');
+        setLocationLoading(false);
+        processStoresWithLocation(location);
+        toast.success('Location detected! Showing nearest stores.');
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setLocationLoading(false);
+        
+        let errorMessage = 'Failed to get your location. ';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += 'Please allow location access to see nearby stores.';
+            setLocationPermission('denied');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += 'Location information unavailable.';
+            break;
+          case error.TIMEOUT:
+            errorMessage += 'Location request timed out.';
+            break;
+          default:
+            errorMessage += 'An unknown error occurred.';
+            break;
+        }
+        
+        setLocationError(errorMessage);
+        // Use default location as fallback
+        const defaultLocation = { lat: 42.1015, lng: -72.5898 };
+        setUserLocation(defaultLocation);
+        processStoresWithLocation(defaultLocation);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
   }, []);
+
+  // Process stores with user location to calculate real distances
+  const processStoresWithLocation = useCallback((location) => {
+    if (!location) return;
+
+    // Store coordinates (using Springfield, MA area as base)
+    // In a real app, you'd geocode the addresses or use Google Places API
+    const storeCoordinates = [
+      { lat: 42.1015, lng: -72.5898 }, // Walmart
+      { lat: 42.1020, lng: -72.5900 }, // Target
+      { lat: 42.1025, lng: -72.5905 }, // Kroger
+      { lat: 42.1030, lng: -72.5910 }, // Whole Foods
+      { lat: 42.1035, lng: -72.5915 }, // Stop & Shop
+      { lat: 42.1040, lng: -72.5920 }, // Aldi
+      { lat: 42.1045, lng: -72.5925 }, // Trader Joe's
+      { lat: 42.1050, lng: -72.5930 }, // Safeway
+      { lat: 42.1055, lng: -72.5935 }, // Publix
+      { lat: 42.1060, lng: -72.5940 }, // Costco
+      { lat: 42.1065, lng: -72.5945 }, // BJ's
+      { lat: 42.1070, lng: -72.5950 }, // Food Lion
+      { lat: 42.1075, lng: -72.5955 }, // Giant Food
+      { lat: 42.1080, lng: -72.5960 }, // Wegmans
+      { lat: 42.1085, lng: -72.5965 }, // Meijer
+    ];
+
+    const processedStores = mockStores.map((store, index) => {
+      const storeCoord = storeCoordinates[index] || { lat: 42.1015, lng: -72.5898 };
+      const distance = calculateDistance(
+        location.lat,
+        location.lng,
+        storeCoord.lat,
+        storeCoord.lng
+      );
+      
+      return {
+        ...store,
+        distance: formatDistance(distance),
+        distanceMiles: distance,
+        coordinates: storeCoord
+      };
+    });
+
+    // Sort by distance
+    processedStores.sort((a, b) => a.distanceMiles - b.distanceMiles);
+
+    setStores(processedStores);
+    setSelectedStore(processedStores[0]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    // Request location on component mount
+    getUserLocation();
+  }, [getUserLocation]);
 
   const getPriceColor = (price, item) => {
     const prices = stores.map(store => store.prices[item]).filter(p => p);

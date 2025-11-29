@@ -1,4 +1,4 @@
-// src/pages/ShoppingMeals.jsx - Enhanced AI-Powered Shopping & Meal Planning
+// src/pages/ShoppingMeals.jsx - Enhanced AI-Powered Shopping & Meal Planning with OpenAI Integration
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -24,18 +24,13 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  Copy,
-  Share2,
-  Printer,
   Filter,
   Search,
   Star,
   Download,
   Upload,
   ChefHat,
-  TrendingUp,
-  BarChart3,
-  Smartphone,
+  Brain,
   Heart,
   BookOpen,
   Clock4,
@@ -43,29 +38,12 @@ import {
   Camera,
   Image as ImageIcon,
   Zap,
-  Cloud,
-  Brain,
-  Calculator,
-  Scale,
-  Thermometer,
-  Bookmark,
-  Eye,
-  ShoppingBag,
-  Truck,
-  Wallet,
-  PieChart,
-  Crown,
-  Award,
   MessageCircle,
   MapPin,
   Navigation,
   Phone,
   Store,
-  Scan,
   BarChart,
-  RotateCcw,
-  Sparkle,
-  Cpu,
   Globe,
   Shield,
   Tag,
@@ -74,7 +52,9 @@ import {
   Mic,
   Volume2,
   VolumeX,
-  Send
+  Send,
+  Sparkle,
+  Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -87,7 +67,6 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
-  Timestamp,
   writeBatch
 } from 'firebase/firestore';
 import { db, storage } from '../firebase/config';
@@ -103,13 +82,62 @@ const Sprout = ({ className }) => (
   </svg>
 );
 
-// Enhanced AI Chat Component with Real-time Responses and Contextual Answers
+// OpenAI API Integration with Fallback
+const callOpenAI = async (userMessage, pantryItems = []) => {
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  
+  if (!apiKey) {
+    // Fallback to contextual responses if no API key
+    return null;
+  }
+
+  try {
+    const pantryContext = pantryItems.length > 0 
+      ? `User's pantry contains: ${pantryItems.map(item => item.name).join(', ')}. `
+      : '';
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a helpful AI cooking assistant. ${pantryContext}Provide meal ideas, recipes, cooking tips, and help with meal planning. Be concise, friendly, and practical. Format responses with emojis and clear sections.`
+          },
+          {
+            role: 'user',
+            content: userMessage
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('OpenAI API error');
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content || null;
+  } catch (error) {
+    console.warn('OpenAI API call failed, using fallback:', error);
+    return null;
+  }
+};
+
+// Enhanced AI Chat Component with OpenAI Integration and Fast Responses
 const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
   const { isDark } = useTheme();
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hi! I'm your AI cooking assistant. I can help you with meal ideas, recipes, cooking tips, and even suggest meals based on what's in your pantry. What would you like to know?",
+      text: "Hi! I'm your AI cooking assistant powered by advanced AI. I can help you with meal ideas, recipes, cooking tips, and even suggest meals based on what's in your pantry. What would you like to know?",
       isAI: true,
       timestamp: new Date()
     }
@@ -117,6 +145,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isUsingAI, setIsUsingAI] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -140,8 +169,8 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
     "Meal prep ideas"
   ];
 
-  // Enhanced AI response system with context awareness and faster responses
-  const generateAIResponse = useCallback((userInput) => {
+  // Enhanced contextual response system (fallback when OpenAI is not available)
+  const generateContextualResponse = useCallback((userInput) => {
     const input = userInput.toLowerCase().trim();
     
     // Pantry-based suggestions
@@ -149,7 +178,6 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
       if (pantryItems.length === 0) {
         return "I don't see any items in your pantry yet. Would you like to add some items first, or should I suggest some versatile recipes that work with common ingredients?";
       }
-      
       const pantryList = pantryItems.map(item => item.name).join(', ');
       return `Based on your pantry (${pantryList}), here are some great meal ideas:\n\n🍝 **Pantry Pasta**\nUse your pasta, olive oil, and any vegetables. Add garlic and herbs for flavor.\n\n🍚 **Rice Bowl**\nCombine rice with canned tomatoes and beans for a hearty meal.\n\n🥫 **Quick Soup**\nUse canned tomatoes as a base, add pasta or rice, season well.\n\nWould you like detailed recipes for any of these?`;
     }
@@ -204,42 +232,12 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
       return "Quick cooking tips:\n\n🔪 **Knife Skills**\n- Keep knives sharp\n- Use proper cutting board\n- Master basic cuts\n\n🔥 **Heat Control**\n- Preheat pans properly\n- Don't overcrowd\n- Let meat rest\n\n🧂 **Seasoning**\n- Salt in layers\n- Taste as you cook\n- Fresh herbs at end\n\n⏰ **Time Management**\n- Prep ingredients first\n- Multi-task wisely\n- Clean as you go\n\nWhat specific technique interests you?";
     }
 
-    // Specific ingredients
-    if (input.includes('recipe for') || input.includes('how to make') || input.includes('cook') || input.includes('with')) {
-      const parts = input.split(/recipe for|how to make|cook|with/);
-      const ingredient = parts[parts.length - 1]?.trim();
-      
-      if (ingredient && ingredient.length > 2) {
-        return `Here's a great recipe featuring ${ingredient}:\n\n**Simple ${ingredient.charAt(0).toUpperCase() + ingredient.slice(1)} Recipe**\n\nI'd be happy to provide a detailed recipe! Could you let me know:\n- How many servings?\n- Any dietary restrictions?\n- Preferred cooking method?\n- Time available?\n\nThis helps me give you the perfect recipe!`;
-      }
-    }
-
     // Budget meals
     if (input.includes('cheap') || input.includes('budget') || input.includes('affordable') || input.includes('save money') || input.includes('inexpensive')) {
       return "Budget-friendly meals:\n\n💰 **Rice & Beans** ($2/serving)\nRice, beans, spices, vegetables\n\n🥔 **Potato Soup** ($1.50/serving)\nPotatoes, onions, milk, seasonings\n\n🍝 **Pasta Primavera** ($2/serving)\nPasta, frozen veggies, olive oil, garlic\n\n🥚 **Egg Fried Rice** ($1.75/serving)\nRice, eggs, frozen vegetables, soy sauce\n\n🌯 **Bean Burritos** ($1.50/serving)\nTortillas, refried beans, cheese, salsa\n\nAll filling and nutritious!";
     }
 
-    // Spicy food
-    if (input.includes('spicy') || input.includes('hot') || input.includes('heat')) {
-      return "Spicy dishes:\n\n🌶️ **Spicy Thai Basil** (25 min)\nProtein, thai basil, chilies, garlic\n\n🔥 **Buffalo Chicken** (30 min)\nChicken, buffalo sauce, ranch, celery\n\n🍛 **Vindaloo Curry** (45 min)\nProtein, vindaloo paste, potatoes\n\n🌮 **Spicy Tacos** (20 min)\nSeasoned meat, jalapeños, hot sauce\n\nHow spicy do you like it?";
-    }
-
-    // Sweet/Dessert
-    if (input.includes('dessert') || input.includes('sweet') || input.includes('cake') || input.includes('cookie') || input.includes('treat')) {
-      return "Sweet treats:\n\n🍰 **Mug Cake** (5 min)\nFlour, sugar, cocoa, egg, milk\n\n🍪 **No-Bake Cookies** (15 min)\nOats, peanut butter, honey, chocolate\n\n🍌 **Banana Bread** (60 min)\nBananas, flour, eggs, sugar\n\n🍓 **Fruit Parfait** (5 min)\nYogurt, granola, fresh berries\n\nEasy and delicious!";
-    }
-
-    // Seafood
-    if (input.includes('fish') || input.includes('seafood') || input.includes('salmon') || input.includes('shrimp') || input.includes('tuna')) {
-      return "Seafood options:\n\n🐟 **Pan-Seared Salmon** (20 min)\nSalmon, lemon, dill, garlic butter\n\n🍤 **Garlic Shrimp** (15 min)\nShrimp, garlic, white wine, pasta\n\n🐠 **Fish Tacos** (25 min)\nWhite fish, cabbage slaw, lime crema\n\n🦐 **Shrimp Stir-Fry** (20 min)\nShrimp, vegetables, ginger-soy sauce\n\nFresh and healthy!";
-    }
-
-    // Kid-friendly
-    if (input.includes('kid') || input.includes('child') || input.includes('picky eater') || input.includes('family') || input.includes('kids')) {
-      return "Kid-friendly meals:\n\n🍕 **Mini Pizzas** (20 min)\nEnglish muffins, sauce, cheese, toppings\n\n🌭 **Mac & Cheese Dogs** (15 min)\nHot dogs, mac and cheese\n\n🍗 **Chicken Nuggets** (25 min)\nChicken, breadcrumbs, baked not fried\n\n🌮 **Taco Bar** (20 min)\nLet kids build their own tacos\n\n🍝 **Spaghetti & Meatballs** (30 min)\nClassic favorite everyone loves\n\nFun and nutritious!";
-    }
-
-    // Default response with suggestions
+    // Default response
     return "I'd be happy to help! I can assist you with:\n\n✨ **Recipe suggestions** based on ingredients, time, or dietary needs\n📋 **Meal planning** for the week\n🥘 **Cooking tips** and techniques\n🛒 **Shopping lists** from recipes\n⏱️ **Quick meals** under 30 minutes\n🌱 **Dietary options** (vegan, keto, etc.)\n\nWhat would you like to explore? Try asking:\n- \"What can I make for dinner?\"\n- \"Quick healthy breakfast ideas\"\n- \"Recipes using chicken\"\n- \"Vegetarian meal prep\"\n- \"What's in my pantry?\"";
   }, [pantryItems]);
 
@@ -257,33 +255,53 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
     const currentInput = inputMessage;
     setInputMessage('');
     setIsTyping(true);
+    setIsUsingAI(false);
 
-    // Faster response time (reduced from 800ms to 500ms for better UX)
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(currentInput);
-      
-      const aiMessage = {
-        id: Date.now() + 1,
-        text: aiResponse,
-        isAI: true,
-        timestamp: new Date(),
-        hasActions: aiResponse.includes('Would you like') || aiResponse.includes('Need the full recipe')
-      };
+    // Try OpenAI first (if available), then fallback to contextual
+    let aiResponse = null;
+    
+    try {
+      // Show AI indicator
+      setIsUsingAI(true);
+      aiResponse = await callOpenAI(currentInput, pantryItems);
+    } catch (error) {
+      console.warn('OpenAI error:', error);
+    }
 
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
+    // Use fallback if OpenAI not available or failed
+    if (!aiResponse) {
+      setIsUsingAI(false);
+      // Simulate faster typing for fallback (300ms)
+      await new Promise(resolve => setTimeout(resolve, 300));
+      aiResponse = generateContextualResponse(currentInput);
+    } else {
+      // OpenAI responses are already fast, just a small delay for UX
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
 
-      // Text-to-speech (optional, user-controlled)
-      if (!isMuted && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(aiResponse.replace(/\*\*/g, '').replace(/\n/g, ' '));
-        utterance.rate = 0.9;
-        utterance.pitch = 1;
-        utterance.volume = 0.8;
-        window.speechSynthesis.speak(utterance);
-      }
-    }, 500); // Faster response
-  }, [inputMessage, generateAIResponse, isMuted]);
+    const aiMessage = {
+      id: Date.now() + 1,
+      text: aiResponse,
+      isAI: true,
+      timestamp: new Date(),
+      hasActions: aiResponse.includes('Would you like') || aiResponse.includes('Need the full recipe') || aiResponse.includes('Want detailed'),
+      isOpenAI: !!aiResponse && isUsingAI
+    };
+
+    setMessages(prev => [...prev, aiMessage]);
+    setIsTyping(false);
+    setIsUsingAI(false);
+
+    // Text-to-speech (optional, user-controlled)
+    if (!isMuted && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(aiResponse.replace(/\*\*/g, '').replace(/\n/g, ' '));
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 0.8;
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [inputMessage, generateContextualResponse, pantryItems, isMuted]);
 
   const handleQuickQuestion = useCallback((question) => {
     setInputMessage(question);
@@ -299,6 +317,8 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
     }
   }, [handleSendMessage]);
 
+  const hasOpenAI = !!import.meta.env.VITE_OPENAI_API_KEY;
+
   return (
     <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn`}>
       <div className={`bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl h-[600px] shadow-2xl flex flex-col animate-slideUp transition-colors duration-200`}>
@@ -311,7 +331,15 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">AI Cooking Assistant</h2>
-                <p className="text-purple-700 dark:text-purple-300 text-sm">Instant meal ideas and cooking help</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-purple-700 dark:text-purple-300 text-sm">Instant meal ideas and cooking help</p>
+                  {hasOpenAI && (
+                    <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium rounded-full flex items-center gap-1">
+                      <Sparkle className="h-3 w-3" />
+                      AI Powered
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -347,6 +375,12 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                     : 'bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-tr-none'
                 }`}
               >
+                {message.isAI && message.isOpenAI && (
+                  <div className="flex items-center gap-1 mb-2 text-xs text-purple-600 dark:text-purple-400">
+                    <Sparkle className="h-3 w-3" />
+                    <span>AI Enhanced</span>
+                  </div>
+                )}
                 <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>
                 {message.hasActions && (
                   <div className="flex gap-2 mt-3">
@@ -373,10 +407,19 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
           {isTyping && (
             <div className="flex justify-start animate-messageSlide">
               <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-4 border border-gray-200 dark:border-gray-700">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="flex items-center gap-2">
+                  {isUsingAI ? (
+                    <>
+                      <Loader2 className="h-4 w-4 text-purple-600 dark:text-purple-400 animate-spin" />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">AI is thinking...</span>
+                    </>
+                  ) : (
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -414,10 +457,21 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
               disabled={!inputMessage.trim() || isTyping}
               className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
             >
-              <span>Send</span>
-              <ArrowRight className="h-4 w-4" />
+              {isTyping ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <span>Send</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </button>
           </div>
+          {!hasOpenAI && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+              💡 Add VITE_OPENAI_API_KEY to enable advanced AI responses
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -760,17 +814,6 @@ const SHOPPING_CATEGORIES = [
   }
 ];
 
-// Dietary filters
-const DIETARY_FILTERS = [
-  { id: 'all', label: 'All', icon: Globe },
-  { id: 'vegetarian', label: 'Vegetarian', icon: Leaf },
-  { id: 'vegan', label: 'Vegan', icon: Sprout },
-  { id: 'gluten-free', label: 'Gluten-Free', icon: Shield },
-  { id: 'keto', label: 'Keto', icon: Zap },
-  { id: 'low-carb', label: 'Low-Carb', icon: BarChart },
-  { id: 'dairy-free', label: 'Dairy-Free', icon: CircleDot }
-];
-
 // Main Component
 export default function ShoppingMeals() {
   const { currentUser } = useAuth();
@@ -787,7 +830,6 @@ export default function ShoppingMeals() {
   // New state
   const [showAIChat, setShowAIChat] = useState(false);
   const [showNearbyStores, setShowNearbyStores] = useState(false);
-  const [dietaryFilter, setDietaryFilter] = useState('all');
   const [pantryItems, setPantryItems] = useState([]);
 
   // Item form
@@ -989,7 +1031,7 @@ export default function ShoppingMeals() {
 
   return (
     <div className={`p-6 max-w-7xl mx-auto space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200`}>
-      {/* Header */}
+      {/* Enhanced Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-2xl shadow-lg">
@@ -1004,7 +1046,7 @@ export default function ShoppingMeals() {
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => setShowAIChat(true)}
-            className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-500 dark:to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 dark:hover:from-purple-600 dark:hover:to-pink-600 transition-all flex items-center gap-2 shadow-lg"
+            className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-500 dark:to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 dark:hover:from-purple-600 dark:hover:to-pink-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
           >
             <Brain className="h-5 w-5" />
             AI Assistant
@@ -1012,7 +1054,7 @@ export default function ShoppingMeals() {
           
           <button
             onClick={() => setShowNearbyStores(true)}
-            className="px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all flex items-center gap-2"
+            className="px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
           >
             <Store className="h-5 w-5" />
             Nearby Stores
@@ -1020,51 +1062,59 @@ export default function ShoppingMeals() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors duration-200`}>
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{shoppingStats.total}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Items</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{shoppingStats.total}</p>
             </div>
-            <ShoppingCart className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+              <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
           </div>
         </div>
         
-        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors duration-200`}>
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Checked</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{shoppingStats.checked}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Checked</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{shoppingStats.checked}</p>
             </div>
-            <Check className="h-8 w-8 text-green-400 dark:text-green-500" />
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+              <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
           </div>
         </div>
         
-        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors duration-200`}>
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Remaining</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{shoppingStats.remaining}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Remaining</p>
+              <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{shoppingStats.remaining}</p>
             </div>
-            <Package className="h-8 w-8 text-orange-400 dark:text-orange-500" />
+            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+              <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+            </div>
           </div>
         </div>
         
-        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors duration-200`}>
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Cost</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${shoppingStats.totalCost.toFixed(2)}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Cost</p>
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">${shoppingStats.totalCost.toFixed(2)}</p>
             </div>
-            <DollarSign className="h-8 w-8 text-blue-400 dark:text-blue-500" />
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
+              <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Controls */}
-      <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors duration-200`}>
+      {/* Enhanced Controls */}
+      <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm transition-colors duration-200`}>
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -1074,14 +1124,14 @@ export default function ShoppingMeals() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search items..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
               />
             </div>
           </div>
           
           <button
             onClick={() => setShowAddItem(true)}
-            className="px-6 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors flex items-center gap-2 justify-center"
+            className="px-6 py-3 bg-orange-600 dark:bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-all flex items-center gap-2 justify-center shadow-lg hover:shadow-xl"
           >
             <Plus className="h-5 w-5" />
             Add Item
@@ -1090,23 +1140,23 @@ export default function ShoppingMeals() {
           {shoppingStats.checked > 0 && (
             <button
               onClick={handleClearChecked}
-              className="px-6 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors flex items-center gap-2"
+              className="px-6 py-3 bg-red-600 dark:bg-red-500 text-white rounded-xl font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
             >
               <Trash2 className="h-5 w-5" />
               Clear Checked
             </button>
           )}
         </div>
-        {/* Categories */}
+        {/* Enhanced Categories */}
         <div className="flex flex-wrap gap-2 mt-4">
           {SHOPPING_CATEGORIES.map(cat => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 border ${
                 selectedCategory === cat.id
-                  ? cat.color + ' shadow-sm'
-                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  ? cat.color + ' shadow-md scale-105'
+                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:scale-105'
               }`}
             >
               <cat.icon className="h-4 w-4" />
@@ -1116,7 +1166,7 @@ export default function ShoppingMeals() {
         </div>
       </div>
 
-      {/* Items List */}
+      {/* Enhanced Items List */}
       <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm transition-colors duration-200`}>
         {filteredItems.length === 0 ? (
           <div className="p-12 text-center">
@@ -1132,28 +1182,28 @@ export default function ShoppingMeals() {
               return (
                 <div
                   key={item.id}
-                  className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                    item.checked ? 'bg-gray-50 dark:bg-gray-700/50' : ''
+                  className={`p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 ${
+                    item.checked ? 'bg-gray-50 dark:bg-gray-700/30' : ''
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => toggleItemChecked(item.id, item.checked)}
-                      className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                      className={`flex-shrink-0 w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${
                         item.checked
-                          ? 'bg-green-600 dark:bg-green-500 border-green-600 dark:border-green-500'
-                          : 'border-gray-300 dark:border-gray-600 hover:border-green-600 dark:hover:border-green-500'
+                          ? 'bg-green-600 dark:bg-green-500 border-green-600 dark:border-green-500 shadow-md'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-green-600 dark:hover:border-green-500 hover:scale-110'
                       }`}
                     >
                       {item.checked && <Check className="h-4 w-4 text-white" />}
                     </button>
-                    <div className={`p-2 rounded-lg ${
+                    <div className={`p-3 rounded-xl ${
                       SHOPPING_CATEGORIES.find(c => c.id === item.category)?.color || 'bg-gray-100 dark:bg-gray-700'
                     }`}>
                       <CategoryIcon className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
-                      <h3 className={`font-semibold ${
+                      <h3 className={`font-semibold text-lg ${
                         item.checked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'
                       }`}>
                         {item.name}
@@ -1161,7 +1211,7 @@ export default function ShoppingMeals() {
                       <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
                         <span>{item.quantity} {item.unit}</span>
                         {item.price && (
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1 font-medium text-green-600 dark:text-green-400">
                             <DollarSign className="h-3 w-3" />
                             {item.price}
                           </span>
@@ -1172,13 +1222,13 @@ export default function ShoppingMeals() {
                       </div>
                     </div>
                     {item.priority === 'high' && !item.checked && (
-                      <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full">
+                      <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full border border-red-200 dark:border-red-800">
                         High Priority
                       </span>
                     )}
                     <button
                       onClick={() => handleDeleteItem(item.id)}
-                      className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                      className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all hover:scale-110"
                     >
                       <Trash2 className="h-5 w-5" />
                     </button>
@@ -1190,16 +1240,16 @@ export default function ShoppingMeals() {
         )}
       </div>
 
-      {/* Add Item Modal */}
+      {/* Enhanced Add Item Modal */}
       {showAddItem && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className={`bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl transition-colors duration-200`}>
-            <div className={`p-6 border-b border-gray-200 dark:border-gray-700`}>
+            <div className={`p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900`}>
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Item</h2>
                 <button
                   onClick={() => setShowAddItem(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
@@ -1207,32 +1257,32 @@ export default function ShoppingMeals() {
             </div>
             <form onSubmit={handleAddItem} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Item Name *
                 </label>
                 <input
                   type="text"
                   value={itemForm.name}
                   onChange={(e) => setItemForm({...itemForm, name: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                   required
                   autoFocus
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Quantity
                   </label>
                   <input
                     type="text"
                     value={itemForm.quantity}
                     onChange={(e) => setItemForm({...itemForm, quantity: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Unit
                   </label>
                   <input
@@ -1240,18 +1290,18 @@ export default function ShoppingMeals() {
                     value={itemForm.unit}
                     onChange={(e) => setItemForm({...itemForm, unit: e.target.value})}
                     placeholder="lbs, oz, etc."
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Category
                 </label>
                 <select
                   value={itemForm.category}
                   onChange={(e) => setItemForm({...itemForm, category: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                 >
                   {SHOPPING_CATEGORIES.filter(c => c.id !== 'all').map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -1259,13 +1309,13 @@ export default function ShoppingMeals() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Priority
                 </label>
                 <select
                   value={itemForm.priority}
                   onChange={(e) => setItemForm({...itemForm, priority: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -1273,7 +1323,7 @@ export default function ShoppingMeals() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Price (optional)
                 </label>
                 <input
@@ -1282,32 +1332,32 @@ export default function ShoppingMeals() {
                   value={itemForm.price}
                   onChange={(e) => setItemForm({...itemForm, price: e.target.value})}
                   placeholder="0.00"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Notes
                 </label>
                 <textarea
                   value={itemForm.notes}
                   onChange={(e) => setItemForm({...itemForm, notes: e.target.value})}
                   rows="2"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all resize-none"
                 />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowAddItem(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-3 bg-orange-600 dark:bg-orange-500 text-white rounded-xl hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors disabled:opacity-50 font-medium shadow-lg hover:shadow-xl"
                 >
                   {submitting ? 'Adding...' : 'Add Item'}
                 </button>

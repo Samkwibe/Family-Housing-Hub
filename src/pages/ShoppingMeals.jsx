@@ -1300,7 +1300,7 @@ export default function ShoppingMeals() {
                     type="text"
                     value={itemForm.quantity}
                     onChange={(e) => setItemForm(prev => ({ ...prev, quantity: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
                     placeholder="1"
                   />
                 </div>
@@ -1310,7 +1310,7 @@ export default function ShoppingMeals() {
                     type="text"
                     value={itemForm.unit}
                     onChange={(e) => setItemForm(prev => ({ ...prev, unit: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
                     placeholder="lbs, oz, pack"
                   />
                 </div>
@@ -1549,7 +1549,7 @@ export default function ShoppingMeals() {
                 <textarea
                   value={mealForm.ingredients}
                   onChange={(e) => setMealForm(prev => ({ ...prev, ingredients: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 resize-none placeholder-gray-400 dark:placeholder-gray-500"
                   rows={4}
                   placeholder="Chicken breast&#10;Rice&#10;Olive oil&#10;Garlic"
                 />
@@ -1572,6 +1572,84 @@ export default function ShoppingMeals() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import/Export Modal */}
+      {showImportExport && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl transition-colors duration-200">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Import/Export Shopping List</h2>
+                <button
+                  onClick={() => setShowImportExport(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Export Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Export Shopping List</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Download your shopping list as a JSON file to backup or share.
+                </p>
+                <button
+                  onClick={exportShoppingList}
+                  className="w-full bg-blue-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download className="h-5 w-5" />
+                  Export to JSON
+                </button>
+              </div>
+
+              {/* Import Section */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Import Shopping List</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Upload a JSON file to restore your shopping list.
+                </p>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        try {
+                          const data = JSON.parse(event.target.result);
+                          if (Array.isArray(data)) {
+                            handleBulkImport(data);
+                          } else {
+                            toast.error('Invalid file format');
+                          }
+                        } catch (error) {
+                          toast.error('Failed to parse JSON file');
+                        }
+                      };
+                      reader.readAsText(file);
+                    }
+                  }}
+                  className="block w-full text-sm text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50"
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowImportExport(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

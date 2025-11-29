@@ -1144,7 +1144,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 3959; // Earth's radius in miles
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
@@ -1169,6 +1169,9 @@ const NearbyStores = ({ onClose }) => {
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState(null);
   const [locationPermission, setLocationPermission] = useState('prompt'); // 'prompt', 'granted', 'denied'
+  const [addressSearch, setAddressSearch] = useState('');
+  const [searchingAddress, setSearchingAddress] = useState(false);
+  const [currentLocationName, setCurrentLocationName] = useState(null);
 
   const mockStores = [
     {
@@ -1488,6 +1491,55 @@ const NearbyStores = ({ onClose }) => {
     }
   ];
 
+  // Geocode address to coordinates using OpenStreetMap Nominatim (free)
+  const geocodeAddress = async (address) => {
+    if (!address.trim()) {
+      toast.error('Please enter an address');
+      return;
+    }
+
+    setSearchingAddress(true);
+    setLocationError(null);
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'Family-Housing-Hub/1.0'
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const result = data[0];
+        const location = {
+          lat: parseFloat(result.lat),
+          lng: parseFloat(result.lon)
+        };
+        
+        setUserLocation(location);
+        setCurrentLocationName(result.display_name);
+        setLocationPermission('granted');
+        setSearchingAddress(false);
+        processStoresWithLocation(location);
+        toast.success(`Found stores near ${result.display_name}`);
+        setAddressSearch(''); // Clear search after success
+      } else {
+        setSearchingAddress(false);
+        setLocationError('Address not found. Please try a different address.');
+        toast.error('Address not found');
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      setSearchingAddress(false);
+      setLocationError('Failed to search address. Please try again.');
+      toast.error('Failed to search address');
+    }
+  };
+
   // Get user's location
   const getUserLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -1496,6 +1548,7 @@ const NearbyStores = ({ onClose }) => {
       // Use default location (Springfield, MA) as fallback
       const defaultLocation = { lat: 42.1015, lng: -72.5898 };
       setUserLocation(defaultLocation);
+      setCurrentLocationName('Springfield, MA');
       processStoresWithLocation(defaultLocation);
       return;
     }
@@ -1504,11 +1557,30 @@ const NearbyStores = ({ onClose }) => {
     setLocationError(null);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const location = {
           lat: position.coords.latitude,
           lng: position.coords.longitude
         };
+        
+        // Reverse geocode to get address name
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}`,
+            {
+              headers: {
+                'User-Agent': 'Family-Housing-Hub/1.0'
+              }
+            }
+          );
+          const data = await response.json();
+          if (data && data.display_name) {
+            setCurrentLocationName(data.display_name);
+          }
+        } catch (e) {
+          console.warn('Reverse geocoding failed:', e);
+        }
+        
         setUserLocation(location);
         setLocationPermission('granted');
         setLocationLoading(false);
@@ -1522,7 +1594,7 @@ const NearbyStores = ({ onClose }) => {
         let errorMessage = 'Failed to get your location. ';
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage += 'Please allow location access to see nearby stores.';
+            errorMessage += 'Please allow location access or search for an address.';
             setLocationPermission('denied');
             break;
           case error.POSITION_UNAVAILABLE:
@@ -1540,6 +1612,7 @@ const NearbyStores = ({ onClose }) => {
         // Use default location as fallback
         const defaultLocation = { lat: 42.1015, lng: -72.5898 };
         setUserLocation(defaultLocation);
+        setCurrentLocationName('Springfield, MA');
         processStoresWithLocation(defaultLocation);
       },
       {
@@ -1582,7 +1655,7 @@ const NearbyStores = ({ onClose }) => {
         storeCoord.lat,
         storeCoord.lng
       );
-      
+
       return {
         ...store,
         distance: formatDistance(distance),
@@ -1641,14 +1714,14 @@ const NearbyStores = ({ onClose }) => {
                   <span>Detecting your location...</span>
                 </div>
               )}
-              
+
               {userLocation && !locationLoading && (
                 <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                   <MapPin className="h-4 w-4" />
                   <span>Location detected • Sorted by distance</span>
                 </div>
               )}
-              
+
               {locationError && locationPermission === 'denied' && (
                 <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
                   <p className="text-xs text-amber-800 dark:text-amber-300 mb-2">{locationError}</p>
@@ -1660,7 +1733,7 @@ const NearbyStores = ({ onClose }) => {
                   </button>
                 </div>
               )}
-              
+
               {locationPermission === 'prompt' && !locationLoading && !userLocation && (
                 <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <p className="text-xs text-blue-800 dark:text-blue-300 mb-2">
@@ -1674,7 +1747,7 @@ const NearbyStores = ({ onClose }) => {
                   </button>
                 </div>
               )}
-              
+
               {!locationLoading && !userLocation && !locationError && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <MapPin className="h-4 w-4" />

@@ -1,6 +1,7 @@
-// src/pages/ShoppingMeals.jsx - Enhanced Shopping Lists & Meal Planning
+// src/pages/ShoppingMeals.jsx - Enhanced AI-Powered Shopping & Meal Planning
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   ShoppingCart,
   Plus,
@@ -34,6 +35,7 @@ import {
   ChefHat,
   TrendingUp,
   BarChart3,
+  Smartphone,
   Heart,
   BookOpen,
   Clock4,
@@ -41,6 +43,7 @@ import {
   Camera,
   Image as ImageIcon,
   Zap,
+  Cloud,
   Brain,
   Calculator,
   Scale,
@@ -54,14 +57,24 @@ import {
   Crown,
   Award,
   MessageCircle,
+  MapPin,
+  Navigation,
+  Phone,
+  Store,
+  Scan,
+  BarChart,
+  RotateCcw,
+  Sparkle,
+  Cpu,
+  Globe,
+  Shield,
+  Tag,
+  DollarSign,
+  ArrowRight,
   Mic,
   Volume2,
   VolumeX,
-  Send,
-  Store,
-  Navigation,
-  Phone,
-  Sprout
+  Send
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -77,163 +90,688 @@ import {
   Timestamp,
   writeBatch
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
-import { useTheme } from '../contexts/ThemeContext';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-// Enhanced shopping categories
+// Sprout icon component
+const Sprout = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M7 20h10" />
+    <path d="M10 20c5.5-2.5.8-6.4 3-10" />
+    <path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z" />
+    <path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z" />
+  </svg>
+);
+
+// Enhanced AI Chat Component with Real-time Responses and Contextual Answers
+const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
+  const { isDark } = useTheme();
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      text: "Hi! I'm your AI cooking assistant. I can help you with meal ideas, recipes, cooking tips, and even suggest meals based on what's in your pantry. What would you like to know?",
+      isAI: true,
+      timestamp: new Date()
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const quickQuestions = [
+    "Quick healthy dinner?",
+    "Use my pantry items",
+    "30-minute meals",
+    "Vegetarian recipes",
+    "Meal prep ideas"
+  ];
+
+  // Enhanced AI response system with context awareness and faster responses
+  const generateAIResponse = useCallback((userInput) => {
+    const input = userInput.toLowerCase().trim();
+    
+    // Pantry-based suggestions
+    if (input.includes('pantry') || input.includes('what i have') || input.includes('ingredients i have') || input.includes('use my')) {
+      if (pantryItems.length === 0) {
+        return "I don't see any items in your pantry yet. Would you like to add some items first, or should I suggest some versatile recipes that work with common ingredients?";
+      }
+      
+      const pantryList = pantryItems.map(item => item.name).join(', ');
+      return `Based on your pantry (${pantryList}), here are some great meal ideas:\n\n🍝 **Pantry Pasta**\nUse your pasta, olive oil, and any vegetables. Add garlic and herbs for flavor.\n\n🍚 **Rice Bowl**\nCombine rice with canned tomatoes and beans for a hearty meal.\n\n🥫 **Quick Soup**\nUse canned tomatoes as a base, add pasta or rice, season well.\n\nWould you like detailed recipes for any of these?`;
+    }
+
+    // Quick meals
+    if (input.includes('quick') || input.includes('fast') || input.includes('30 min') || input.includes('easy') || input.includes('simple')) {
+      return "Here are quick meals under 30 minutes:\n\n⚡ **Stir-Fry Noodles** (15 min)\nNoodles, vegetables, soy sauce, sesame oil\n\n🥗 **Greek Salad Bowl** (10 min)\nGreens, cucumber, tomatoes, feta, olives, dressing\n\n🌮 **Quick Tacos** (20 min)\nProtein of choice, tortillas, toppings, salsa\n\n🍳 **Shakshuka** (25 min)\nEggs, tomatoes, peppers, onions, spices\n\nWhich one sounds good?";
+    }
+
+    // Healthy options
+    if (input.includes('healthy') || input.includes('nutritious') || input.includes('diet') || input.includes('low calorie')) {
+      return "Healthy meal ideas:\n\n🥑 **Buddha Bowl** (20 min, 380 cal)\nQuinoa, roasted vegetables, chickpeas, tahini\n\n🐟 **Baked Salmon** (25 min, 350 cal)\nSalmon, lemon, herbs, steamed broccoli\n\n🥗 **Power Salad** (15 min, 320 cal)\nSpinach, grilled chicken, nuts, berries, vinaigrette\n\n🍲 **Lentil Soup** (30 min, 280 cal)\nLentils, vegetables, spices, vegetable broth\n\nAll high in protein and nutrients!";
+    }
+
+    // Dinner ideas
+    if (input.includes('dinner') || input.includes('tonight') || input.includes('evening') || input.includes('supper')) {
+      return "Perfect dinner ideas:\n\n🍗 **Honey Garlic Chicken** (35 min)\nChicken thighs, honey, garlic, soy sauce, rice\n\n🍝 **Creamy Tuscan Pasta** (30 min)\nPasta, cream, sun-dried tomatoes, spinach, parmesan\n\n🥘 **One-Pan Fajitas** (25 min)\nProtein, peppers, onions, spices, tortillas\n\n🍛 **Thai Green Curry** (40 min)\nCoconut milk, curry paste, vegetables, protein, rice\n\nNeed the full recipe for any?";
+    }
+
+    // Breakfast
+    if (input.includes('breakfast') || input.includes('morning') || input.includes('brunch')) {
+      return "Breakfast options:\n\n🥞 **Protein Pancakes** (15 min)\nOats, eggs, banana, protein powder\n\n🍳 **Veggie Scramble** (10 min)\nEggs, peppers, onions, spinach, cheese\n\n🥣 **Overnight Oats** (5 min + overnight)\nOats, milk, chia seeds, berries, honey\n\n🥑 **Avocado Toast Deluxe** (10 min)\nWhole grain bread, avocado, eggs, seasonings\n\nAll filling and nutritious!";
+    }
+
+    // Lunch
+    if (input.includes('lunch') || input.includes('midday')) {
+      return "Lunch ideas:\n\n🥙 **Mediterranean Wrap** (10 min)\nWhole wheat wrap, hummus, veggies, feta\n\n🍜 **Asian Noodle Bowl** (20 min)\nNoodles, vegetables, protein, soy-ginger dressing\n\n🥗 **Cobb Salad** (15 min)\nGreens, chicken, eggs, bacon, avocado, cheese\n\n🌯 **Burrito Bowl** (15 min)\nRice, beans, protein, salsa, guacamole\n\nPerfect for meal prep too!";
+    }
+
+    // Vegetarian/Vegan
+    if (input.includes('vegetarian') || input.includes('veggie') || input.includes('vegan') || input.includes('plant-based') || input.includes('meatless')) {
+      return "Plant-based recipes:\n\n🌱 **Vegan Buddha Bowl** (25 min)\nQuinoa, roasted chickpeas, tahini, veggies\n\n🍆 **Eggplant Parmesan** (45 min)\nEggplant, marinara, mozzarella (vegan option)\n\n🥦 **Broccoli Alfredo** (20 min)\nPasta, cashew cream sauce, broccoli\n\n🌮 **Black Bean Tacos** (15 min)\nBlack beans, avocado, salsa, corn tortillas\n\nAll delicious and satisfying!";
+    }
+
+    // Meal prep
+    if (input.includes('meal prep') || input.includes('batch') || input.includes('week') || input.includes('prep')) {
+      return "Weekly meal prep plan:\n\n📦 **Prep Day Sunday**\n\n**Breakfast:** Egg muffins (12 count)\n**Lunch:** Chicken quinoa bowls (5 servings)\n**Dinner:** Turkey chili (6 servings)\n**Snacks:** Cut veggies & hummus\n\n**Shopping List:**\n- 2 dozen eggs\n- 2 lbs chicken\n- 1 lb ground turkey\n- Quinoa, rice\n- Mixed vegetables\n- Beans, tomatoes\n\n**Prep time:** 3-4 hours\n**Saves:** 10+ hours during week\n\nWant detailed instructions?";
+    }
+
+    // Chicken recipes
+    if (input.includes('chicken')) {
+      return "Chicken recipe ideas:\n\n🍗 **Lemon Herb Chicken** (30 min)\nChicken breast, lemon, rosemary, garlic\n\n🌮 **Chicken Fajitas** (25 min)\nChicken strips, peppers, onions, spices\n\n🍛 **Butter Chicken** (40 min)\nChicken, tomato cream sauce, spices, rice\n\n🥗 **Greek Chicken** (35 min)\nChicken, olives, tomatoes, feta, oregano\n\nAll easy and family-friendly!";
+    }
+
+    // Pasta
+    if (input.includes('pasta') || input.includes('noodle') || input.includes('spaghetti')) {
+      return "Pasta dishes:\n\n🍝 **Aglio e Olio** (15 min)\nSpaghetti, garlic, olive oil, chili flakes\n\n🍅 **Marinara Pasta** (20 min)\nPasta, tomatoes, basil, garlic, parmesan\n\n🧀 **Mac and Cheese** (25 min)\nPasta, cheese sauce, breadcrumb topping\n\n🥓 **Carbonara** (20 min)\nPasta, eggs, bacon, parmesan, black pepper\n\nClassic and delicious!";
+    }
+
+    // Cooking tips
+    if (input.includes('tip') || input.includes('how to') || input.includes('technique') || input.includes('advice')) {
+      return "Quick cooking tips:\n\n🔪 **Knife Skills**\n- Keep knives sharp\n- Use proper cutting board\n- Master basic cuts\n\n🔥 **Heat Control**\n- Preheat pans properly\n- Don't overcrowd\n- Let meat rest\n\n🧂 **Seasoning**\n- Salt in layers\n- Taste as you cook\n- Fresh herbs at end\n\n⏰ **Time Management**\n- Prep ingredients first\n- Multi-task wisely\n- Clean as you go\n\nWhat specific technique interests you?";
+    }
+
+    // Specific ingredients
+    if (input.includes('recipe for') || input.includes('how to make') || input.includes('cook') || input.includes('with')) {
+      const parts = input.split(/recipe for|how to make|cook|with/);
+      const ingredient = parts[parts.length - 1]?.trim();
+      
+      if (ingredient && ingredient.length > 2) {
+        return `Here's a great recipe featuring ${ingredient}:\n\n**Simple ${ingredient.charAt(0).toUpperCase() + ingredient.slice(1)} Recipe**\n\nI'd be happy to provide a detailed recipe! Could you let me know:\n- How many servings?\n- Any dietary restrictions?\n- Preferred cooking method?\n- Time available?\n\nThis helps me give you the perfect recipe!`;
+      }
+    }
+
+    // Budget meals
+    if (input.includes('cheap') || input.includes('budget') || input.includes('affordable') || input.includes('save money') || input.includes('inexpensive')) {
+      return "Budget-friendly meals:\n\n💰 **Rice & Beans** ($2/serving)\nRice, beans, spices, vegetables\n\n🥔 **Potato Soup** ($1.50/serving)\nPotatoes, onions, milk, seasonings\n\n🍝 **Pasta Primavera** ($2/serving)\nPasta, frozen veggies, olive oil, garlic\n\n🥚 **Egg Fried Rice** ($1.75/serving)\nRice, eggs, frozen vegetables, soy sauce\n\n🌯 **Bean Burritos** ($1.50/serving)\nTortillas, refried beans, cheese, salsa\n\nAll filling and nutritious!";
+    }
+
+    // Spicy food
+    if (input.includes('spicy') || input.includes('hot') || input.includes('heat')) {
+      return "Spicy dishes:\n\n🌶️ **Spicy Thai Basil** (25 min)\nProtein, thai basil, chilies, garlic\n\n🔥 **Buffalo Chicken** (30 min)\nChicken, buffalo sauce, ranch, celery\n\n🍛 **Vindaloo Curry** (45 min)\nProtein, vindaloo paste, potatoes\n\n🌮 **Spicy Tacos** (20 min)\nSeasoned meat, jalapeños, hot sauce\n\nHow spicy do you like it?";
+    }
+
+    // Sweet/Dessert
+    if (input.includes('dessert') || input.includes('sweet') || input.includes('cake') || input.includes('cookie') || input.includes('treat')) {
+      return "Sweet treats:\n\n🍰 **Mug Cake** (5 min)\nFlour, sugar, cocoa, egg, milk\n\n🍪 **No-Bake Cookies** (15 min)\nOats, peanut butter, honey, chocolate\n\n🍌 **Banana Bread** (60 min)\nBananas, flour, eggs, sugar\n\n🍓 **Fruit Parfait** (5 min)\nYogurt, granola, fresh berries\n\nEasy and delicious!";
+    }
+
+    // Seafood
+    if (input.includes('fish') || input.includes('seafood') || input.includes('salmon') || input.includes('shrimp') || input.includes('tuna')) {
+      return "Seafood options:\n\n🐟 **Pan-Seared Salmon** (20 min)\nSalmon, lemon, dill, garlic butter\n\n🍤 **Garlic Shrimp** (15 min)\nShrimp, garlic, white wine, pasta\n\n🐠 **Fish Tacos** (25 min)\nWhite fish, cabbage slaw, lime crema\n\n🦐 **Shrimp Stir-Fry** (20 min)\nShrimp, vegetables, ginger-soy sauce\n\nFresh and healthy!";
+    }
+
+    // Kid-friendly
+    if (input.includes('kid') || input.includes('child') || input.includes('picky eater') || input.includes('family') || input.includes('kids')) {
+      return "Kid-friendly meals:\n\n🍕 **Mini Pizzas** (20 min)\nEnglish muffins, sauce, cheese, toppings\n\n🌭 **Mac & Cheese Dogs** (15 min)\nHot dogs, mac and cheese\n\n🍗 **Chicken Nuggets** (25 min)\nChicken, breadcrumbs, baked not fried\n\n🌮 **Taco Bar** (20 min)\nLet kids build their own tacos\n\n🍝 **Spaghetti & Meatballs** (30 min)\nClassic favorite everyone loves\n\nFun and nutritious!";
+    }
+
+    // Default response with suggestions
+    return "I'd be happy to help! I can assist you with:\n\n✨ **Recipe suggestions** based on ingredients, time, or dietary needs\n📋 **Meal planning** for the week\n🥘 **Cooking tips** and techniques\n🛒 **Shopping lists** from recipes\n⏱️ **Quick meals** under 30 minutes\n🌱 **Dietary options** (vegan, keto, etc.)\n\nWhat would you like to explore? Try asking:\n- \"What can I make for dinner?\"\n- \"Quick healthy breakfast ideas\"\n- \"Recipes using chicken\"\n- \"Vegetarian meal prep\"\n- \"What's in my pantry?\"";
+  }, [pantryItems]);
+
+  const handleSendMessage = useCallback(async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage = {
+      id: Date.now(),
+      text: inputMessage,
+      isAI: false,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputMessage;
+    setInputMessage('');
+    setIsTyping(true);
+
+    // Faster response time (reduced from 800ms to 500ms for better UX)
+    setTimeout(() => {
+      const aiResponse = generateAIResponse(currentInput);
+      
+      const aiMessage = {
+        id: Date.now() + 1,
+        text: aiResponse,
+        isAI: true,
+        timestamp: new Date(),
+        hasActions: aiResponse.includes('Would you like') || aiResponse.includes('Need the full recipe')
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+      setIsTyping(false);
+
+      // Text-to-speech (optional, user-controlled)
+      if (!isMuted && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(aiResponse.replace(/\*\*/g, '').replace(/\n/g, ' '));
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 0.8;
+        window.speechSynthesis.speak(utterance);
+      }
+    }, 500); // Faster response
+  }, [inputMessage, generateAIResponse, isMuted]);
+
+  const handleQuickQuestion = useCallback((question) => {
+    setInputMessage(question);
+    setTimeout(() => {
+      handleSendMessage();
+    }, 100);
+  }, [handleSendMessage]);
+
+  const handleKeyPress = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  }, [handleSendMessage]);
+
+  return (
+    <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl h-[600px] shadow-2xl flex flex-col animate-slideUp transition-colors duration-200`}>
+        {/* Header */}
+        <div className={`p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-t-2xl`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-lg">
+                <Brain className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">AI Cooking Assistant</h2>
+                <p className="text-purple-700 dark:text-purple-300 text-sm">Instant meal ideas and cooking help</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsMuted(!isMuted)}
+                className={`p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors`}
+                title={isMuted ? "Enable audio" : "Disable audio"}
+              >
+                {isMuted ? <VolumeX className="h-5 w-5 text-gray-500 dark:text-gray-400" /> : <Volume2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />}
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-gray-900/50">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${message.isAI ? 'justify-start' : 'justify-end'} animate-messageSlide`}
+            >
+              <div
+                className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
+                  message.isAI
+                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none border border-gray-200 dark:border-gray-700'
+                    : 'bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-tr-none'
+                }`}
+              >
+                <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>
+                {message.hasActions && (
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => {
+                        toast.success('Recipe details coming soon!');
+                        onAddMeal?.();
+                      }}
+                      className="px-3 py-1.5 bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 rounded-full text-sm font-medium hover:bg-orange-50 dark:hover:bg-gray-600 transition-colors shadow-sm border border-orange-200 dark:border-orange-800"
+                    >
+                      Get Full Recipe
+                    </button>
+                    <button
+                      onClick={() => onAddMeal?.()}
+                      className="px-3 py-1.5 bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 rounded-full text-sm font-medium hover:bg-orange-50 dark:hover:bg-gray-600 transition-colors shadow-sm border border-orange-200 dark:border-orange-800"
+                    >
+                      Add to Meal Plan
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          {isTyping && (
+            <div className="flex justify-start animate-messageSlide">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-4 border border-gray-200 dark:border-gray-700">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick Questions */}
+        <div className={`p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800`}>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {quickQuestions.map((question, index) => (
+              <button
+                key={index}
+                onClick={() => handleQuickQuestion(question)}
+                className="px-3 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-700 dark:hover:text-purple-300 hover:border-purple-200 dark:hover:border-purple-800 transition-all border border-gray-200 dark:border-gray-600 shadow-sm"
+              >
+                {question}
+              </button>
+            ))}
+          </div>
+          {/* Input */}
+          <div className="flex gap-3">
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask about recipes, ingredients, or cooking tips..."
+              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+              disabled={isTyping}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!inputMessage.trim() || isTyping}
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+            >
+              <span>Send</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Nearby Stores Component (Enhanced with Dark Mode)
+const NearbyStores = ({ onClose }) => {
+  const { isDark } = useTheme();
+  const [stores, setStores] = useState([]);
+  const [selectedStore, setSelectedStore] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const mockStores = [
+    {
+      id: 1,
+      name: "Walmart Supercenter",
+      distance: "0.8 mi",
+      address: "123 Main St",
+      hours: "6:00 AM - 11:00 PM",
+      open: true,
+      rating: 4.2,
+      prices: {
+        "Milk (1 gal)": 3.29,
+        "Eggs (dozen)": 2.49,
+        "Bread": 2.99,
+        "Chicken Breast (lb)": 5.99,
+        "Apples (lb)": 1.99
+      },
+      deals: ["5% off produce today", "BOGO on select cereals"]
+    },
+    {
+      id: 2,
+      name: "Target",
+      distance: "1.2 mi",
+      address: "456 Oak Ave",
+      hours: "8:00 AM - 10:00 PM",
+      open: true,
+      rating: 4.4,
+      prices: {
+        "Milk (1 gal)": 3.49,
+        "Eggs (dozen)": 2.99,
+        "Bread": 3.29,
+        "Chicken Breast (lb)": 6.49,
+        "Apples (lb)": 2.29
+      },
+      deals: ["Red Card 5% discount", "Weekly circular specials"]
+    },
+    {
+      id: 3,
+      name: "Kroger",
+      distance: "0.5 mi",
+      address: "789 Pine St",
+      hours: "6:00 AM - 12:00 AM",
+      open: true,
+      rating: 4.1,
+      prices: {
+        "Milk (1 gal)": 3.19,
+        "Eggs (dozen)": 2.39,
+        "Bread": 2.79,
+        "Chicken Breast (lb)": 5.79,
+        "Apples (lb)": 1.89
+      },
+      deals: ["Fuel points on every purchase", "Digital coupons available"]
+    },
+    {
+      id: 4,
+      name: "Whole Foods Market",
+      distance: "2.1 mi",
+      address: "321 Elm Blvd",
+      hours: "7:00 AM - 10:00 PM",
+      open: true,
+      rating: 4.6,
+      prices: {
+        "Milk (1 gal)": 4.99,
+        "Eggs (dozen)": 4.49,
+        "Bread": 4.99,
+        "Chicken Breast (lb)": 8.99,
+        "Apples (lb)": 2.99
+      },
+      deals: ["Prime member 10% off", "Weekly sale items"]
+    }
+  ];
+
+  useEffect(() => {
+    setTimeout(() => {
+      setStores(mockStores);
+      setSelectedStore(mockStores[0]);
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  const getPriceColor = (price, item) => {
+    const prices = stores.map(store => store.prices[item]).filter(p => p);
+    const minPrice = Math.min(...prices);
+    return price === minPrice ? 'text-green-600 dark:text-green-400 font-bold' : 'text-gray-600 dark:text-gray-400';
+  };
+
+  const handleGetDirections = () => {
+    if (selectedStore) {
+      const address = encodeURIComponent(selectedStore.address);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+      <div className={`bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl h-[600px] shadow-2xl flex overflow-hidden animate-slideUp transition-colors duration-200`}>
+        {/* Store List */}
+        <div className={`w-1/3 border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-gray-50 dark:bg-gray-900`}>
+          <div className={`p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 sticky top-0 z-10`}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Nearby Stores</h2>
+              <button 
+                onClick={onClose} 
+                className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+              <MapPin className="h-4 w-4" />
+              <span>Sorted by distance</span>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="p-6 space-y-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className={`animate-pulse bg-white dark:bg-gray-800 p-4 rounded-xl`}>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {stores.map(store => (
+                <button
+                  key={store.id}
+                  onClick={() => setSelectedStore(store)}
+                  className={`w-full p-4 cursor-pointer transition-all text-left ${
+                    selectedStore?.id === store.id 
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-r-4 border-blue-600 dark:border-blue-400 shadow-sm' 
+                      : 'hover:bg-white dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-semibold text-gray-900 dark:text-white pr-2">{store.name}</h3>
+                    <span className="text-sm text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">{store.distance}</span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{store.address}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-2 h-2 rounded-full ${store.open ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{store.open ? 'Open' : 'Closed'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{store.rating}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Store Details */}
+        <div className={`flex-1 overflow-y-auto bg-white dark:bg-gray-800`}>
+          {selectedStore ? (
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{selectedStore.name}</h2>
+                  <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    {selectedStore.address}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleGetDirections}
+                    className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors shadow-sm"
+                    title="Get directions"
+                  >
+                    <Navigation className="h-5 w-5" />
+                  </button>
+                  <button 
+                    className="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors shadow-sm"
+                    title="Call store"
+                  >
+                    <Phone className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Store Info Cards */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className={`bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-600`}>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <Clock className="h-4 w-4" />
+                    <span>Hours</span>
+                  </div>
+                  <p className="font-semibold text-gray-900 dark:text-white">{selectedStore.hours}</p>
+                  <span className={`text-xs px-2 py-0.5 rounded-full mt-2 inline-block ${
+                    selectedStore.open ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                  }`}>
+                    {selectedStore.open ? 'Open Now' : 'Closed'}
+                  </span>
+                </div>
+                <div className={`bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-600`}>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <Star className="h-4 w-4" />
+                    <span>Rating</span>
+                  </div>
+                  <p className="font-semibold text-gray-900 dark:text-white text-2xl">{selectedStore.rating}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">out of 5.0</p>
+                </div>
+                <div className={`bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-600`}>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <Navigation className="h-4 w-4" />
+                    <span>Distance</span>
+                  </div>
+                  <p className="font-semibold text-gray-900 dark:text-white text-2xl">{selectedStore.distance}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">from you</p>
+                </div>
+              </div>
+
+              {/* Price Comparison */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <DollarSign className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg">Price Comparison</h3>
+                </div>
+                <div className="space-y-2">
+                  {Object.entries(selectedStore.prices).map(([item, price]) => (
+                    <div key={item} className={`flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors`}>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{item}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`${getPriceColor(price, item)} text-lg`}>
+                          ${price.toFixed(2)}
+                        </span>
+                        {getPriceColor(price, item).includes('green') && (
+                          <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-2 py-0.5 rounded-full font-medium">
+                            Best Price
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Current Deals */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Tag className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg">Current Deals</h3>
+                </div>
+                <div className="space-y-2">
+                  {selectedStore.deals.map((deal, index) => (
+                    <div key={index} className={`flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg`}>
+                      <Sparkles className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <span className="text-green-800 dark:text-green-300 font-medium">{deal}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <button
+                onClick={handleGetDirections}
+                className="w-full mt-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              >
+                <Navigation className="h-5 w-5" />
+                Get Directions to {selectedStore.name}
+              </button>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
+              <Store className="h-16 w-16 mb-4" />
+              <p className="text-lg">Select a store to view details</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Enhanced shopping categories with dark mode
 const SHOPPING_CATEGORIES = [
-  { id: 'produce', label: 'Produce', icon: Leaf, color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' },
-  { id: 'dairy', label: 'Dairy', icon: CircleDot, color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
-  { id: 'meat', label: 'Meat & Fish', icon: Utensils, color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' },
-  { id: 'bakery', label: 'Bakery', icon: UtensilsCrossed, color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
-  { id: 'frozen', label: 'Frozen', icon: Snowflake, color: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800' },
-  { id: 'pantry', label: 'Pantry', icon: Package, color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800' },
-  { id: 'beverages', label: 'Beverages', icon: Coffee, color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
-  { id: 'other', label: 'Other', icon: ShoppingCart, color: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600' }
-];
-
-// Enhanced meal types
-const MEAL_TYPES = [
-  { id: 'breakfast', label: 'Breakfast', icon: Coffee, time: '7:00 AM', color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' },
-  { id: 'lunch', label: 'Lunch', icon: Sun, time: '12:00 PM', color: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300' },
-  { id: 'dinner', label: 'Dinner', icon: Moon, time: '6:00 PM', color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300' },
-  { id: 'snack', label: 'Snack', icon: Leaf, time: '', color: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300' }
-];
-
-// AI Suggested Meals with Images
-const AI_SUGGESTED_MEALS = [
-  {
-    id: 1,
-    name: "Mediterranean Bowl",
-    type: "lunch",
-    prepTime: "15 min",
-    difficulty: "easy",
-    calories: 420,
-    ingredients: ["Quinoa", "Chickpeas", "Cucumber", "Tomatoes", "Feta Cheese", "Olive Oil"],
-    aiScore: 95,
-    tags: ["Healthy", "Vegetarian", "Quick"],
-    image: null, // Using placeholder instead
-    description: "A vibrant and nutritious bowl packed with Mediterranean flavors. Perfect for a healthy lunch that's both satisfying and quick to prepare."
+  { 
+    id: 'all',
+    label: 'All Items',
+    icon: ShoppingCart,
+    color: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
   },
-  {
-    id: 2,
-    name: "Teriyaki Salmon",
-    type: "dinner",
-    prepTime: "25 min",
-    difficulty: "medium",
-    calories: 380,
-    ingredients: ["Salmon", "Soy Sauce", "Ginger", "Garlic", "Brown Sugar", "Green Onions"],
-    aiScore: 92,
-    tags: ["High Protein", "Omega-3", "Asian"],
-    image: null, // Using placeholder instead
-    description: "Tender salmon glazed with a sweet and savory teriyaki sauce. Rich in omega-3 fatty acids and protein, perfect for a nutritious dinner."
+  { 
+    id: 'produce', 
+    label: 'Produce', 
+    icon: Leaf, 
+    color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
   },
-  {
-    id: 3,
-    name: "Avocado Toast",
-    type: "breakfast",
-    prepTime: "10 min",
-    difficulty: "easy",
-    calories: 280,
-    ingredients: ["Whole Grain Bread", "Avocado", "Eggs", "Chili Flakes", "Lemon Juice"],
-    aiScore: 88,
-    tags: ["Quick", "Vegetarian", "Healthy Fats"],
-    image: null, // Using placeholder instead
-    description: "A modern breakfast classic featuring creamy avocado on whole grain toast. Quick, healthy, and delicious - perfect for busy mornings."
+  { 
+    id: 'dairy', 
+    label: 'Dairy', 
+    icon: CircleDot, 
+    color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
   },
-  {
-    id: 4,
-    name: "Vegetable Stir Fry",
-    type: "dinner",
-    prepTime: "20 min",
-    difficulty: "easy",
-    calories: 320,
-    ingredients: ["Broccoli", "Bell Peppers", "Carrots", "Tofu", "Soy Sauce", "Sesame Oil"],
-    aiScore: 90,
-    tags: ["Vegan", "Quick", "Low Calorie"],
-    image: null, // Using placeholder instead
-    description: "A colorful mix of fresh vegetables stir-fried to perfection. Light, healthy, and packed with nutrients - ideal for a quick weeknight dinner."
+  { 
+    id: 'meat', 
+    label: 'Meat & Fish', 
+    icon: Utensils, 
+    color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
   },
-  {
-    id: 5,
-    name: "Grilled Chicken Salad",
-    type: "lunch",
-    prepTime: "20 min",
-    difficulty: "easy",
-    calories: 350,
-    ingredients: ["Chicken Breast", "Mixed Greens", "Cherry Tomatoes", "Cucumber", "Olive Oil", "Lemon"],
-    aiScore: 93,
-    tags: ["High Protein", "Low Carb", "Fresh"],
-    image: null, // Using placeholder instead
-    description: "Fresh mixed greens topped with perfectly grilled chicken. A protein-packed lunch that keeps you energized throughout the day."
+  { 
+    id: 'bakery', 
+    label: 'Bakery', 
+    icon: UtensilsCrossed, 
+    color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
   },
-  {
-    id: 6,
-    name: "Pasta Primavera",
-    type: "dinner",
-    prepTime: "30 min",
-    difficulty: "medium",
-    calories: 450,
-    ingredients: ["Pasta", "Zucchini", "Bell Peppers", "Cherry Tomatoes", "Parmesan", "Basil"],
-    aiScore: 89,
-    tags: ["Vegetarian", "Comfort Food", "Italian"],
-    image: null, // Using placeholder instead
-    description: "Fresh spring vegetables tossed with pasta in a light sauce. A comforting and colorful dish that celebrates seasonal produce."
+  { 
+    id: 'frozen', 
+    label: 'Frozen', 
+    icon: Snowflake, 
+    color: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800'
+  },
+  { 
+    id: 'pantry', 
+    label: 'Pantry', 
+    icon: Package, 
+    color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800'
+  },
+  { 
+    id: 'beverages', 
+    label: 'Beverages', 
+    icon: Coffee, 
+    color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
   }
 ];
 
-// Popular Recipes with placeholders
-const POPULAR_RECIPES = [
-  {
-    id: 1,
-    name: "Classic Beef Burger",
-    cookTime: "30 min",
-    difficulty: "medium",
-    rating: 4.8,
-    image: null, // Using placeholder
-    tags: ["American", "Comfort Food", "Family"],
-    description: "Juicy beef patty with fresh vegetables and special sauce. Perfect for family gatherings and weekend barbecues.",
-    ingredients: ["Ground Beef", "Burger Buns", "Lettuce", "Tomato", "Onion", "Cheese", "Pickles", "Special Sauce"]
-  },
-  {
-    id: 2,
-    name: "Margherita Pizza",
-    cookTime: "25 min",
-    difficulty: "medium",
-    rating: 4.7,
-    image: null,
-    tags: ["Italian", "Vegetarian", "Classic"],
-    description: "Classic Italian pizza with fresh mozzarella, basil, and tomato sauce. Simple yet delicious.",
-    ingredients: ["Pizza Dough", "Tomato Sauce", "Mozzarella", "Fresh Basil", "Olive Oil", "Garlic"]
-  },
-  {
-    id: 3,
-    name: "Chicken Curry",
-    cookTime: "45 min",
-    difficulty: "medium",
-    rating: 4.6,
-    image: null,
-    tags: ["Indian", "Spicy", "Comfort Food"],
-    description: "Aromatic and flavorful chicken curry with rich spices. Perfect for a hearty dinner.",
-    ingredients: ["Chicken", "Curry Powder", "Coconut Milk", "Onions", "Garlic", "Ginger", "Tomatoes", "Rice"]
-  },
-  {
-    id: 4,
-    name: "Chocolate Cake",
-    cookTime: "60 min",
-    difficulty: "hard",
-    rating: 4.9,
-    image: null,
-    tags: ["Dessert", "Chocolate", "Baking"],
-    description: "Rich and moist chocolate cake that's perfect for celebrations. A crowd favorite dessert.",
-    ingredients: ["Flour", "Cocoa Powder", "Sugar", "Eggs", "Butter", "Milk", "Vanilla Extract", "Baking Powder"]
-  }
+// Dietary filters
+const DIETARY_FILTERS = [
+  { id: 'all', label: 'All', icon: Globe },
+  { id: 'vegetarian', label: 'Vegetarian', icon: Leaf },
+  { id: 'vegan', label: 'Vegan', icon: Sprout },
+  { id: 'gluten-free', label: 'Gluten-Free', icon: Shield },
+  { id: 'keto', label: 'Keto', icon: Zap },
+  { id: 'low-carb', label: 'Low-Carb', icon: BarChart },
+  { id: 'dairy-free', label: 'Dairy-Free', icon: CircleDot }
 ];
 
-// Days of week
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
+// Main Component
 export default function ShoppingMeals() {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
@@ -242,40 +780,17 @@ export default function ShoppingMeals() {
   const [shoppingItems, setShoppingItems] = useState([]);
   const [meals, setMeals] = useState([]);
   const [showAddItem, setShowAddItem] = useState(false);
-  const [showAddMeal, setShowAddMeal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  const [editingMeal, setEditingMeal] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()));
-  const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('grid');
-  const [showImportExport, setShowImportExport] = useState(false);
-  const [bulkItems, setBulkItems] = useState('');
-  const [budget, setBudget] = useState(200);
-  const [currentSpending, setCurrentSpending] = useState(0);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // New state
   const [showAIChat, setShowAIChat] = useState(false);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [chatInput, setChatInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState([]);
-  const recognitionRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const chatInputRef = useRef(null);
   const [showNearbyStores, setShowNearbyStores] = useState(false);
-  const [showImageRecognition, setShowImageRecognition] = useState(false);
-  const [showPantry, setShowPantry] = useState(false);
-  const [pantryItems, setPantryItems] = useState([]);
   const [dietaryFilter, setDietaryFilter] = useState('all');
-  const [mealPrepSuggestions, setMealPrepSuggestions] = useState([]);
-  const [selectedRecipe, setSelectedRecipe] = useState(null);
-  const [showRecipeModal, setShowRecipeModal] = useState(false);
-  const [editingMeal, setEditingMeal] = useState(null);
+  const [pantryItems, setPantryItems] = useState([]);
 
-  // Enhanced item form
+  // Item form
   const [itemForm, setItemForm] = useState({
     name: '',
     quantity: '1',
@@ -283,95 +798,146 @@ export default function ShoppingMeals() {
     category: 'produce',
     notes: '',
     priority: 'medium',
-    price: '',
-    image: null
+    price: ''
   });
-
-  // Enhanced meal form
-  const [mealForm, setMealForm] = useState({
-    name: '',
-    type: 'dinner',
-    date: new Date().toISOString().split('T')[0],
-    servings: '4',
-    ingredients: '',
-    notes: '',
-    prepTime: '',
-    difficulty: 'medium',
-    favorite: false,
-    image: null,
-    nutrition: {
-      calories: '',
-      protein: '',
-      carbs: '',
-      fats: ''
-    }
-  });
-
-  // Get week start (Sunday)
-  function getWeekStart(date) {
-    const d = new Date(date);
-    const day = d.getDay();
-    d.setDate(d.getDate() - day);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
 
   // Load data
   useEffect(() => {
     if (currentUser) {
       loadData();
       loadPantryItems();
-      generateMealPrepSuggestions();
     }
   }, [currentUser]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      let items = [];
-      let mealsList = [];
-
-      // Load shopping items
-      try {
-        const itemsSnap = await getDocs(query(
-          collection(db, 'shoppingItems'), 
-          where('userId', '==', currentUser.uid)
-        ));
-        items = itemsSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate()
-        }));
-      } catch (err) {
-        console.log('No shopping items yet:', err.code);
-      }
-
-      // Load meals
-      try {
-        const mealsSnap = await getDocs(query(
-          collection(db, 'meals'), 
-          where('userId', '==', currentUser.uid)
-        ));
-        mealsList = mealsSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          date: doc.data().date?.toDate(),
-          createdAt: doc.data().createdAt?.toDate()
-        }));
-      } catch (err) {
-        console.log('No meals yet:', err.code);
-      }
-
+      const itemsSnap = await getDocs(query(
+        collection(db, 'shoppingItems'), 
+        where('userId', '==', currentUser.uid)
+      ));
+      const items = itemsSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
+      const mealsSnap = await getDocs(query(
+        collection(db, 'meals'), 
+        where('userId', '==', currentUser.uid)
+      ));
+      const mealsList = mealsSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().date?.toDate(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
       setShoppingItems(items);
       setMeals(mealsList);
     } catch (error) {
       console.error('Error loading data:', error);
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
   };
 
-  // Enhanced filtering with search
+  const loadPantryItems = () => {
+    const mockPantry = [
+      { id: 1, name: 'Rice', quantity: '2 cups', category: 'pantry' },
+      { id: 2, name: 'Pasta', quantity: '1 lb', category: 'pantry' },
+      { id: 3, name: 'Olive Oil', quantity: '500 ml', category: 'pantry' },
+      { id: 4, name: 'Canned Tomatoes', quantity: '3 cans', category: 'pantry' }
+    ];
+    setPantryItems(mockPantry);
+  };
+
+  // Add item
+  const handleAddItem = async (e) => {
+    e.preventDefault();
+    if (!itemForm.name.trim()) {
+      toast.error('Please enter an item name');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'shoppingItems'), {
+        ...itemForm,
+        userId: currentUser.uid,
+        checked: false,
+        createdAt: serverTimestamp()
+      });
+      toast.success('Item added!');
+      setShowAddItem(false);
+      setItemForm({
+        name: '',
+        quantity: '1',
+        unit: '',
+        category: 'produce',
+        notes: '',
+        priority: 'medium',
+        price: ''
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast.error('Failed to add item');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Toggle item checked
+  const toggleItemChecked = async (itemId, currentChecked) => {
+    try {
+      await updateDoc(doc(db, 'shoppingItems', itemId), {
+        checked: !currentChecked
+      });
+      loadData();
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast.error('Failed to update item');
+    }
+  };
+
+  // Delete item
+  const handleDeleteItem = async (itemId) => {
+    if (!window.confirm('Delete this item?')) return;
+    
+    try {
+      await deleteDoc(doc(db, 'shoppingItems', itemId));
+      toast.success('Item deleted');
+      loadData();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      toast.error('Failed to delete item');
+    }
+  };
+
+  // Clear checked items
+  const handleClearChecked = async () => {
+    const checkedItems = shoppingItems.filter(item => item.checked);
+    if (checkedItems.length === 0) {
+      toast.error('No checked items to clear');
+      return;
+    }
+    if (!window.confirm(`Clear ${checkedItems.length} checked items?`)) return;
+    try {
+      const batch = writeBatch(db);
+      checkedItems.forEach(item => {
+        batch.delete(doc(db, 'shoppingItems', item.id));
+      });
+      await batch.commit();
+      
+      toast.success(`Cleared ${checkedItems.length} items`);
+      loadData();
+    } catch (error) {
+      console.error('Error clearing items:', error);
+      toast.error('Failed to clear items');
+    }
+  };
+
+  // Filter items
   const filteredItems = useMemo(() => {
     let items = shoppingItems;
     
@@ -386,7 +952,6 @@ export default function ShoppingMeals() {
       );
     }
     
-    // Enhanced sorting: unchecked first, then by priority, then by category
     return items.sort((a, b) => {
       if (a.checked !== b.checked) return a.checked ? 1 : -1;
       
@@ -399,1922 +964,352 @@ export default function ShoppingMeals() {
     });
   }, [shoppingItems, selectedCategory, searchTerm]);
 
-  // Get meals for current week
-  const weekMeals = useMemo(() => {
-    const weekEnd = new Date(currentWeekStart);
-    weekEnd.setDate(weekEnd.getDate() + 7);
-
-    return meals.filter(m => {
-      if (!m.date) return false;
-      const mealDate = new Date(m.date);
-      return mealDate >= currentWeekStart && mealDate < weekEnd;
-    });
-  }, [meals, currentWeekStart]);
-
-  // Get meals for a specific day
-  const getMealsForDay = (dayIndex) => {
-    const targetDate = new Date(currentWeekStart);
-    targetDate.setDate(targetDate.getDate() + dayIndex);
-    
-    return weekMeals.filter(m => {
-      const mealDate = new Date(m.date);
-      return mealDate.toDateString() === targetDate.toDateString();
-    });
-  };
-
-  // Enhanced shopping stats
+  // Shopping stats
   const shoppingStats = useMemo(() => {
     const total = shoppingItems.length;
     const checked = shoppingItems.filter(i => i.checked).length;
     const remaining = total - checked;
-    const highPriority = shoppingItems.filter(i => i.priority === 'high' && !i.checked).length;
-    const totalCost = shoppingItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
-    
-    return { total, checked, remaining, highPriority, totalCost };
-  }, [shoppingItems]);
-
-  // Meal planning stats
-  const mealStats = useMemo(() => {
-    const total = meals.length;
-    const thisWeek = weekMeals.length;
-    const favorites = meals.filter(m => m.favorite).length;
-    const breakfasts = meals.filter(m => m.type === 'breakfast').length;
-    
-    return { total, thisWeek, favorites, breakfasts };
-  }, [meals, weekMeals]);
-
-  // Handle add item with image upload
-  const handleAddItem = async (e) => {
-    e.preventDefault();
-    if (!itemForm.name) {
-      toast.error('Please enter item name');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      let imageUrl = itemForm.image;
-      if (itemForm.image instanceof File) {
-        imageUrl = await uploadImage(itemForm.image);
-      }
-
-      const data = {
-        userId: currentUser.uid,
-        name: itemForm.name.trim(),
-        quantity: itemForm.quantity,
-        unit: itemForm.unit,
-        category: itemForm.category,
-        notes: itemForm.notes,
-        priority: itemForm.priority || 'medium',
-        price: itemForm.price || '',
-        image: imageUrl,
-        checked: editingItem ? editingItem.checked : false,
-        createdAt: editingItem ? editingItem.createdAt : serverTimestamp(),
-        updatedAt: serverTimestamp()
-      };
-
-      if (editingItem) {
-        await updateDoc(doc(db, 'shoppingItems', editingItem.id), data);
-        toast.success('Item updated!');
-      } else {
-        await addDoc(collection(db, 'shoppingItems'), data);
-        toast.success('Item added!');
-      }
-
-      await loadData();
-      setShowAddItem(false);
-      setEditingItem(null);
-      resetItemForm();
-    } catch (error) {
-      console.error('Error saving item:', error);
-      toast.error('Failed to save item');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Handle add meal with image upload
-  const handleAddMeal = async (e) => {
-    e.preventDefault();
-    if (!mealForm.name) {
-      toast.error('Please enter meal name');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      let imageUrl = mealForm.image;
-      if (mealForm.image instanceof File) {
-        imageUrl = await uploadImage(mealForm.image);
-      }
-
-      const data = {
-        userId: currentUser.uid,
-        name: mealForm.name.trim(),
-        type: mealForm.type,
-        date: Timestamp.fromDate(new Date(mealForm.date)),
-        servings: parseInt(mealForm.servings) || 4,
-        ingredients: mealForm.ingredients,
-        notes: mealForm.notes,
-        prepTime: mealForm.prepTime,
-        difficulty: mealForm.difficulty,
-        favorite: mealForm.favorite,
-        image: imageUrl,
-        nutrition: mealForm.nutrition,
-        createdAt: editingMeal ? editingMeal.createdAt : serverTimestamp(),
-        updatedAt: serverTimestamp()
-      };
-
-      if (editingMeal) {
-        await updateDoc(doc(db, 'meals', editingMeal.id), data);
-        toast.success('Meal updated!');
-      } else {
-        await addDoc(collection(db, 'meals'), data);
-        toast.success('Meal planned!');
-      }
-
-      await loadData();
-      setShowAddMeal(false);
-      setEditingMeal(null);
-      resetMealForm();
-    } catch (error) {
-      console.error('Error saving meal:', error);
-      toast.error('Failed to save meal');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Add AI suggested meal (with calendar integration)
-  const addAISuggestedMeal = async (meal, selectedDate = null) => {
-    setSubmitting(true);
-    try {
-      const mealDate = selectedDate || new Date(mealForm.date);
-      const mealTime = MEAL_TYPES.find(m => m.id === meal.type)?.time || '12:00 PM';
-      
-      // Add meal to meals collection
-      await addDoc(collection(db, 'meals'), {
-        userId: currentUser.uid,
-        name: meal.name,
-        type: meal.type,
-        date: Timestamp.fromDate(mealDate),
-        servings: 4,
-        ingredients: meal.ingredients.join('\n'),
-        prepTime: meal.prepTime,
-        difficulty: meal.difficulty,
-        favorite: false,
-        image: meal.image || null,
-        description: meal.description || '',
-        nutrition: {
-          calories: meal.calories.toString(),
-          protein: '',
-          carbs: '',
-          fats: ''
-        },
-        createdAt: serverTimestamp()
-      });
-
-      // Also add to calendar as an event
-      const eventDate = new Date(mealDate);
-      const [time, period] = mealTime.split(' ');
-      const [hours, minutes] = time.split(':');
-      let hour = parseInt(hours);
-      if (period === 'PM' && hour !== 12) hour += 12;
-      if (period === 'AM' && hour === 12) hour = 0;
-      eventDate.setHours(hour, parseInt(minutes) || 0, 0, 0);
-
-      await addDoc(collection(db, 'events'), {
-        userId: currentUser.uid,
-        title: `${meal.name} - ${meal.type.charAt(0).toUpperCase() + meal.type.slice(1)}`,
-        type: 'family',
-        date: Timestamp.fromDate(eventDate),
-        startTime: mealTime,
-        endTime: '',
-        location: 'Home',
-        description: meal.description || `Meal: ${meal.name}\nPrep Time: ${meal.prepTime}\nDifficulty: ${meal.difficulty}\nCalories: ${meal.calories}`,
-        assignedTo: '',
-        reminder: true,
-        allDay: false,
-        createdAt: serverTimestamp()
-      });
-
-      toast.success('AI meal added to plan and calendar! 🚀');
-      await loadData();
-    } catch (error) {
-      console.error('Error saving AI meal:', error);
-      toast.error('Failed to save meal');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Initialize chat with welcome message
-  useEffect(() => {
-    if (showAIChat && chatMessages.length === 0) {
-      const welcomeMessage = {
-        id: Date.now(),
-        type: 'assistant',
-        content: `👋 Hi! I'm your AI Meal Assistant. I can help you with:
-
-🍽️ **Meal Ideas** - Get personalized meal suggestions
-📝 **Recipes** - Detailed cooking instructions
-🥗 **Nutrition** - Nutritional information and health tips
-📅 **Meal Planning** - Weekly meal planning strategies
-💰 **Budget-Friendly** - Affordable meal options
-
-**Try asking:**
-• "Quick healthy meals for dinner"
-• "Vegetarian meal ideas"
-• "Low calorie breakfast options"
-• "Meal prep tips for the week"
-
-You can also upload images of food or ingredients, and I'll help you create meals from them!`,
-        timestamp: new Date()
-      };
-      setChatMessages([welcomeMessage]);
-    }
-  }, [showAIChat]);
-
-  // Auto-scroll chat
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
-
-  // Comprehensive AI Responses based on user input
-  const aiResponses = {
-    "quick healthy dinner ideas": {
-      content: "Here are some quick healthy dinner ideas:\n\n🥗 **Mediterranean Quinoa Bowl** (15 min)\n- Quinoa, chickpeas, cucumber, tomatoes, feta, olive oil\n\n🍣 **Teriyaki Salmon** (25 min)\n- Salmon, soy sauce, ginger, garlic, broccoli\n\n🥦 **Vegetable Stir Fry** (20 min)\n- Mixed vegetables, tofu, soy sauce, sesame oil\n\nWould you like recipes for any of these?",
-      meals: AI_SUGGESTED_MEALS.filter(m => m.difficulty === 'easy' && parseInt(m.prepTime) <= 20)
-    },
-    "what can i make with chicken": {
-      content: "Great! Chicken is versatile. Here are ideas:\n\n🍗 **Lemon Herb Chicken** (30 min)\n- Chicken breast, lemon, herbs, garlic\n\n🌮 **Chicken Fajitas** (25 min)\n- Chicken strips, bell peppers, onions, spices\n\n🍛 **Chicken Curry** (40 min)\n- Chicken, coconut milk, curry spices, rice\n\n🍝 **Chicken Alfredo** (35 min)\n- Chicken, pasta, cream, parmesan\n\nWhich sounds good?",
-      meals: []
-    },
-    "vegetarian recipes for beginners": {
-      content: "Perfect for starting meat-free! Try these:\n\n🍅 **Caprese Pasta** (20 min)\n- Pasta, fresh tomatoes, mozzarella, basil\n\n🥔 **Vegetable Curry** (30 min)\n- Mixed vegetables, coconut milk, curry paste\n\n🌯 **Black Bean Burritos** (15 min)\n- Black beans, tortillas, cheese, salsa\n\n🥗 **Greek Salad Bowl** (10 min)\n- Greens, olives, feta, cucumber, dressing",
-      meals: AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('vegetarian') || t.toLowerCase().includes('vegan')))
-    },
-    "meal prep ideas for the week": {
-      content: "Smart planning! Here's a weekly meal prep plan:\n\n**Breakfasts:**\n- Overnight oats with berries\n- Egg muffins with vegetables\n\n**Lunches:**\n- Quinoa salad jars\n- Chicken/veggie wraps\n\n**Dinners:**\n- Sheet pan vegetables with protein\n- Hearty soups or stews\n\n**Snacks:**\n- Cut vegetables with hummus\n- Greek yogurt with nuts",
-      meals: []
-    },
-    "low-carb breakfast options": {
-      content: "Low-carb breakfast ideas:\n\n🥑 **Avocado Egg Boats** (15 min)\n- Avocado halves with baked eggs\n\n🍳 **Vegetable Frittata** (25 min)\n- Eggs, spinach, mushrooms, cheese\n\n🥓 **Breakfast Skillet** (20 min)\n- Sausage, peppers, onions, eggs\n\n🍓 **Greek Yogurt Bowl** (5 min)\n- Greek yogurt, berries, nuts, seeds\n\n🥚 **Egg Muffins** (25 min)\n- Eggs, cheese, vegetables baked in muffin tin",
-      meals: []
-    },
-    "dinner": {
-      content: "Here are some great dinner options:\n\n🍣 **Teriyaki Salmon** (25 min)\n- High in omega-3, protein-packed\n\n🥦 **Vegetable Stir Fry** (20 min)\n- Quick, vegan, and nutritious\n\n🍗 **Grilled Chicken Salad** (20 min)\n- Fresh and protein-rich\n\nWhich would you like to try?",
-      meals: AI_SUGGESTED_MEALS.filter(m => m.type === 'dinner')
-    },
-    "breakfast": {
-      content: "Start your day right with these breakfast ideas:\n\n🥑 **Avocado Toast** (10 min)\n- Whole grain bread, avocado, eggs\n\n🍳 **Vegetable Frittata** (25 min)\n- Eggs, vegetables, cheese\n\n🥣 **Overnight Oats** (5 min prep)\n- Oats, milk, berries, nuts\n\nWhich sounds good?",
-      meals: AI_SUGGESTED_MEALS.filter(m => m.type === 'breakfast')
-    },
-    "lunch": {
-      content: "Perfect lunch options:\n\n🥗 **Mediterranean Bowl** (15 min)\n- Quinoa, chickpeas, fresh vegetables\n\n🍗 **Grilled Chicken Salad** (20 min)\n- Protein-packed and fresh\n\n🌯 **Wrap Options** (10 min)\n- Various fillings, quick to make\n\nWhat would you like?",
-      meals: AI_SUGGESTED_MEALS.filter(m => m.type === 'lunch')
-    }
-  };
-
-  // AI Meal Response Generator - Based on user input, not random
-  const generateMealResponse = useCallback((query) => {
-    const lowerQuery = query.toLowerCase();
-    
-    // Check for exact matches first
-    for (const [key, response] of Object.entries(aiResponses)) {
-      if (lowerQuery.includes(key)) {
-        const meal = response.meals && response.meals.length > 0 
-          ? response.meals[0] 
-          : AI_SUGGESTED_MEALS.find(m => m.name.toLowerCase().includes(key.split(' ')[0]));
-        
-        if (meal) {
-          return {
-            content: response.content + `\n\n**${meal.name}**\n\n${meal.description}\n\n**Prep Time:** ${meal.prepTime}\n**Difficulty:** ${meal.difficulty}\n**Calories:** ${meal.calories}\n\n**Ingredients:**\n${meal.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
-            mealSuggestion: meal,
-            image: meal.image
-          };
-        }
-        return {
-          content: response.content,
-          mealSuggestion: null,
-          image: null
-        };
-      }
-    }
-
-    // Check for specific meal names
-    const matchingMeal = AI_SUGGESTED_MEALS.find(meal => 
-      meal.name.toLowerCase().includes(lowerQuery) ||
-      meal.ingredients.some(ing => ing.toLowerCase().includes(lowerQuery))
+    const totalCost = shoppingItems.reduce((sum, item) => 
+      sum + (parseFloat(item.price) || 0), 0
     );
-
-    if (matchingMeal) {
-      return {
-        content: `Here's a great meal suggestion for you:\n\n**${matchingMeal.name}**\n\n${matchingMeal.description}\n\n**Prep Time:** ${matchingMeal.prepTime}\n**Difficulty:** ${matchingMeal.difficulty}\n**Calories:** ${matchingMeal.calories}\n\n**Ingredients:**\n${matchingMeal.ingredients.map(ing => `• ${ing}`).join('\n')}\n\n**Tags:** ${matchingMeal.tags.join(', ')}\n\nWould you like me to add this to your meal plan?`,
-        mealSuggestion: matchingMeal,
-        image: matchingMeal.image
-      };
-    }
-
-    // Keyword-based matching
-    if (lowerQuery.includes('quick') || lowerQuery.includes('fast') || lowerQuery.includes('easy')) {
-      const quickMeals = AI_SUGGESTED_MEALS.filter(m => m.difficulty === 'easy' && parseInt(m.prepTime) <= 20);
-      if (quickMeals.length > 0) {
-        const selected = quickMeals[0];
-        return {
-          content: `Here's a quick and easy meal idea:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
-          mealSuggestion: selected,
-          image: selected.image
-        };
-      }
-    }
-
-    if (lowerQuery.includes('vegetarian') || lowerQuery.includes('vegan')) {
-      const vegMeals = AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('vegetarian') || t.toLowerCase().includes('vegan')));
-      if (vegMeals.length > 0) {
-        const selected = vegMeals[0];
-        return {
-          content: `Here's a great vegetarian option:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
-          mealSuggestion: selected,
-          image: selected.image
-        };
-      }
-    }
-
-    if (lowerQuery.includes('healthy') || lowerQuery.includes('nutritious') || lowerQuery.includes('low calorie')) {
-      const healthyMeals = AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('healthy')) || m.calories < 400);
-      if (healthyMeals.length > 0) {
-        const selected = healthyMeals[0];
-        return {
-          content: `Here's a nutritious meal suggestion:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
-          mealSuggestion: selected,
-          image: selected.image
-        };
-      }
-    }
-
-    if (lowerQuery.includes('high protein') || lowerQuery.includes('protein')) {
-      const proteinMeals = AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('protein')));
-      if (proteinMeals.length > 0) {
-        const selected = proteinMeals[0];
-        return {
-          content: `Here's a high-protein meal:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
-          mealSuggestion: selected,
-          image: selected.image
-        };
-      }
-    }
-
-    // If no specific match, provide helpful response
-    return {
-      content: `I'd be happy to help with that! Could you tell me more about:\n\n• What type of meal are you looking for? (breakfast, lunch, dinner)\n• Any dietary preferences? (vegetarian, vegan, gluten-free)\n• How much time do you have? (quick, easy, or more complex)\n• Any specific ingredients you want to use?\n\nOr try asking:\n• "Quick healthy dinner ideas"\n• "Vegetarian recipes for beginners"\n• "What can I make with chicken"\n• "Low-carb breakfast options"`,
-      mealSuggestion: null,
-      image: null
-    };
-  }, []);
-
-  // Handle chat send
-  const handleChatSend = useCallback(async (text = null) => {
-    const query = (text || chatInput).trim();
-    const hasImages = uploadedImages.length > 0;
     
-    if (!query && !hasImages) return;
-
-    setIsTyping(true);
-
-    // Add user message
-    const userMessage = {
-      id: Date.now(),
-      type: 'user',
-      content: query || 'Sent an image',
-      timestamp: new Date(),
-      images: uploadedImages.map(img => img.url)
-    };
-    setChatMessages(prev => [...prev, userMessage]);
-    setChatInput('');
-    setUploadedImages([]);
-
-    // Simulate AI thinking
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Analyze image if provided
-    let imageAnalysis = '';
-    if (hasImages) {
-      imageAnalysis = 'I can see the image you shared. Based on the ingredients/food shown, ';
-    }
-
-    // Generate AI response
-    const aiResponse = generateMealResponse(query || 'meal suggestion');
-    
-    const assistantMessage = {
-      id: Date.now() + 1,
-      type: 'assistant',
-      content: imageAnalysis + aiResponse.content,
-      timestamp: new Date(),
-      mealSuggestion: aiResponse.mealSuggestion,
-      image: aiResponse.image
-    };
-
-    setChatMessages(prev => [...prev, assistantMessage]);
-
-    // Text-to-speech
-    if (!isMuted && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(aiResponse.content.replace(/\*\*/g, '').replace(/\n/g, ' '));
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 0.8;
-      window.speechSynthesis.speak(utterance);
-    }
-
-    setIsTyping(false);
-  }, [chatInput, uploadedImages, generateMealResponse, isMuted]);
-
-  // Speech-to-text
-  const handleStartRecording = useCallback(() => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      toast.error('Speech recognition not supported in your browser');
-      return;
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
-
-    if (isRecording) {
-      recognition.stop();
-      setIsRecording(false);
-      return;
-    }
-
-    recognition.onstart = () => {
-      setIsRecording(true);
-      toast.success('Listening...');
-    };
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setChatInput(transcript);
-      recognition.stop();
-      setIsRecording(false);
-      handleChatSend(transcript);
-    };
-
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      toast.error('Speech recognition error');
-      setIsRecording(false);
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-  }, [isRecording, handleChatSend]);
-
-  // Image upload handler
-  const handleImageUpload = (e, setForm) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('Image size should be less than 5MB');
-        return;
-      }
-      setForm(prev => ({ ...prev, image: file }));
-    }
-  };
-
-  // Toggle item checked
-  const toggleItemChecked = async (item) => {
-    try {
-      await updateDoc(doc(db, 'shoppingItems', item.id), {
-        checked: !item.checked
-      });
-      await loadData();
-    } catch (error) {
-      toast.error('Failed to update item');
-    }
-  };
-
-  // Delete item
-  const handleDeleteItem = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'shoppingItems', id));
-      await loadData();
-      toast.success('Item removed');
-    } catch (error) {
-      toast.error('Failed to delete item');
-    }
-  };
-
-  // Delete meal
-  const handleDeleteMeal = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'meals', id));
-      await loadData();
-      toast.success('Meal removed');
-    } catch (error) {
-      toast.error('Failed to delete meal');
-    }
-  };
-
-  // Clear checked items
-  const clearCheckedItems = async () => {
-    if (!window.confirm('Remove all checked items?')) return;
-    
-    try {
-      const checkedItems = shoppingItems.filter(i => i.checked);
-      await Promise.all(
-        checkedItems.map(item => deleteDoc(doc(db, 'shoppingItems', item.id)))
-      );
-      await loadData();
-      toast.success('Checked items cleared');
-    } catch (error) {
-      toast.error('Failed to clear items');
-    }
-  };
-
-  // Add ingredients to shopping list
-  const addIngredientsToList = async (meal) => {
-    if (!meal.ingredients) {
-      toast.error('No ingredients to add');
-      return;
-    }
-
-    const ingredients = meal.ingredients.split('\n').filter(i => i.trim());
-    
-    try {
-      await Promise.all(
-        ingredients.map(ingredient =>
-          addDoc(collection(db, 'shoppingItems'), {
-            userId: currentUser.uid,
-            name: ingredient.trim(),
-            quantity: '1',
-            unit: '',
-            category: 'produce',
-            notes: `For: ${meal.name}`,
-            checked: false,
-            createdAt: serverTimestamp()
-          })
-        )
-      );
-      await loadData();
-      toast.success(`${ingredients.length} items added to shopping list`);
-    } catch (error) {
-      toast.error('Failed to add ingredients');
-    }
-  };
-
-  // Navigate weeks
-  const goToPrevWeek = () => {
-    const newStart = new Date(currentWeekStart);
-    newStart.setDate(newStart.getDate() - 7);
-    setCurrentWeekStart(newStart);
-  };
-
-  const goToNextWeek = () => {
-    const newStart = new Date(currentWeekStart);
-    newStart.setDate(newStart.getDate() + 7);
-    setCurrentWeekStart(newStart);
-  };
-
-  const goToCurrentWeek = () => {
-    setCurrentWeekStart(getWeekStart(new Date()));
-  };
-
-  // Handle bulk import
-  const handleBulkImport = async () => {
-    if (!bulkItems.trim()) {
-      toast.error('Please enter items to import');
-      return;
-    }
-
-    const items = bulkItems.split('\n').filter(item => item.trim());
-    
-    try {
-      const batch = writeBatch(db);
-      items.forEach(item => {
-        const docRef = doc(collection(db, 'shoppingItems'));
-        batch.set(docRef, {
-          userId: currentUser.uid,
-          name: item.trim(),
-          quantity: '1',
-          unit: '',
-          category: 'other',
-          checked: false,
-          priority: 'medium',
-          createdAt: serverTimestamp()
-        });
-      });
-      
-      await batch.commit();
-      await loadData();
-      setShowImportExport(false);
-      setBulkItems('');
-      toast.success(`${items.length} items imported!`);
-    } catch (error) {
-      toast.error('Failed to import items');
-    }
-  };
-
-  const exportShoppingList = () => {
-    const data = shoppingItems.map(item => 
-      `${item.checked ? '[✓]' : '[ ]'} ${item.quantity} ${item.unit} ${item.name}${item.notes ? ` (${item.notes})` : ''}`
-    ).join('\n');
-    
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `shopping-list-${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast.success('Shopping list exported!');
-  };
-
-  // Reset forms
-  const resetItemForm = () => {
-    setItemForm({ name: '', quantity: '1', unit: '', category: 'produce', notes: '', priority: 'medium', price: '', image: null });
-  };
-
-  const resetMealForm = () => {
-    setMealForm({ 
-      name: '', 
-      type: 'dinner', 
-      date: new Date().toISOString().split('T')[0], 
-      servings: '4', 
-      ingredients: '', 
-      notes: '',
-      prepTime: '',
-      difficulty: 'medium',
-      favorite: false,
-      image: null,
-      nutrition: {
-        calories: '',
-        protein: '',
-        carbs: '',
-        fats: ''
-      }
-    });
-  };
-
-  // Start editing item
-  const startEditItem = (item) => {
-    setEditingItem(item);
-    setItemForm({
-      name: item.name,
-      quantity: item.quantity,
-      unit: item.unit,
-      category: item.category,
-      notes: item.notes || '',
-      priority: item.priority || 'medium',
-      price: item.price || '',
-      image: item.image || null
-    });
-    setShowAddItem(true);
-  };
-
-  // Start editing meal
-  const startEditMeal = (meal) => {
-    setEditingMeal(meal);
-    const mealDate = meal.date instanceof Date ? meal.date : meal.date?.toDate ? meal.date.toDate() : new Date(meal.date);
-    setMealForm({
-      name: meal.name,
-      type: meal.type,
-      date: mealDate.toISOString().split('T')[0],
-      servings: meal.servings?.toString() || '4',
-      ingredients: meal.ingredients || '',
-      notes: meal.notes || '',
-      prepTime: meal.prepTime || '',
-      difficulty: meal.difficulty || 'medium',
-      favorite: meal.favorite || false,
-      image: meal.image || null,
-      nutrition: meal.nutrition || {
-        calories: '',
-        protein: '',
-        carbs: '',
-        fats: ''
-      }
-    });
-    setShowAddMeal(true);
-  };
-
-  // Get category info
-  const getCategoryInfo = (categoryId) => {
-    return SHOPPING_CATEGORIES.find(c => c.id === categoryId) || SHOPPING_CATEGORIES[SHOPPING_CATEGORIES.length - 1];
-  };
-
-  // Get meal type info
-  const getMealType = (typeId) => {
-    return MEAL_TYPES.find(t => t.id === typeId) || MEAL_TYPES[2];
-  };
-
-  // Format week range
-  const formatWeekRange = () => {
-    const end = new Date(currentWeekStart);
-    end.setDate(end.getDate() + 6);
-    return `${currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-  };
+    return { total, checked, remaining, totalCost };
+  }, [shoppingItems]);
 
   if (loading) {
     return (
-      <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 flex items-center justify-center min-h-[400px]">
-        <div className="w-10 h-10 border-4 border-orange-600 border-t-transparent rounded-full animate-spin" />
+      <div className={`flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200`}>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-orange-200 dark:border-orange-800 border-t-orange-600 dark:border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 max-w-7xl mx-auto">
+    <div className={`p-6 max-w-7xl mx-auto space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200`}>
       {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-orange-100 to-amber-100 rounded-xl">
-              {activeTab === 'shopping' ? (
-                <ShoppingCart className="h-8 w-8 text-orange-600" />
-              ) : (
-                <UtensilsCrossed className="h-8 w-8 text-orange-600" />
-              )}
-            </div>
-            {activeTab === 'shopping' ? 'Shopping List' : 'Meal Planner'}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {activeTab === 'shopping' 
-              ? 'Organize your grocery shopping' 
-              : 'Plan meals for the week'}
-          </p>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-2xl shadow-lg">
+            <ShoppingCart className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Smart Shopping List</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">AI-powered grocery management</p>
+          </div>
         </div>
-        {/* Budget Tracker */}
-        {activeTab === 'shopping' && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
-                <Wallet className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Monthly Budget</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-gray-900 dark:text-white">${currentSpending.toFixed(2)}</span>
-                  <span className="text-gray-400">/</span>
-                  <span className="text-lg font-bold text-green-600 dark:text-green-400">${budget}</span>
-                </div>
-                <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                  <div 
-                    className={`h-2 rounded-full ${
-                      (currentSpending / budget) > 0.8 ? 'bg-red-500' : 
-                      (currentSpending / budget) > 0.6 ? 'bg-yellow-500' : 'bg-green-500'
-                    }`}
-                    style={{ width: `${Math.min((currentSpending / budget) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
         
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
-            <button
-              onClick={() => setActiveTab('shopping')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'shopping' ? 'bg-white dark:bg-gray-800 shadow text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-300'
-              }`}
-            >
-              <ShoppingCart className="h-4 w-4 inline mr-2" />
-              Shopping
-            </button>
-            <button
-              onClick={() => setActiveTab('meals')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'meals' ? 'bg-white dark:bg-gray-800 shadow text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-300'
-              }`}
-            >
-              <UtensilsCrossed className="h-4 w-4 inline mr-2" />
-              Meals
-            </button>
-          </div>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setShowAIChat(true)}
+            className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-500 dark:to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 dark:hover:from-purple-600 dark:hover:to-pink-600 transition-all flex items-center gap-2 shadow-lg"
+          >
+            <Brain className="h-5 w-5" />
+            AI Assistant
+          </button>
           
-          <div className="flex gap-3">
-            {activeTab === 'shopping' && (
-              <button
-                onClick={() => setShowImportExport(true)}
-                className="px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center gap-2 shadow-sm"
-              >
-                <Download className="h-4 w-4" />
-                Import/Export
-              </button>
-            )}
-            <button
-              onClick={() => activeTab === 'shopping' ? setShowAddItem(true) : setShowAddMeal(true)}
-              className="bg-gradient-to-r from-orange-600 to-amber-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 hover:from-orange-700 hover:to-amber-700 transition-all shadow-lg shadow-orange-200"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Add {activeTab === 'shopping' ? 'Item' : 'Meal'}</span>
-            </button>
+          <button
+            onClick={() => setShowNearbyStores(true)}
+            className="px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all flex items-center gap-2"
+          >
+            <Store className="h-5 w-5" />
+            Nearby Stores
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors duration-200`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{shoppingStats.total}</p>
+            </div>
+            <ShoppingCart className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+          </div>
+        </div>
+        
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors duration-200`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Checked</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{shoppingStats.checked}</p>
+            </div>
+            <Check className="h-8 w-8 text-green-400 dark:text-green-500" />
+          </div>
+        </div>
+        
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors duration-200`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Remaining</p>
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{shoppingStats.remaining}</p>
+            </div>
+            <Package className="h-8 w-8 text-orange-400 dark:text-orange-500" />
+          </div>
+        </div>
+        
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors duration-200`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Cost</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${shoppingStats.totalCost.toFixed(2)}</p>
+            </div>
+            <DollarSign className="h-8 w-8 text-blue-400 dark:text-blue-500" />
           </div>
         </div>
       </div>
 
-      {activeTab === 'shopping' ? (
-        /* Shopping List View */
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Enhanced Stats */}
-          <div className="lg:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Items</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{shoppingStats.total}</p>
-                </div>
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                  <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Remaining</p>
-                  <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{shoppingStats.remaining}</p>
-                </div>
-                <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
-                  <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Completed</p>
-                  <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{shoppingStats.checked}</p>
-                </div>
-                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
-                  <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Cost</p>
-                  <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-1">${shoppingStats.totalCost.toFixed(2)}</p>
-                </div>
-                <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
-                  <Wallet className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                </div>
-              </div>
+      {/* Controls */}
+      <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-colors duration-200`}>
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search items..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+              />
             </div>
           </div>
-
-          {/* Enhanced Category Filter with Search */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sticky top-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white">Categories</h3>
-                <Filter className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-              </div>
-              
-              {/* Search */}
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search items..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                />
-              </div>
-
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                <button
-                  onClick={() => setSelectedCategory('all')}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    selectedCategory === 'all' 
-                      ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800' 
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent'
-                  }`}
-                >
-                  All Items
-                </button>
-                {SHOPPING_CATEGORIES.map((cat) => {
-                  const count = shoppingItems.filter(i => i.category === cat.id && !i.checked).length;
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => setSelectedCategory(cat.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${
-                        selectedCategory === cat.id ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <cat.icon className="h-4 w-4" />
-                        {cat.label}
-                      </span>
-                      {count > 0 && (
-                        <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">
-                          {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Quick Actions */}
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
-                {shoppingStats.checked > 0 && (
-                  <button
-                    onClick={clearCheckedItems}
-                    className="w-full py-3 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 transition-all text-sm font-medium flex items-center justify-center gap-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Clear Checked Items
-                  </button>
-                )}
-                
-                <button
-                  onClick={exportShoppingList}
-                  className="w-full py-3 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all text-sm font-medium flex items-center justify-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Export List
-                </button>
-              </div>
-            </div>
-
-            {/* Shopping Tips */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200 dark:border-blue-800 p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Smart Tips</h3>
-              </div>
-              <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-                <p>🛒 Buy in bulk for frequently used items</p>
-                <p>📅 Plan meals around weekly sales</p>
-                <p>🥬 Shop seasonal produce for better prices</p>
-                <p>📱 Use price comparison apps</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Shopping Items */}
-          <div className="lg:col-span-3">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h2 className="font-semibold text-gray-900 dark:text-white text-lg">
-                    {selectedCategory === 'all' ? 'All Items' : getCategoryInfo(selectedCategory).label}
-                    <span className="text-gray-500 dark:text-gray-400 font-normal ml-2">
-                      ({filteredItems.length} items)
-                    </span>
-                  </h2>
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span>Priority:</span>
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                    <span>High</span>
-                    <span className="w-2 h-2 bg-yellow-500 rounded-full ml-2"></span>
-                    <span>Medium</span>
-                    <span className="w-2 h-2 bg-green-500 rounded-full ml-2"></span>
-                    <span>Low</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {filteredItems.length > 0 ? (
-                  filteredItems.map((item) => {
-                    const category = getCategoryInfo(item.category);
-                    const CategoryIcon = category.icon;
-
-                    return (
-                      <div
-                        key={item.id}
-                        className={`p-4 flex items-center gap-4 border-l-4 group hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                          item.checked ? 'opacity-60' : ''
-                        } ${
-                          item.priority === 'high' ? 'border-l-red-500 bg-red-50/50 dark:bg-red-900/10' :
-                          item.priority === 'medium' ? 'border-l-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10' :
-                          'border-l-green-500 bg-green-50/50 dark:bg-green-900/10'
-                        }`}
-                      >
-                        <button
-                          onClick={() => toggleItemChecked(item)}
-                          className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${
-                            item.checked
-                              ? 'bg-green-500 dark:bg-green-600 border-green-500 dark:border-green-600 text-white shadow-sm'
-                              : 'border-gray-300 dark:border-gray-600 hover:border-green-500 dark:hover:border-green-400 bg-white dark:bg-gray-700'
-                          }`}
-                        >
-                          {item.checked && <Check className="h-4 w-4" />}
-                        </button>
-
-                        {/* Item Image */}
-                        {item.image && (
-                          <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                            <img 
-                              src={item.image} 
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-
-                        <div className={`p-2 rounded-xl ${category.color} border flex-shrink-0`}>
-                          <CategoryIcon className="h-4 w-4" />
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-semibold truncate ${
-                            item.checked ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white'
-                          }`}>
-                            {item.name}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {item.quantity} {item.unit} {item.notes && `• ${item.notes}`}
-                          </p>
-                          {item.price && (
-                            <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                              ${parseFloat(item.price).toFixed(2)}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => startEditItem(item)}
-                            className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                            title="Edit item"
-                          >
-                            <Edit3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                            title="Delete item"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="p-12 text-center">
-                    <ShoppingCart className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400 mb-2 text-lg">No items found</p>
-                    <p className="text-gray-400 dark:text-gray-500 mb-6">
-                      {searchTerm || selectedCategory !== 'all' 
-                        ? 'Try adjusting your search or filter' 
-                        : 'Start by adding items to your shopping list'
-                      }
-                    </p>
-                    <button
-                      onClick={() => setShowAddItem(true)}
-                      className="bg-orange-600 dark:bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200 dark:shadow-orange-900/50"
-                    >
-                      Add Your First Item
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          
+          <button
+            onClick={() => setShowAddItem(true)}
+            className="px-6 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors flex items-center gap-2 justify-center"
+          >
+            <Plus className="h-5 w-5" />
+            Add Item
+          </button>
+          
+          {shoppingStats.checked > 0 && (
+            <button
+              onClick={handleClearChecked}
+              className="px-6 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="h-5 w-5" />
+              Clear Checked
+            </button>
+          )}
         </div>
-      ) : (
-        /* Enhanced Meal Planner View */
-        <div className="space-y-8">
-          {/* Enhanced Meal Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Meals</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{mealStats.total}</p>
-                </div>
-                <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
-                  <BookOpen className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">This Week</p>
-                  <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{mealStats.thisWeek}</p>
-                </div>
-                <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
-                  <Calendar className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Favorites</p>
-                  <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{mealStats.favorites}</p>
-                </div>
-                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
-                  <Heart className="h-6 w-6 text-red-600 dark:text-red-400" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Breakfasts</p>
-                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{mealStats.breakfasts}</p>
-                </div>
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                  <Coffee className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* Enhanced Week Navigation */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={goToPrevWeek}
-                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors border border-gray-200 dark:border-gray-700"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              
-              <div className="text-center">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{formatWeekRange()}</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Weekly Meal Plan</p>
-              </div>
-              
-              <button
-                onClick={goToNextWeek}
-                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors border border-gray-200 dark:border-gray-700"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <button
-                onClick={goToCurrentWeek}
-                className="px-4 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg font-medium hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors border border-orange-200 dark:border-orange-800"
-              >
-                This Week
-              </button>
-              
-              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === 'grid' ? 'bg-white dark:bg-gray-800 shadow text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  Grid
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === 'list' ? 'bg-white dark:bg-gray-800 shadow text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  List
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Categories */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {SHOPPING_CATEGORIES.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${
+                selectedCategory === cat.id
+                  ? cat.color + ' shadow-sm'
+                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+              }`}
+            >
+              <cat.icon className="h-4 w-4" />
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          {/* Week Grid */}
-          {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-            {DAYS.map((day, index) => {
-              const dayDate = new Date(currentWeekStart);
-              dayDate.setDate(dayDate.getDate() + index);
-              const dayMeals = getMealsForDay(index);
-              const isToday = dayDate.toDateString() === new Date().toDateString();
-
+      {/* Items List */}
+      <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm transition-colors duration-200`}>
+        {filteredItems.length === 0 ? (
+          <div className="p-12 text-center">
+            <ShoppingCart className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No items found</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm">Add items to your shopping list to get started</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            {filteredItems.map(item => {
+              const CategoryIcon = SHOPPING_CATEGORIES.find(c => c.id === item.category)?.icon || ShoppingCart;
+              
               return (
                 <div
-                  key={day}
-                  className={`bg-white dark:bg-gray-800 rounded-2xl border-2 overflow-hidden transition-all hover:shadow-md ${
-                    isToday ? 'border-orange-500 dark:border-orange-400 shadow-lg' : 'border-gray-200 dark:border-gray-700'
+                  key={item.id}
+                  className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                    item.checked ? 'bg-gray-50 dark:bg-gray-700/50' : ''
                   }`}
                 >
-                  <div className={`p-3 text-center ${
-                    isToday ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white' : 'bg-gray-50 dark:bg-gray-800'
-                  }`}>
-                    <p className="font-medium text-sm uppercase tracking-wide">{day.slice(0, 3)}</p>
-                    <p className={`text-lg font-bold ${isToday ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                      {dayDate.getDate()}
-                    </p>
-                  </div>
-
-                  <div className="p-2 space-y-2 min-h-[200px]">
-                    {dayMeals.length > 0 ? (
-                      dayMeals.map((meal) => {
-                        const mealType = getMealType(meal.type);
-                        const MealIcon = mealType.icon;
-
-                        return (
-                          <div
-                            key={meal.id}
-                            className="p-2 bg-orange-50 rounded-lg group relative"
-                          >
-                            <div className="flex items-center gap-1 mb-1">
-                              <MealIcon className="h-3 w-3 text-orange-600" />
-                              <span className="text-xs text-orange-600 capitalize">{meal.type}</span>
-                            </div>
-                            <p className="text-sm font-medium text-gray-900 truncate">{meal.name}</p>
-                            
-                            <div className="absolute top-1 right-1 hidden group-hover:flex gap-1">
-                              <button
-                                onClick={() => startEditMeal(meal)}
-                                className="p-1 bg-white dark:bg-gray-800 rounded shadow hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                                title="Edit meal"
-                              >
-                                <Edit3 className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                              </button>
-                              {meal.ingredients && (
-                                <button
-                                  onClick={() => addIngredientsToList(meal)}
-                                  className="p-1 bg-white dark:bg-gray-800 rounded shadow hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-                                  title="Add to shopping list"
-                                >
-                                  <ShoppingCart className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleDeleteMeal(meal.id)}
-                                className="p-1 bg-white dark:bg-gray-800 rounded shadow hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                                title="Delete"
-                              >
-                                <X className="h-3 w-3 text-red-600 dark:text-red-400" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setMealForm(prev => ({
-                            ...prev,
-                            date: dayDate.toISOString().split('T')[0]
-                          }));
-                          setShowAddMeal(true);
-                        }}
-                        className="w-full h-full min-h-[50px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-400 hover:border-orange-300 hover:text-orange-500 transition-colors"
-                      >
-                        <Plus className="h-5 w-5" />
-                      </button>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => toggleItemChecked(item.id, item.checked)}
+                      className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                        item.checked
+                          ? 'bg-green-600 dark:bg-green-500 border-green-600 dark:border-green-500'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-green-600 dark:hover:border-green-500'
+                      }`}
+                    >
+                      {item.checked && <Check className="h-4 w-4 text-white" />}
+                    </button>
+                    <div className={`p-2 rounded-lg ${
+                      SHOPPING_CATEGORIES.find(c => c.id === item.category)?.color || 'bg-gray-100 dark:bg-gray-700'
+                    }`}>
+                      <CategoryIcon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className={`font-semibold ${
+                        item.checked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'
+                      }`}>
+                        {item.name}
+                      </h3>
+                      <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <span>{item.quantity} {item.unit}</span>
+                        {item.price && (
+                          <span className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            {item.price}
+                          </span>
+                        )}
+                        {item.notes && (
+                          <span className="text-gray-400 dark:text-gray-500">• {item.notes}</span>
+                        )}
+                      </div>
+                    </div>
+                    {item.priority === 'high' && !item.checked && (
+                      <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full">
+                        High Priority
+                      </span>
                     )}
+                    <button
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
-          ) : (
-            /* List View for Meals */
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
-                <h3 className="font-semibold text-gray-900 dark:text-white">Weekly Meals List</h3>
-              </div>
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {weekMeals.map((meal) => {
-                  const mealType = getMealType(meal.type);
-                  const MealIcon = mealType.icon;
-                  const mealDate = new Date(meal.date);
-                  
-                  return (
-                    <div key={meal.id} className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
-                      {meal.image && (
-                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-                          <img 
-                            src={meal.image} 
-                            alt={meal.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      
-                      <div className={`p-3 rounded-xl ${mealType.color} border flex-shrink-0`}>
-                        <MealIcon className="h-5 w-5" />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-1">
-                          <p className="font-semibold text-gray-900 dark:text-white truncate">{meal.name}</p>
-                          {meal.favorite && (
-                            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {mealDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                          </span>
-                          <span className="capitalize">{meal.type}</span>
-                          {meal.prepTime && (
-                            <span className="flex items-center gap-1">
-                              <Clock4 className="h-3 w-3" />
-                              {meal.prepTime}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {meal.servings} servings
-                          </span>
-                        </div>
-                        
-                        {meal.notes && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">{meal.notes}</p>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {meal.ingredients && (
-                          <button
-                            onClick={() => addIngredientsToList(meal)}
-                            className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
-                            title="Add to shopping list"
-                          >
-                            <ShoppingCart className="h-4 w-4 text-green-600 dark:text-green-400" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => startEditMeal(meal)}
-                          className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                          title="Edit meal"
-                        >
-                          <Edit3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteMeal(meal.id)}
-                          className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                          title="Delete meal"
-                        >
-                          <X className="h-4 w-4 text-red-600 dark:text-red-400" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-                
-                {weekMeals.length === 0 && (
-                  <div className="p-12 text-center">
-                    <ChefHat className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400 mb-2 text-lg">No meals planned for this week</p>
-                    <p className="text-gray-400 dark:text-gray-500 mb-6">Start planning your meals to see them here</p>
-                    <button
-                      onClick={() => setShowAddMeal(true)}
-                      className="bg-orange-600 dark:bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200 dark:shadow-orange-900/50"
-                    >
-                      Plan Your First Meal
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+        )}
+      </div>
 
-          {/* AI Meal Suggestions */}
-          <div className="mt-8 bg-gradient-to-r from-purple-50 dark:from-purple-900/20 to-pink-50 dark:to-pink-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-800">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
-                  <Brain className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg">AI Meal Suggestions</h3>
-                  <p className="text-purple-700 dark:text-purple-300 text-sm">Personalized recommendations</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={() => setShowAIChat(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-700 dark:to-pink-700 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 dark:hover:from-purple-600 dark:hover:to-pink-600 transition-all shadow-lg"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Chat with AI
-                </button>
-                <button
-                  onClick={() => setShowNearbyStores(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all"
-                >
-                  <Store className="h-4 w-4" />
-                  Nearby Stores
-                </button>
-                <button
-                  onClick={() => setShowImageRecognition(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-700 dark:hover:bg-green-600 transition-all"
-                >
-                  <Camera className="h-4 w-4" />
-                  Scan Items
-                </button>
-                <button
-                  onClick={() => setShowPantry(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-700 text-white rounded-lg text-sm font-medium hover:bg-amber-700 dark:hover:bg-amber-600 transition-all"
-                >
-                  <Package className="h-4 w-4" />
-                  My Pantry
-                </button>
-                <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 rounded-full border border-purple-200 dark:border-purple-800">
-                  <Zap className="h-4 w-4 text-yellow-500" />
-                  <span className="text-sm font-medium text-purple-700 dark:text-purple-300">AI Powered</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {AI_SUGGESTED_MEALS.map((meal) => (
-                <div key={meal.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all group">
-                  {/* Meal Image */}
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30">
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ChefHat className="h-12 w-12 text-purple-400 dark:text-purple-500" />
-                    </div>
-                    <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 dark:bg-gray-700 text-white px-2 py-1 rounded-full text-xs">
-                      <Crown className="h-3 w-3 text-yellow-400" />
-                      {meal.aiScore}%
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{meal.name}</h4>
-                      {!meal.image && (
-                        <div className="flex items-center gap-1 bg-black/70 dark:bg-gray-700 text-white px-2 py-1 rounded-full text-xs">
-                          <Crown className="h-3 w-3 text-yellow-400" />
-                          {meal.aiScore}%
-                        </div>
-                      )}
-                    </div>
-                    
-                    {meal.description && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{meal.description}</p>
-                    )}
-                    
-                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
-                      <span className="flex items-center gap-1">
-                        <Clock4 className="h-3 w-3" />
-                        {meal.prepTime}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full ${
-                        meal.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                        meal.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                      }`}>
-                        {meal.difficulty}
-                      </span>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {meal.tags.map((tag, index) => (
-                        <span key={index} className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded text-xs">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    
-                    <button
-                      onClick={() => addAISuggestedMeal(meal)}
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-700 dark:to-pink-700 text-white py-2 rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 dark:hover:from-purple-600 dark:hover:to-pink-600 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add to Plan
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Popular Recipes Section */}
-          <div className="bg-gradient-to-r from-orange-50 dark:from-orange-900/20 to-amber-50 dark:to-amber-900/20 rounded-2xl p-8 border border-orange-200 dark:border-orange-800 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
-                  <ChefHat className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg">Popular Recipes</h3>
-                  <p className="text-orange-700 dark:text-orange-300 text-sm">Community favorites with high ratings</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {POPULAR_RECIPES.map((recipe) => (
-                <div 
-                  key={recipe.id} 
-                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
-                  onClick={() => {
-                    setSelectedRecipe(recipe);
-                    setShowRecipeModal(true);
-                  }}
-                >
-                  <div className="relative h-40 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center">
-                    <ChefHat className="h-16 w-16 text-purple-400 dark:text-purple-500" />
-                    <div className="absolute top-2 right-2 bg-black/70 dark:bg-gray-700 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      {recipe.rating}
-                    </div>
-                  </div>
-                  
-                  <div className="p-4">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{recipe.name}</h4>
-                    
-                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
-                      <span className="flex items-center gap-1">
-                        <Clock4 className="h-3 w-3" />
-                        {recipe.cookTime}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        recipe.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                        recipe.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                      }`}>
-                        {recipe.difficulty}
-                      </span>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1">
-                      {recipe.tags.map((tag, index) => (
-                        <span key={index} className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-1 rounded text-xs">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Enhanced Add Item Modal with Image Upload */}
+      {/* Add Item Modal */}
       {showAddItem && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto transition-colors duration-200">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className={`bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl transition-colors duration-200`}>
+            <div className={`p-6 border-b border-gray-200 dark:border-gray-700`}>
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {editingItem ? 'Edit Item' : 'Add New Item'}
-                </h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Item</h2>
                 <button
-                  onClick={() => { setShowAddItem(false); setEditingItem(null); resetItemForm(); }}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  onClick={() => setShowAddItem(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
                   <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
-
-            <form onSubmit={handleAddItem} className="p-6 space-y-6">
-              {/* Image Upload */}
+            <form onSubmit={handleAddItem} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item Image</label>
-                <div className="flex items-center gap-4">
-                  {itemForm.image ? (
-                    <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                      <img 
-                        src={itemForm.image instanceof File ? URL.createObjectURL(itemForm.image) : itemForm.image} 
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
-                      <ImageIcon className="h-8 w-8 text-gray-400 dark:text-gray-500" />
-                    </div>
-                  )}
-                  <div>
-                    <input
-                      type="file"
-                      id="item-image"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, setItemForm)}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="item-image"
-                      className="cursor-pointer bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
-                    >
-                      {itemForm.image ? 'Change Image' : 'Upload Image'}
-                    </label>
-                    {itemForm.image && (
-                      <button
-                        type="button"
-                        onClick={() => setItemForm(prev => ({ ...prev, image: null }))}
-                        className="ml-2 text-red-600 dark:text-red-400 text-sm hover:text-red-700 dark:hover:text-red-300"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Item Name *
+                </label>
                 <input
                   type="text"
-                  required
                   value={itemForm.name}
-                  onChange={(e) => setItemForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                  placeholder="e.g., Organic Apples, 2% Milk, Whole Wheat Bread"
+                  onChange={(e) => setItemForm({...itemForm, name: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  required
+                  autoFocus
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quantity</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Quantity
+                  </label>
                   <input
                     type="text"
                     value={itemForm.quantity}
-                    onChange={(e) => setItemForm(prev => ({ ...prev, quantity: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                    placeholder="1"
+                    onChange={(e) => setItemForm({...itemForm, quantity: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Unit</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Unit
+                  </label>
                   <input
                     type="text"
                     value={itemForm.unit}
-                    onChange={(e) => setItemForm(prev => ({ ...prev, unit: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                    placeholder="lbs, oz, pack"
+                    onChange={(e) => setItemForm({...itemForm, unit: e.target.value})}
+                    placeholder="lbs, oz, etc."
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Price ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={itemForm.price}
-                    onChange={(e) => setItemForm(prev => ({ ...prev, price: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Priority</label>
-                  <select
-                    value={itemForm.priority}
-                    onChange={(e) => setItemForm(prev => ({ ...prev, priority: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-              </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {SHOPPING_CATEGORIES.slice(0, 8).map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setItemForm(prev => ({ ...prev, category: cat.id }))}
-                      className={`p-2 rounded-xl border-2 transition-all flex flex-col items-center ${
-                        itemForm.category === cat.id
-                          ? 'border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/30 shadow-sm'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <cat.icon className={`h-4 w-4 ${itemForm.category === cat.id ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}`} />
-                      <span className="text-xs mt-1 dark:text-gray-300">{cat.label}</span>
-                    </button>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Category
+                </label>
+                <select
+                  value={itemForm.category}
+                  onChange={(e) => setItemForm({...itemForm, category: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  {SHOPPING_CATEGORIES.filter(c => c.id !== 'all').map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.label}</option>
                   ))}
-                </div>
+                </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Priority
+                </label>
+                <select
+                  value={itemForm.priority}
+                  onChange={(e) => setItemForm({...itemForm, priority: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Price (optional)
+                </label>
                 <input
-                  type="text"
-                  value={itemForm.notes}
-                  onChange={(e) => setItemForm(prev => ({ ...prev, notes: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                  placeholder="e.g., Organic, Ripe bananas, etc."
+                  type="number"
+                  step="0.01"
+                  value={itemForm.price}
+                  onChange={(e) => setItemForm({...itemForm, price: e.target.value})}
+                  placeholder="0.00"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => { setShowAddItem(false); setEditingItem(null); resetItemForm(); }}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting || uploadingImage}
-                  className="flex-1 bg-gradient-to-r from-orange-600 to-amber-600 text-white px-4 py-3 rounded-xl font-medium hover:from-orange-700 hover:to-amber-700 disabled:opacity-50 transition-all shadow-lg shadow-orange-200"
-                >
-                  {uploadingImage ? 'Uploading...' : submitting ? 'Saving...' : editingItem ? 'Update Item' : 'Add Item'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Add Meal Modal */}
-      {showAddMeal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 dark:bg-gray-900 min-h-screen transition-colors duration-200 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Plan Meal</h2>
-                <button
-                  onClick={() => setShowAddMeal(false)}
-                  className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleAddMeal} className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Meal Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={mealForm.name}
-                  onChange={(e) => setMealForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500"
-                  placeholder="e.g., Grilled Chicken with Rice"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Meal Type</label>
-                  <select
-                    value={mealForm.type}
-                    onChange={(e) => setMealForm(prev => ({ ...prev, type: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                  >
-                    {MEAL_TYPES.map(type => (
-                      <option key={type.id} value={type.id}>{type.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
-                  <input
-                    type="date"
-                    value={mealForm.date}
-                    onChange={(e) => setMealForm(prev => ({ ...prev, date: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Servings</label>
-                  <input
-                    type="number"
-                    value={mealForm.servings}
-                    onChange={(e) => setMealForm(prev => ({ ...prev, servings: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                    min="1"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prep Time</label>
-                  <input
-                    type="text"
-                    value={mealForm.prepTime}
-                    onChange={(e) => setMealForm(prev => ({ ...prev, prepTime: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                    placeholder="e.g., 30 min"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Difficulty</label>
-                  <select
-                    value={mealForm.difficulty}
-                    onChange={(e) => setMealForm(prev => ({ ...prev, difficulty: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500"
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Nutrition Information */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Nutrition Information (Optional)</label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Calories</label>
-                    <input
-                      type="number"
-                      value={mealForm.nutrition.calories}
-                      onChange={(e) => setMealForm(prev => ({
-                        ...prev,
-                        nutrition: { ...prev.nutrition, calories: e.target.value }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400"
-                      placeholder="Cal"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Protein (g)</label>
-                    <input
-                      type="number"
-                      value={mealForm.nutrition.protein}
-                      onChange={(e) => setMealForm(prev => ({
-                        ...prev,
-                        nutrition: { ...prev.nutrition, protein: e.target.value }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400"
-                      placeholder="g"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Carbs (g)</label>
-                    <input
-                      type="number"
-                      value={mealForm.nutrition.carbs}
-                      onChange={(e) => setMealForm(prev => ({
-                        ...prev,
-                        nutrition: { ...prev.nutrition, carbs: e.target.value }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400"
-                      placeholder="g"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fats (g)</label>
-                    <input
-                      type="number"
-                      value={mealForm.nutrition.fats}
-                      onChange={(e) => setMealForm(prev => ({
-                        ...prev,
-                        nutrition: { ...prev.nutrition, fats: e.target.value }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400"
-                      placeholder="g"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Ingredients (one per line - can add to shopping list later)
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Notes
                 </label>
                 <textarea
-                  value={mealForm.ingredients}
-                  onChange={(e) => setMealForm(prev => ({ ...prev, ingredients: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 resize-none placeholder-gray-400 dark:placeholder-gray-500"
-                  rows={4}
-                  placeholder="Chicken breast&#10;Rice&#10;Olive oil&#10;Garlic"
+                  value={itemForm.notes}
+                  onChange={(e) => setItemForm({...itemForm, notes: e.target.value})}
+                  rows="2"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
-
-              <div className="flex space-x-3 pt-4">
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddMeal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  onClick={() => setShowAddItem(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 bg-gradient-to-r from-orange-600 to-amber-600 text-white px-4 py-3 rounded-xl font-medium hover:from-orange-700 hover:to-amber-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors disabled:opacity-50"
                 >
-                  {submitting ? 'Planning...' : 'Plan Meal'}
+                  {submitting ? 'Adding...' : 'Add Item'}
                 </button>
               </div>
             </form>
@@ -2322,563 +1317,57 @@ You can also upload images of food or ingredients, and I'll help you create meal
         </div>
       )}
 
-      {/* Import/Export Modal */}
-      {showImportExport && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl transition-colors duration-200">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Import/Export Shopping List</h2>
-                <button
-                  onClick={() => setShowImportExport(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Export Section */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Export Shopping List</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Download your shopping list as a JSON file to backup or share.
-                </p>
-                <button
-                  onClick={exportShoppingList}
-                  className="w-full bg-blue-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Download className="h-5 w-5" />
-                  Export to JSON
-                </button>
-              </div>
-
-              {/* Import Section */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Import Shopping List</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Upload a JSON file to restore your shopping list.
-                </p>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        try {
-                          const data = JSON.parse(event.target.result);
-                          if (Array.isArray(data)) {
-                            handleBulkImport(data);
-                          } else {
-                            toast.error('Invalid file format');
-                          }
-                        } catch (error) {
-                          toast.error('Failed to parse JSON file');
-                        }
-                      };
-                      reader.readAsText(file);
-                    }
-                  }}
-                  className="block w-full text-sm text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50"
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowImportExport(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* AI Chat Interface */}
+      {/* Modals */}
       {showAIChat && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full h-[80vh] flex flex-col shadow-2xl transition-colors duration-200">
-            {/* Chat Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl">
-                  <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">AI Meal Assistant</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Get personalized meal ideas and recipes</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title={isMuted ? "Enable audio" : "Disable audio"}
-                >
-                  {isMuted ? <VolumeX className="h-5 w-5 text-gray-500 dark:text-gray-400" /> : <Volume2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowAIChat(false);
-                    setChatMessages([]);
-                    setChatInput('');
-                  }}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                </button>
-              </div>
-            </div>
-
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {chatMessages.length === 0 && (
-                <div className="text-center py-12">
-                  <Brain className="h-16 w-16 text-purple-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Start a conversation!</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">Ask me about meal ideas, recipes, nutrition, or meal planning tips.</p>
-                  <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-                    {['Quick healthy meals', 'Vegetarian dinner ideas', 'Low calorie recipes', 'Meal prep tips'].map((suggestion, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleChatSend(suggestion)}
-                        className="px-4 py-2 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {chatMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-[80%] rounded-2xl p-4 ${
-                    msg.type === 'user'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  }`}>
-                    {msg.type === 'assistant' && msg.mealSuggestion && (
-                      <div className="w-full h-48 rounded-lg mb-3 overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center">
-                        <ChefHat className="h-16 w-16 text-purple-400 dark:text-purple-500" />
-                      </div>
-                    )}
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                    {msg.type === 'assistant' && msg.mealSuggestion && (
-                      <button
-                        onClick={() => {
-                          addAISuggestedMeal(msg.mealSuggestion);
-                          toast.success('Meal added to plan and calendar!');
-                        }}
-                        className="mt-3 w-full bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
-                      >
-                        <Plus className="h-4 w-4 inline mr-2" />
-                        Add to Plan
-                      </button>
-                    )}
-                    <p className="text-xs mt-2 opacity-70">
-                      {new Date(msg.timestamp).toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-4">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Chat Input */}
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
-              {uploadedImages.length > 0 && (
-                <div className="flex gap-2 mb-3 overflow-x-auto">
-                  {uploadedImages.map((img) => (
-                    <div key={img.id} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0">
-                      <img src={img.url} alt="Upload" className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => setUploadedImages(prev => prev.filter(i => i.id !== img.id))}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-end gap-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  id="chat-image-upload"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        setUploadedImages(prev => [...prev, {
-                          id: Date.now(),
-                          url: event.target.result,
-                          file: file
-                        }]);
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-                <label
-                  htmlFor="chat-image-upload"
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-                  title="Upload image"
-                >
-                  <ImageIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                </label>
-                <button
-                  onClick={handleStartRecording}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isRecording
-                      ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400'
-                  }`}
-                  title="Voice input"
-                >
-                  <Mic className="h-5 w-5" />
-                </button>
-                <input
-                  ref={chatInputRef}
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleChatSend();
-                    }
-                  }}
-                  placeholder="Ask about meal ideas, recipes, or nutrition..."
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
-                />
-                <button
-                  onClick={() => handleChatSend()}
-                  disabled={!chatInput.trim() && uploadedImages.length === 0}
-                  className="p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all"
-                >
-                  <Send className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AIChatAssistant 
+          onClose={() => setShowAIChat(false)}
+          onAddMeal={() => {
+            setShowAIChat(false);
+            toast.success('Meal planning feature coming soon!');
+          }}
+          pantryItems={pantryItems}
+        />
       )}
 
-      {/* Nearby Stores Modal */}
       {showNearbyStores && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-4xl h-[600px] shadow-2xl flex transition-colors duration-200">
-            <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Nearby Stores</h2>
-                  <button onClick={() => setShowNearbyStores(false)} className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg">
-                    <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 mt-2 text-sm text-blue-700 dark:text-blue-300">
-                  <MapPin className="h-4 w-4" />
-                  <span>Sorted by distance</span>
-                </div>
-              </div>
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {[
-                  { id: 1, name: "Walmart Supercenter", distance: "0.8 mi", address: "123 Main St", open: true, rating: 4.2 },
-                  { id: 2, name: "Target", distance: "1.2 mi", address: "456 Oak Ave", open: true, rating: 4.4 },
-                  { id: 3, name: "Kroger", distance: "0.5 mi", address: "789 Pine St", open: true, rating: 4.1 }
-                ].map(store => (
-                  <div key={store.id} className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{store.name}</h3>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">{store.distance}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{store.address}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className={`w-2 h-2 rounded-full ${store.open ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">{store.open ? 'Open' : 'Closed'}</span>
-                    </div>
-                    <div className="flex items-center gap-1 mt-2">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{store.rating}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="text-center text-gray-500 dark:text-gray-400 mt-20">
-                Select a store to view details and price comparisons
-              </div>
-            </div>
-          </div>
-        </div>
+        <NearbyStores onClose={() => setShowNearbyStores(false)} />
       )}
 
-      {/* Image Recognition Modal */}
-      {showImageRecognition && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl transition-colors duration-200">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Scan Food Items</h2>
-                <button
-                  onClick={() => setShowImageRecognition(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                </button>
-              </div>
-            </div>
-            <div className="p-6 space-y-6">
-              <div className="text-center">
-                <div className="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center mx-auto mb-4">
-                  <Camera className="h-12 w-12 text-gray-400 dark:text-gray-500" />
-                </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Take a photo of your ingredients or receipt to automatically add items to your shopping list
-                </p>
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) => handleImageRecognition(e.target.files[0])}
-                className="hidden"
-                id="image-recognition-input"
-              />
-              <label
-                htmlFor="image-recognition-input"
-                className="block w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {uploadingImage ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Analyzing Image...
-                  </>
-                ) : (
-                  <>
-                    <Camera className="h-5 w-5" />
-                    Take Photo
-                  </>
-                )}
-              </label>
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 mb-2">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="font-medium">AI Recognition</span>
-                </div>
-                <p className="text-sm text-blue-600 dark:text-blue-400">
-                  Our AI can recognize common grocery items and automatically add them to your list with accurate categories.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Pantry Inventory Modal */}
-      {showPantry && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full shadow-2xl max-h-[600px] overflow-y-auto transition-colors duration-200">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">My Pantry Inventory</h2>
-                <button
-                  onClick={() => setShowPantry(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                </button>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {pantryItems.map(item => (
-                  <div key={item.id} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{item.name}</h3>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">{item.quantity}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-                      <span>{item.category}</span>
-                      {item.expires && <span>Expires: {new Date(item.expires).toLocaleDateString()}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 mb-2">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="font-medium">Smart Suggestions</span>
-                </div>
-                <p className="text-sm text-amber-600 dark:text-amber-400">
-                  Based on your pantry, you can make: Pasta with tomato sauce, Rice bowls, and more!
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Recipe Detail Modal */}
-      {showRecipeModal && selectedRecipe && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto transition-colors duration-200">
-            <div className="relative h-64 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center">
-              <ChefHat className="h-32 w-32 text-purple-400 dark:text-purple-500" />
-              <button
-                onClick={() => setShowRecipeModal(false)}
-                className="absolute top-4 right-4 p-2 bg-black/50 dark:bg-gray-700 text-white rounded-lg hover:bg-black/70 dark:hover:bg-gray-600 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedRecipe.name}</h2>
-                <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-3 py-1 rounded-full">
-                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                  <span className="font-medium">{selectedRecipe.rating}</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400 mb-6">
-                <span className="flex items-center gap-1">
-                  <Clock4 className="h-4 w-4" />
-                  {selectedRecipe.cookTime}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  selectedRecipe.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                  selectedRecipe.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                  'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                }`}>
-                  {selectedRecipe.difficulty}
-                </span>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 mb-6">
-                {selectedRecipe.tags.map((tag, index) => (
-                  <span key={index} className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-3 py-1 rounded-full text-sm">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white">Description</h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {selectedRecipe.description}
-                </p>
-                
-                <h3 className="font-semibold text-gray-900 dark:text-white">Ingredients</h3>
-                <ul className="text-gray-600 dark:text-gray-400 space-y-2">
-                  {selectedRecipe.ingredients.map((ingredient, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-                      {ingredient}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div className="flex space-x-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => {
-                    setMealForm(prev => ({
-                      ...prev,
-                      name: selectedRecipe.name,
-                      prepTime: selectedRecipe.cookTime,
-                      difficulty: selectedRecipe.difficulty,
-                      ingredients: selectedRecipe.ingredients.join('\n')
-                    }));
-                    setShowRecipeModal(false);
-                    setShowAddMeal(true);
-                  }}
-                  className="flex-1 bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-500 dark:to-amber-500 text-white px-4 py-3 rounded-xl font-medium hover:from-orange-700 hover:to-amber-700 dark:hover:from-orange-600 dark:hover:to-amber-600 transition-all"
-                >
-                  Add to Meal Plan
-                </button>
-                <button
-                  onClick={() => setShowRecipeModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Meal Prep Suggestions */}
-      {activeTab === 'meals' && mealPrepSuggestions.length > 0 && (
-        <div className="bg-gradient-to-r from-green-50 dark:from-green-900/20 to-emerald-50 dark:to-emerald-900/20 rounded-2xl p-6 border border-green-200 dark:border-green-800">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
-              <Users className="h-5 w-5 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white text-lg">Meal Prep Suggestions</h3>
-              <p className="text-green-700 dark:text-green-300 text-sm">Save time with batch cooking ideas</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {mealPrepSuggestions.map(suggestion => (
-              <div key={suggestion.id} className="bg-white dark:bg-gray-800 rounded-xl border border-green-200 dark:border-green-700 p-4">
-                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{suggestion.title}</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{suggestion.description}</p>
-                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
-                  <span className="flex items-center gap-1">
-                    <Clock4 className="h-4 w-4" />
-                    Saves {suggestion.timeSaved}
-                  </span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    suggestion.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                  }`}>
-                    {suggestion.difficulty}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {suggestion.items.slice(0, 3).map((item, index) => (
-                    <span key={index} className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded text-xs">
-                      {item}
-                    </span>
-                  ))}
-                  {suggestion.items.length > 3 && (
-                    <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded text-xs">
-                      +{suggestion.items.length - 3} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes messageSlide {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+        .animate-messageSlide {
+          animation: messageSlide 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

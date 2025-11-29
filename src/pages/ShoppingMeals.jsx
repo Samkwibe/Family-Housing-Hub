@@ -183,6 +183,54 @@ const AI_SUGGESTED_MEALS = [
   }
 ];
 
+// Popular Recipes with placeholders
+const POPULAR_RECIPES = [
+  {
+    id: 1,
+    name: "Classic Beef Burger",
+    cookTime: "30 min",
+    difficulty: "medium",
+    rating: 4.8,
+    image: null, // Using placeholder
+    tags: ["American", "Comfort Food", "Family"],
+    description: "Juicy beef patty with fresh vegetables and special sauce. Perfect for family gatherings and weekend barbecues.",
+    ingredients: ["Ground Beef", "Burger Buns", "Lettuce", "Tomato", "Onion", "Cheese", "Pickles", "Special Sauce"]
+  },
+  {
+    id: 2,
+    name: "Margherita Pizza",
+    cookTime: "25 min",
+    difficulty: "medium",
+    rating: 4.7,
+    image: null,
+    tags: ["Italian", "Vegetarian", "Classic"],
+    description: "Classic Italian pizza with fresh mozzarella, basil, and tomato sauce. Simple yet delicious.",
+    ingredients: ["Pizza Dough", "Tomato Sauce", "Mozzarella", "Fresh Basil", "Olive Oil", "Garlic"]
+  },
+  {
+    id: 3,
+    name: "Chicken Curry",
+    cookTime: "45 min",
+    difficulty: "medium",
+    rating: 4.6,
+    image: null,
+    tags: ["Indian", "Spicy", "Comfort Food"],
+    description: "Aromatic and flavorful chicken curry with rich spices. Perfect for a hearty dinner.",
+    ingredients: ["Chicken", "Curry Powder", "Coconut Milk", "Onions", "Garlic", "Ginger", "Tomatoes", "Rice"]
+  },
+  {
+    id: 4,
+    name: "Chocolate Cake",
+    cookTime: "60 min",
+    difficulty: "hard",
+    rating: 4.9,
+    image: null,
+    tags: ["Dessert", "Chocolate", "Baking"],
+    description: "Rich and moist chocolate cake that's perfect for celebrations. A crowd favorite dessert.",
+    ingredients: ["Flour", "Cocoa Powder", "Sugar", "Eggs", "Butter", "Milk", "Vanilla Extract", "Baking Powder"]
+  }
+];
+
 // Days of week
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -223,6 +271,9 @@ export default function ShoppingMeals() {
   const [pantryItems, setPantryItems] = useState([]);
   const [dietaryFilter, setDietaryFilter] = useState('all');
   const [mealPrepSuggestions, setMealPrepSuggestions] = useState([]);
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [editingMeal, setEditingMeal] = useState(null);
 
   // Enhanced item form
   const [itemForm, setItemForm] = useState({
@@ -320,18 +371,33 @@ export default function ShoppingMeals() {
     }
   };
 
-  // Filter shopping items
+  // Enhanced filtering with search
   const filteredItems = useMemo(() => {
     let items = shoppingItems;
+    
     if (selectedCategory !== 'all') {
       items = items.filter(i => i.category === selectedCategory);
     }
-    // Sort: unchecked first, then by category
+    
+    if (searchTerm) {
+      items = items.filter(i => 
+        i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        i.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Enhanced sorting: unchecked first, then by priority, then by category
     return items.sort((a, b) => {
       if (a.checked !== b.checked) return a.checked ? 1 : -1;
+      
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      const aPriority = priorityOrder[a.priority] || 1;
+      const bPriority = priorityOrder[b.priority] || 1;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      
       return a.category.localeCompare(b.category);
     });
-  }, [shoppingItems, selectedCategory]);
+  }, [shoppingItems, selectedCategory, searchTerm]);
 
   // Get meals for current week
   const weekMeals = useMemo(() => {
@@ -1160,33 +1226,50 @@ You can also upload images of food or ingredients, and I'll help you create meal
       {activeTab === 'shopping' ? (
         /* Shopping List View */
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Stats */}
-          <div className="lg:col-span-4 grid grid-cols-3 gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
+          {/* Enhanced Stats */}
+          <div className="lg:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Items</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{shoppingStats.total}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Items</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{shoppingStats.total}</p>
                 </div>
-                <ShoppingCart className="h-8 w-8 text-orange-600" />
+                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                  <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Remaining</p>
-                  <p className="text-3xl font-bold text-orange-600">{shoppingStats.remaining}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Remaining</p>
+                  <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{shoppingStats.remaining}</p>
                 </div>
-                <Package className="h-8 w-8 text-orange-600" />
+                <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+                  <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                </div>
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
-                  <p className="text-3xl font-bold text-green-600">{shoppingStats.checked}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Completed</p>
+                  <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{shoppingStats.checked}</p>
                 </div>
-                <Check className="h-8 w-8 text-green-600" />
+                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+                  <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Cost</p>
+                  <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-1">${shoppingStats.totalCost.toFixed(2)}</p>
+                </div>
+                <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
+                  <Wallet className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
               </div>
             </div>
           </div>
@@ -1246,33 +1329,65 @@ You can also upload images of food or ingredients, and I'll help you create meal
                 })}
               </div>
 
-              {shoppingStats.checked > 0 && (
+              {/* Quick Actions */}
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                {shoppingStats.checked > 0 && (
+                  <button
+                    onClick={clearCheckedItems}
+                    className="w-full py-3 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 transition-all text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Clear Checked Items
+                  </button>
+                )}
+                
                 <button
-                  onClick={clearCheckedItems}
-                  className="w-full mt-4 py-2 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                  onClick={exportShoppingList}
+                  className="w-full py-3 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all text-sm font-medium flex items-center justify-center gap-2"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  Clear Checked Items
+                  <Download className="h-4 w-4" />
+                  Export List
                 </button>
-              )}
-              
-              <button
-                onClick={exportShoppingList}
-                className="w-full mt-3 py-2 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                >
-                  Clear Checked Items
-                </button>
-              )}
+              </div>
+            </div>
+
+            {/* Shopping Tips */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200 dark:border-blue-800 p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">Smart Tips</h3>
+              </div>
+              <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+                <p>🛒 Buy in bulk for frequently used items</p>
+                <p>📅 Plan meals around weekly sales</p>
+                <p>🥬 Shop seasonal produce for better prices</p>
+                <p>📱 Use price comparison apps</p>
+              </div>
             </div>
           </div>
 
           {/* Shopping Items */}
           <div className="lg:col-span-3">
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="font-semibold text-gray-900 dark:text-white">
-                  {selectedCategory === 'all' ? 'All Items' : getCategoryInfo(selectedCategory).label}
-                </h2>
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <h2 className="font-semibold text-gray-900 dark:text-white text-lg">
+                    {selectedCategory === 'all' ? 'All Items' : getCategoryInfo(selectedCategory).label}
+                    <span className="text-gray-500 dark:text-gray-400 font-normal ml-2">
+                      ({filteredItems.length} items)
+                    </span>
+                  </h2>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span>Priority:</span>
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span>High</span>
+                    <span className="w-2 h-2 bg-yellow-500 rounded-full ml-2"></span>
+                    <span>Medium</span>
+                    <span className="w-2 h-2 bg-green-500 rounded-full ml-2"></span>
+                    <span>Low</span>
+                  </div>
+                </div>
               </div>
 
               <div className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -1355,13 +1470,19 @@ You can also upload images of food or ingredients, and I'll help you create meal
                   })
                 ) : (
                   <div className="p-12 text-center">
-                    <ShoppingCart className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">No items in your list</p>
+                    <ShoppingCart className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400 mb-2 text-lg">No items found</p>
+                    <p className="text-gray-400 dark:text-gray-500 mb-6">
+                      {searchTerm || selectedCategory !== 'all' 
+                        ? 'Try adjusting your search or filter' 
+                        : 'Start by adding items to your shopping list'
+                      }
+                    </p>
                     <button
                       onClick={() => setShowAddItem(true)}
-                      className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700"
+                      className="bg-orange-600 dark:bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200 dark:shadow-orange-900/50"
                     >
-                      Add First Item
+                      Add Your First Item
                     </button>
                   </div>
                 )}
@@ -1370,35 +1491,113 @@ You can also upload images of food or ingredients, and I'll help you create meal
           </div>
         </div>
       ) : (
-        /* Meal Planner View */
-        <div>
-          {/* Week Navigation */}
-          <div className="flex items-center justify-between mb-6">
+        /* Enhanced Meal Planner View */
+        <div className="space-y-8">
+          {/* Enhanced Meal Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Meals</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{mealStats.total}</p>
+                </div>
+                <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
+                  <BookOpen className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">This Week</p>
+                  <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{mealStats.thisWeek}</p>
+                </div>
+                <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+                  <Calendar className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Favorites</p>
+                  <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{mealStats.favorites}</p>
+                </div>
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
+                  <Heart className="h-6 w-6 text-red-600 dark:text-red-400" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Breakfasts</p>
+                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{mealStats.breakfasts}</p>
+                </div>
+                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                  <Coffee className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Enhanced Week Navigation */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex items-center gap-4">
               <button
                 onClick={goToPrevWeek}
-                className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors border border-gray-200 dark:border-gray-700"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{formatWeekRange()}</h2>
+              
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{formatWeekRange()}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Weekly Meal Plan</p>
+              </div>
+              
               <button
                 onClick={goToNextWeek}
-                className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors border border-gray-200 dark:border-gray-700"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
-            <button
-              onClick={goToCurrentWeek}
-              className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-medium hover:bg-orange-200 transition-colors"
-            >
-              This Week
-            </button>
+            
+            <div className="flex items-center gap-3">
+              <button
+                onClick={goToCurrentWeek}
+                className="px-4 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg font-medium hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors border border-orange-200 dark:border-orange-800"
+              >
+                This Week
+              </button>
+              
+              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === 'grid' ? 'bg-white dark:bg-gray-800 shadow text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  Grid
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === 'list' ? 'bg-white dark:bg-gray-800 shadow text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  List
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Week Grid */}
-          <div className="grid grid-cols-7 gap-4">
+          {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
             {DAYS.map((day, index) => {
               const dayDate = new Date(currentWeekStart);
               dayDate.setDate(dayDate.getDate() + index);
@@ -1485,6 +1684,110 @@ You can also upload images of food or ingredients, and I'll help you create meal
               );
             })}
           </div>
+          ) : (
+            /* List View for Meals */
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Weekly Meals List</h3>
+              </div>
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {weekMeals.map((meal) => {
+                  const mealType = getMealType(meal.type);
+                  const MealIcon = mealType.icon;
+                  const mealDate = new Date(meal.date);
+                  
+                  return (
+                    <div key={meal.id} className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
+                      {meal.image && (
+                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                          <img 
+                            src={meal.image} 
+                            alt={meal.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className={`p-3 rounded-xl ${mealType.color} border flex-shrink-0`}>
+                        <MealIcon className="h-5 w-5" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1">
+                          <p className="font-semibold text-gray-900 dark:text-white truncate">{meal.name}</p>
+                          {meal.favorite && (
+                            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {mealDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </span>
+                          <span className="capitalize">{meal.type}</span>
+                          {meal.prepTime && (
+                            <span className="flex items-center gap-1">
+                              <Clock4 className="h-3 w-3" />
+                              {meal.prepTime}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {meal.servings} servings
+                          </span>
+                        </div>
+                        
+                        {meal.notes && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">{meal.notes}</p>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {meal.ingredients && (
+                          <button
+                            onClick={() => addIngredientsToList(meal)}
+                            className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                            title="Add to shopping list"
+                          >
+                            <ShoppingCart className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => startEditMeal(meal)}
+                          className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                          title="Edit meal"
+                        >
+                          <Edit3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMeal(meal.id)}
+                          className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                          title="Delete meal"
+                        >
+                          <X className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {weekMeals.length === 0 && (
+                  <div className="p-12 text-center">
+                    <ChefHat className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400 mb-2 text-lg">No meals planned for this week</p>
+                    <p className="text-gray-400 dark:text-gray-500 mb-6">Start planning your meals to see them here</p>
+                    <button
+                      onClick={() => setShowAddMeal(true)}
+                      className="bg-orange-600 dark:bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200 dark:shadow-orange-900/50"
+                    >
+                      Plan Your First Meal
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* AI Meal Suggestions */}
           <div className="mt-8 bg-gradient-to-r from-purple-50 dark:from-purple-900/20 to-pink-50 dark:to-pink-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-800">
@@ -1597,26 +1900,64 @@ You can also upload images of food or ingredients, and I'll help you create meal
             </div>
           </div>
 
-          {/* Quick Meal Ideas */}
-          <div className="mt-6 bg-gradient-to-r from-orange-50 dark:from-orange-900/20 to-amber-50 dark:to-amber-900/20 rounded-2xl p-6 border border-orange-200 dark:border-orange-800">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-              <h3 className="font-semibold text-gray-900 dark:text-white">Quick Meal Ideas</h3>
+          {/* Popular Recipes Section */}
+          <div className="bg-gradient-to-r from-orange-50 dark:from-orange-900/20 to-amber-50 dark:to-amber-900/20 rounded-2xl p-8 border border-orange-200 dark:border-orange-800 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+                  <ChefHat className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg">Popular Recipes</h3>
+                  <p className="text-orange-700 dark:text-orange-300 text-sm">Community favorites with high ratings</p>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {['Grilled Chicken Salad', 'Pasta Primavera', 'Fish Tacos', 'Stir Fry Vegetables', 
-                'Homemade Pizza', 'Beef Stew', 'Chicken Curry', 'Vegetable Soup'].map((meal, i) => (
-                <button
-                  key={i}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {POPULAR_RECIPES.map((recipe) => (
+                <div 
+                  key={recipe.id} 
+                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
                   onClick={() => {
-                    setMealForm(prev => ({ ...prev, name: meal }));
-                    setEditingMeal(null);
-                    setShowAddMeal(true);
+                    setSelectedRecipe(recipe);
+                    setShowRecipeModal(true);
                   }}
-                  className="px-4 py-2 bg-white dark:bg-gray-800 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:text-orange-700 dark:hover:text-orange-300 transition-colors border border-gray-200 dark:border-gray-700"
                 >
-                  {meal}
-                </button>
+                  <div className="relative h-40 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center">
+                    <ChefHat className="h-16 w-16 text-purple-400 dark:text-purple-500" />
+                    <div className="absolute top-2 right-2 bg-black/70 dark:bg-gray-700 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      {recipe.rating}
+                    </div>
+                  </div>
+                  
+                  <div className="p-4">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{recipe.name}</h4>
+                    
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
+                      <span className="flex items-center gap-1">
+                        <Clock4 className="h-3 w-3" />
+                        {recipe.cookTime}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        recipe.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                        recipe.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                      }`}>
+                        {recipe.difficulty}
+                      </span>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1">
+                      {recipe.tags.map((tag, index) => (
+                        <span key={index} className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-1 rounded text-xs">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -2396,6 +2737,97 @@ You can also upload images of food or ingredients, and I'll help you create meal
                 <p className="text-sm text-amber-600 dark:text-amber-400">
                   Based on your pantry, you can make: Pasta with tomato sauce, Rice bowls, and more!
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recipe Detail Modal */}
+      {showRecipeModal && selectedRecipe && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto transition-colors duration-200">
+            <div className="relative h-64 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center">
+              <ChefHat className="h-32 w-32 text-purple-400 dark:text-purple-500" />
+              <button
+                onClick={() => setShowRecipeModal(false)}
+                className="absolute top-4 right-4 p-2 bg-black/50 dark:bg-gray-700 text-white rounded-lg hover:bg-black/70 dark:hover:bg-gray-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedRecipe.name}</h2>
+                <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-3 py-1 rounded-full">
+                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                  <span className="font-medium">{selectedRecipe.rating}</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400 mb-6">
+                <span className="flex items-center gap-1">
+                  <Clock4 className="h-4 w-4" />
+                  {selectedRecipe.cookTime}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  selectedRecipe.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                  selectedRecipe.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                  'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                }`}>
+                  {selectedRecipe.difficulty}
+                </span>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mb-6">
+                {selectedRecipe.tags.map((tag, index) => (
+                  <span key={index} className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-3 py-1 rounded-full text-sm">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Description</h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {selectedRecipe.description}
+                </p>
+                
+                <h3 className="font-semibold text-gray-900 dark:text-white">Ingredients</h3>
+                <ul className="text-gray-600 dark:text-gray-400 space-y-2">
+                  {selectedRecipe.ingredients.map((ingredient, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                      {ingredient}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className="flex space-x-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    setMealForm(prev => ({
+                      ...prev,
+                      name: selectedRecipe.name,
+                      prepTime: selectedRecipe.cookTime,
+                      difficulty: selectedRecipe.difficulty,
+                      ingredients: selectedRecipe.ingredients.join('\n')
+                    }));
+                    setShowRecipeModal(false);
+                    setShowAddMeal(true);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-500 dark:to-amber-500 text-white px-4 py-3 rounded-xl font-medium hover:from-orange-700 hover:to-amber-700 dark:hover:from-orange-600 dark:hover:to-amber-600 transition-all"
+                >
+                  Add to Meal Plan
+                </button>
+                <button
+                  onClick={() => setShowRecipeModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

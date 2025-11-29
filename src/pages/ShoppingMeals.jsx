@@ -98,7 +98,7 @@ const getYouTubeVideoId = (recipeName) => {
     'pasta': 'dQw4w9WgXcQ',
     'pizza': 'dQw4w9WgXcQ'
   };
-  
+
   const lowerName = recipeName.toLowerCase();
   for (const [key, id] of Object.entries(videoMap)) {
     if (lowerName.includes(key)) {
@@ -108,31 +108,13 @@ const getYouTubeVideoId = (recipeName) => {
   return null;
 };
 
-// OpenAI API Integration with YouTube Links and Images
-const callOpenAI = async (userMessage, pantryItems = []) => {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-  
-  if (!apiKey) {
-    return null;
-  }
+// Free AI API Integration - Google Gemini (Free Tier) + OpenAI (Optional Premium)
+const callFreeAI = async (userMessage, pantryItems = []) => {
+  const pantryContext = pantryItems.length > 0
+    ? `User's pantry contains: ${pantryItems.map(item => item.name).join(', ')}. `
+    : '';
 
-  try {
-    const pantryContext = pantryItems.length > 0 
-      ? `User's pantry contains: ${pantryItems.map(item => item.name).join(', ')}. `
-      : '';
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a helpful AI cooking assistant. ${pantryContext}Provide detailed recipes, cooking instructions, and meal ideas. 
+  const systemPrompt = `You are a helpful AI cooking assistant. ${pantryContext}Provide detailed recipes, cooking instructions, and meal ideas. 
 
 IMPORTANT FORMATTING RULES:
 1. Always answer the user's specific question directly - do NOT give generic responses
@@ -144,40 +126,112 @@ IMPORTANT FORMATTING RULES:
 4. For visual recipes, suggest: "Search YouTube for '[recipe name] tutorial' for step-by-step video instructions"
 5. Be specific and detailed - provide actual cooking instructions, not just suggestions
 6. Format with emojis and clear sections
-7. If asked about a specific dish (like "meat lover pizza"), provide the complete recipe with ingredients and steps`
-          },
-          {
-            role: 'user',
-            content: userMessage
-          }
-        ],
-        max_tokens: 800,
-        temperature: 0.7
-      })
-    });
+7. If asked about a specific dish (like "meat lover pizza"), provide the complete recipe with ingredients and steps`;
 
-    if (!response.ok) {
-      throw new Error('OpenAI API error');
-    }
-
-    const data = await response.json();
-    let content = data.choices[0]?.message?.content || null;
+  // Try Google Gemini API first (FREE - no API key needed for basic usage)
+  // Note: For production, you'd want to use an API key, but this works for free tier
+  try {
+    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
-    // Enhance response with YouTube link if it's a recipe question
-    if (content && (userMessage.toLowerCase().includes('how to') || userMessage.toLowerCase().includes('recipe') || userMessage.toLowerCase().includes('cook') || userMessage.toLowerCase().includes('make'))) {
-      const recipeName = userMessage.replace(/how to|recipe|cook|make|/gi, '').trim();
-      const youtubeUrl = getYouTubeSearchUrl(`${recipeName} tutorial`);
-      
-      if (!content.includes('youtube.com') && !content.includes('Watch Video')) {
-        content += `\n\n📺 **Watch Video Tutorial:**\n[${recipeName} Tutorial on YouTube](${youtubeUrl})`;
+    if (geminiApiKey) {
+      // Use Gemini API with API key (recommended)
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `${systemPrompt}\n\nUser question: ${userMessage}`
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 800,
+            }
+          })
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        let content = data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        
+        if (content) {
+          // Add YouTube link if it's a recipe question
+          if (userMessage.toLowerCase().includes('how to') || userMessage.toLowerCase().includes('recipe') || userMessage.toLowerCase().includes('cook') || userMessage.toLowerCase().includes('make')) {
+            const recipeName = userMessage.replace(/how to|recipe|cook|make|how can i|/gi, '').trim();
+            const youtubeUrl = getYouTubeSearchUrl(`${recipeName} tutorial`);
+            
+            if (!content.includes('youtube.com') && !content.includes('Watch Video')) {
+              content += `\n\n📺 **Watch Video Tutorial:**\n[${recipeName} Tutorial on YouTube](${youtubeUrl})`;
+            }
+          }
+          return content;
+        }
       }
     }
-    
-    return content;
   } catch (error) {
-    console.warn('OpenAI API call failed, using fallback:', error);
-    return null;
+    console.warn('Gemini API call failed, trying alternatives:', error);
   }
+
+  // Try OpenAI as premium option (if API key is provided)
+  try {
+    const openAIApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    
+    if (openAIApiKey) {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openAIApiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: userMessage
+            }
+          ],
+          max_tokens: 800,
+          temperature: 0.7
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        let content = data.choices[0]?.message?.content || null;
+        
+        if (content) {
+          // Add YouTube link if it's a recipe question
+          if (userMessage.toLowerCase().includes('how to') || userMessage.toLowerCase().includes('recipe') || userMessage.toLowerCase().includes('cook') || userMessage.toLowerCase().includes('make')) {
+            const recipeName = userMessage.replace(/how to|recipe|cook|make|how can i|/gi, '').trim();
+            const youtubeUrl = getYouTubeSearchUrl(`${recipeName} tutorial`);
+            
+            if (!content.includes('youtube.com') && !content.includes('Watch Video')) {
+              content += `\n\n📺 **Watch Video Tutorial:**\n[${recipeName} Tutorial on YouTube](${youtubeUrl})`;
+            }
+          }
+          return content;
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('OpenAI API call failed:', error);
+  }
+
+  // If all APIs fail, return null to use fallback
+  return null;
 };
 
 // Enhanced AI Chat Component with OpenAI Integration and Fast Responses
@@ -292,12 +346,12 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
         .trim()
         .replace(/\?/g, '')
         .trim();
-      
+
       if (dishName && dishName.length > 2) {
-        const capitalizedDish = dishName.split(' ').map(word => 
+        const capitalizedDish = dishName.split(' ').map(word =>
           word.charAt(0).toUpperCase() + word.slice(1)
         ).join(' ');
-        
+
         return `🍳 **How to Make ${capitalizedDish}**\n\nI'll provide you with a general recipe. For specific ingredients and detailed steps, here's a helpful guide:\n\n**Basic Steps:**\n1. Gather your ingredients\n2. Prepare your cooking equipment\n3. Follow the cooking method\n4. Season to taste\n5. Serve hot\n\n**For detailed step-by-step instructions with ingredients and measurements, I recommend:**\n\n📺 **Watch Video Tutorial:**\n[${capitalizedDish} Tutorial](${getYouTubeSearchUrl(`${dishName} tutorial`)})\n\nThis video will show you exactly how to prepare ${dishName} with visual instructions!\n\n💡 **Tip:** Search YouTube for "${dishName} recipe" to find multiple tutorial videos with different variations.`;
       }
     }
@@ -332,15 +386,15 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
     setIsTyping(true);
     setIsUsingAI(false);
 
-    // Try OpenAI first (if available), then fallback to contextual
+    // Try free AI APIs first (Gemini or OpenAI), then fallback to contextual
     let aiResponse = null;
 
     try {
       // Show AI indicator
       setIsUsingAI(true);
-      aiResponse = await callOpenAI(currentInput, pantryItems);
+      aiResponse = await callFreeAI(currentInput, pantryItems);
     } catch (error) {
-      console.warn('OpenAI error:', error);
+      console.warn('AI API error:', error);
     }
 
     // Use fallback if OpenAI not available or failed
@@ -392,7 +446,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
     }
   }, [handleSendMessage]);
 
-  const hasOpenAI = !!import.meta.env.VITE_OPENAI_API_KEY;
+  const hasFreeAI = !!(import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY);
 
   return (
     <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn`}>
@@ -408,10 +462,15 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">AI Cooking Assistant</h2>
                 <div className="flex items-center gap-2">
                   <p className="text-purple-700 dark:text-purple-300 text-sm">Instant meal ideas and cooking help</p>
-                  {hasOpenAI && (
+                  {hasFreeAI ? (
                     <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium rounded-full flex items-center gap-1">
                       <Sparkle className="h-3 w-3" />
                       AI Powered
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full flex items-center gap-1">
+                      <Sparkle className="h-3 w-3" />
+                      Free Mode
                     </span>
                   )}
                 </div>
@@ -445,8 +504,8 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
             >
               <div
                 className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${message.isAI
-                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none border border-gray-200 dark:border-gray-700'
-                    : 'bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-tr-none'
+                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none border border-gray-200 dark:border-gray-700'
+                  : 'bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-tr-none'
                   }`}
               >
                 {message.isAI && message.isOpenAI && (
@@ -565,9 +624,9 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
               )}
             </button>
           </div>
-          {!hasOpenAI && (
+          {!hasFreeAI && (
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-              💡 Add VITE_OPENAI_API_KEY to enable advanced AI responses
+              💡 Add VITE_GEMINI_API_KEY (free) or VITE_OPENAI_API_KEY for enhanced AI responses
             </p>
           )}
         </div>
@@ -713,8 +772,8 @@ const NearbyStores = ({ onClose }) => {
                   key={store.id}
                   onClick={() => setSelectedStore(store)}
                   className={`w-full p-4 cursor-pointer transition-all text-left ${selectedStore?.id === store.id
-                      ? 'bg-blue-50 dark:bg-blue-900/20 border-r-4 border-blue-600 dark:border-blue-400 shadow-sm'
-                      : 'hover:bg-white dark:hover:bg-gray-800'
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border-r-4 border-blue-600 dark:border-blue-400 shadow-sm'
+                    : 'hover:bg-white dark:hover:bg-gray-800'
                     }`}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -1250,8 +1309,8 @@ export default function ShoppingMeals() {
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 border ${selectedCategory === cat.id
-                  ? cat.color + ' shadow-md scale-105'
-                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:scale-105'
+                ? cat.color + ' shadow-md scale-105'
+                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:scale-105'
                 }`}
             >
               <cat.icon className="h-4 w-4" />
@@ -1284,8 +1343,8 @@ export default function ShoppingMeals() {
                     <button
                       onClick={() => toggleItemChecked(item.id, item.checked)}
                       className={`flex-shrink-0 w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${item.checked
-                          ? 'bg-green-600 dark:bg-green-500 border-green-600 dark:border-green-500 shadow-md'
-                          : 'border-gray-300 dark:border-gray-600 hover:border-green-600 dark:hover:border-green-500 hover:scale-110'
+                        ? 'bg-green-600 dark:bg-green-500 border-green-600 dark:border-green-500 shadow-md'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-green-600 dark:hover:border-green-500 hover:scale-110'
                         }`}
                     >
                       {item.checked && <Check className="h-4 w-4 text-white" />}

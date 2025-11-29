@@ -57,7 +57,11 @@ import {
   Mic,
   Volume2,
   VolumeX,
-  Send
+  Send,
+  Store,
+  Navigation,
+  Phone,
+  Sprout
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -213,6 +217,12 @@ export default function ShoppingMeals() {
   const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
   const chatInputRef = useRef(null);
+  const [showNearbyStores, setShowNearbyStores] = useState(false);
+  const [showImageRecognition, setShowImageRecognition] = useState(false);
+  const [showPantry, setShowPantry] = useState(false);
+  const [pantryItems, setPantryItems] = useState([]);
+  const [dietaryFilter, setDietaryFilter] = useState('all');
+  const [mealPrepSuggestions, setMealPrepSuggestions] = useState([]);
 
   // Enhanced item form
   const [itemForm, setItemForm] = useState({
@@ -259,6 +269,8 @@ export default function ShoppingMeals() {
   useEffect(() => {
     if (currentUser) {
       loadData();
+      loadPantryItems();
+      generateMealPrepSuggestions();
     }
   }, [currentUser]);
 
@@ -562,15 +574,72 @@ You can also upload images of food or ingredients, and I'll help you create meal
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // AI Meal Response Generator
+  // Comprehensive AI Responses based on user input
+  const aiResponses = {
+    "quick healthy dinner ideas": {
+      content: "Here are some quick healthy dinner ideas:\n\n🥗 **Mediterranean Quinoa Bowl** (15 min)\n- Quinoa, chickpeas, cucumber, tomatoes, feta, olive oil\n\n🍣 **Teriyaki Salmon** (25 min)\n- Salmon, soy sauce, ginger, garlic, broccoli\n\n🥦 **Vegetable Stir Fry** (20 min)\n- Mixed vegetables, tofu, soy sauce, sesame oil\n\nWould you like recipes for any of these?",
+      meals: AI_SUGGESTED_MEALS.filter(m => m.difficulty === 'easy' && parseInt(m.prepTime) <= 20)
+    },
+    "what can i make with chicken": {
+      content: "Great! Chicken is versatile. Here are ideas:\n\n🍗 **Lemon Herb Chicken** (30 min)\n- Chicken breast, lemon, herbs, garlic\n\n🌮 **Chicken Fajitas** (25 min)\n- Chicken strips, bell peppers, onions, spices\n\n🍛 **Chicken Curry** (40 min)\n- Chicken, coconut milk, curry spices, rice\n\n🍝 **Chicken Alfredo** (35 min)\n- Chicken, pasta, cream, parmesan\n\nWhich sounds good?",
+      meals: []
+    },
+    "vegetarian recipes for beginners": {
+      content: "Perfect for starting meat-free! Try these:\n\n🍅 **Caprese Pasta** (20 min)\n- Pasta, fresh tomatoes, mozzarella, basil\n\n🥔 **Vegetable Curry** (30 min)\n- Mixed vegetables, coconut milk, curry paste\n\n🌯 **Black Bean Burritos** (15 min)\n- Black beans, tortillas, cheese, salsa\n\n🥗 **Greek Salad Bowl** (10 min)\n- Greens, olives, feta, cucumber, dressing",
+      meals: AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('vegetarian') || t.toLowerCase().includes('vegan')))
+    },
+    "meal prep ideas for the week": {
+      content: "Smart planning! Here's a weekly meal prep plan:\n\n**Breakfasts:**\n- Overnight oats with berries\n- Egg muffins with vegetables\n\n**Lunches:**\n- Quinoa salad jars\n- Chicken/veggie wraps\n\n**Dinners:**\n- Sheet pan vegetables with protein\n- Hearty soups or stews\n\n**Snacks:**\n- Cut vegetables with hummus\n- Greek yogurt with nuts",
+      meals: []
+    },
+    "low-carb breakfast options": {
+      content: "Low-carb breakfast ideas:\n\n🥑 **Avocado Egg Boats** (15 min)\n- Avocado halves with baked eggs\n\n🍳 **Vegetable Frittata** (25 min)\n- Eggs, spinach, mushrooms, cheese\n\n🥓 **Breakfast Skillet** (20 min)\n- Sausage, peppers, onions, eggs\n\n🍓 **Greek Yogurt Bowl** (5 min)\n- Greek yogurt, berries, nuts, seeds\n\n🥚 **Egg Muffins** (25 min)\n- Eggs, cheese, vegetables baked in muffin tin",
+      meals: []
+    },
+    "dinner": {
+      content: "Here are some great dinner options:\n\n🍣 **Teriyaki Salmon** (25 min)\n- High in omega-3, protein-packed\n\n🥦 **Vegetable Stir Fry** (20 min)\n- Quick, vegan, and nutritious\n\n🍗 **Grilled Chicken Salad** (20 min)\n- Fresh and protein-rich\n\nWhich would you like to try?",
+      meals: AI_SUGGESTED_MEALS.filter(m => m.type === 'dinner')
+    },
+    "breakfast": {
+      content: "Start your day right with these breakfast ideas:\n\n🥑 **Avocado Toast** (10 min)\n- Whole grain bread, avocado, eggs\n\n🍳 **Vegetable Frittata** (25 min)\n- Eggs, vegetables, cheese\n\n🥣 **Overnight Oats** (5 min prep)\n- Oats, milk, berries, nuts\n\nWhich sounds good?",
+      meals: AI_SUGGESTED_MEALS.filter(m => m.type === 'breakfast')
+    },
+    "lunch": {
+      content: "Perfect lunch options:\n\n🥗 **Mediterranean Bowl** (15 min)\n- Quinoa, chickpeas, fresh vegetables\n\n🍗 **Grilled Chicken Salad** (20 min)\n- Protein-packed and fresh\n\n🌯 **Wrap Options** (10 min)\n- Various fillings, quick to make\n\nWhat would you like?",
+      meals: AI_SUGGESTED_MEALS.filter(m => m.type === 'lunch')
+    }
+  };
+
+  // AI Meal Response Generator - Based on user input, not random
   const generateMealResponse = useCallback((query) => {
     const lowerQuery = query.toLowerCase();
     
-    // Check if query matches any AI suggested meals
+    // Check for exact matches first
+    for (const [key, response] of Object.entries(aiResponses)) {
+      if (lowerQuery.includes(key)) {
+        const meal = response.meals && response.meals.length > 0 
+          ? response.meals[0] 
+          : AI_SUGGESTED_MEALS.find(m => m.name.toLowerCase().includes(key.split(' ')[0]));
+        
+        if (meal) {
+          return {
+            content: response.content + `\n\n**${meal.name}**\n\n${meal.description}\n\n**Prep Time:** ${meal.prepTime}\n**Difficulty:** ${meal.difficulty}\n**Calories:** ${meal.calories}\n\n**Ingredients:**\n${meal.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
+            mealSuggestion: meal,
+            image: meal.image
+          };
+        }
+        return {
+          content: response.content,
+          mealSuggestion: null,
+          image: null
+        };
+      }
+    }
+
+    // Check for specific meal names
     const matchingMeal = AI_SUGGESTED_MEALS.find(meal => 
       meal.name.toLowerCase().includes(lowerQuery) ||
-      meal.tags.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-      meal.type.toLowerCase().includes(lowerQuery)
+      meal.ingredients.some(ing => ing.toLowerCase().includes(lowerQuery))
     );
 
     if (matchingMeal) {
@@ -581,43 +650,60 @@ You can also upload images of food or ingredients, and I'll help you create meal
       };
     }
 
-    // Generate meal suggestions based on query
+    // Keyword-based matching
     if (lowerQuery.includes('quick') || lowerQuery.includes('fast') || lowerQuery.includes('easy')) {
       const quickMeals = AI_SUGGESTED_MEALS.filter(m => m.difficulty === 'easy' && parseInt(m.prepTime) <= 20);
-      const selected = quickMeals[Math.floor(Math.random() * quickMeals.length)] || AI_SUGGESTED_MEALS[0];
-      return {
-        content: `Here's a quick and easy meal idea:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
-        mealSuggestion: selected,
-        image: selected.image
-      };
+      if (quickMeals.length > 0) {
+        const selected = quickMeals[0];
+        return {
+          content: `Here's a quick and easy meal idea:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
+          mealSuggestion: selected,
+          image: selected.image
+        };
+      }
     }
 
     if (lowerQuery.includes('vegetarian') || lowerQuery.includes('vegan')) {
       const vegMeals = AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('vegetarian') || t.toLowerCase().includes('vegan')));
-      const selected = vegMeals[Math.floor(Math.random() * vegMeals.length)] || AI_SUGGESTED_MEALS[2];
-      return {
-        content: `Here's a great vegetarian option:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
-        mealSuggestion: selected,
-        image: selected.image
-      };
+      if (vegMeals.length > 0) {
+        const selected = vegMeals[0];
+        return {
+          content: `Here's a great vegetarian option:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
+          mealSuggestion: selected,
+          image: selected.image
+        };
+      }
     }
 
-    if (lowerQuery.includes('healthy') || lowerQuery.includes('nutritious')) {
-      const healthyMeals = AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('healthy')));
-      const selected = healthyMeals[Math.floor(Math.random() * healthyMeals.length)] || AI_SUGGESTED_MEALS[0];
-      return {
-        content: `Here's a nutritious meal suggestion:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
-        mealSuggestion: selected,
-        image: selected.image
-      };
+    if (lowerQuery.includes('healthy') || lowerQuery.includes('nutritious') || lowerQuery.includes('low calorie')) {
+      const healthyMeals = AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('healthy')) || m.calories < 400);
+      if (healthyMeals.length > 0) {
+        const selected = healthyMeals[0];
+        return {
+          content: `Here's a nutritious meal suggestion:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
+          mealSuggestion: selected,
+          image: selected.image
+        };
+      }
     }
 
-    // Default response
-    const randomMeal = AI_SUGGESTED_MEALS[Math.floor(Math.random() * AI_SUGGESTED_MEALS.length)];
+    if (lowerQuery.includes('high protein') || lowerQuery.includes('protein')) {
+      const proteinMeals = AI_SUGGESTED_MEALS.filter(m => m.tags.some(t => t.toLowerCase().includes('protein')));
+      if (proteinMeals.length > 0) {
+        const selected = proteinMeals[0];
+        return {
+          content: `Here's a high-protein meal:\n\n**${selected.name}**\n\n${selected.description}\n\n**Prep Time:** ${selected.prepTime}\n**Difficulty:** ${selected.difficulty}\n**Calories:** ${selected.calories}\n\n**Ingredients:**\n${selected.ingredients.map(ing => `• ${ing}`).join('\n')}\n\nWould you like to add this to your meal plan?`,
+          mealSuggestion: selected,
+          image: selected.image
+        };
+      }
+    }
+
+    // If no specific match, provide helpful response
     return {
-      content: `Here's a meal suggestion for you:\n\n**${randomMeal.name}**\n\n${randomMeal.description}\n\n**Prep Time:** ${randomMeal.prepTime}\n**Difficulty:** ${randomMeal.difficulty}\n**Calories:** ${randomMeal.calories}\n\n**Ingredients:**\n${randomMeal.ingredients.map(ing => `• ${ing}`).join('\n')}\n\n**Tags:** ${randomMeal.tags.join(', ')}\n\nWould you like to add this to your meal plan?`,
-      mealSuggestion: randomMeal,
-      image: randomMeal.image
+      content: `I'd be happy to help with that! Could you tell me more about:\n\n• What type of meal are you looking for? (breakfast, lunch, dinner)\n• Any dietary preferences? (vegetarian, vegan, gluten-free)\n• How much time do you have? (quick, easy, or more complex)\n• Any specific ingredients you want to use?\n\nOr try asking:\n• "Quick healthy dinner ideas"\n• "Vegetarian recipes for beginners"\n• "What can I make with chicken"\n• "Low-carb breakfast options"`,
+      mealSuggestion: null,
+      image: null
     };
   }, []);
 
@@ -1412,13 +1498,34 @@ You can also upload images of food or ingredients, and I'll help you create meal
                   <p className="text-purple-700 dark:text-purple-300 text-sm">Personalized recommendations</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => setShowAIChat(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-700 dark:to-pink-700 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 dark:hover:from-purple-600 dark:hover:to-pink-600 transition-all shadow-lg"
                 >
                   <MessageCircle className="h-4 w-4" />
                   Chat with AI
+                </button>
+                <button
+                  onClick={() => setShowNearbyStores(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all"
+                >
+                  <Store className="h-4 w-4" />
+                  Nearby Stores
+                </button>
+                <button
+                  onClick={() => setShowImageRecognition(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-700 dark:hover:bg-green-600 transition-all"
+                >
+                  <Camera className="h-4 w-4" />
+                  Scan Items
+                </button>
+                <button
+                  onClick={() => setShowPantry(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-700 text-white rounded-lg text-sm font-medium hover:bg-amber-700 dark:hover:bg-amber-600 transition-all"
+                >
+                  <Package className="h-4 w-4" />
+                  My Pantry
                 </button>
                 <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 rounded-full border border-purple-200 dark:border-purple-800">
                   <Zap className="h-4 w-4 text-yellow-500" />
@@ -2137,6 +2244,208 @@ You can also upload images of food or ingredients, and I'll help you create meal
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nearby Stores Modal */}
+      {showNearbyStores && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-4xl h-[600px] shadow-2xl flex transition-colors duration-200">
+            <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Nearby Stores</h2>
+                  <button onClick={() => setShowNearbyStores(false)} className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg">
+                    <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 mt-2 text-sm text-blue-700 dark:text-blue-300">
+                  <MapPin className="h-4 w-4" />
+                  <span>Sorted by distance</span>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {[
+                  { id: 1, name: "Walmart Supercenter", distance: "0.8 mi", address: "123 Main St", open: true, rating: 4.2 },
+                  { id: 2, name: "Target", distance: "1.2 mi", address: "456 Oak Ave", open: true, rating: 4.4 },
+                  { id: 3, name: "Kroger", distance: "0.5 mi", address: "789 Pine St", open: true, rating: 4.1 }
+                ].map(store => (
+                  <div key={store.id} className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{store.name}</h3>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{store.distance}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{store.address}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className={`w-2 h-2 rounded-full ${store.open ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{store.open ? 'Open' : 'Closed'}</span>
+                    </div>
+                    <div className="flex items-center gap-1 mt-2">
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{store.rating}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="text-center text-gray-500 dark:text-gray-400 mt-20">
+                Select a store to view details and price comparisons
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Recognition Modal */}
+      {showImageRecognition && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl transition-colors duration-200">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Scan Food Items</h2>
+                <button
+                  onClick={() => setShowImageRecognition(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="text-center">
+                <div className="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center mx-auto mb-4">
+                  <Camera className="h-12 w-12 text-gray-400 dark:text-gray-500" />
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Take a photo of your ingredients or receipt to automatically add items to your shopping list
+                </p>
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => handleImageRecognition(e.target.files[0])}
+                className="hidden"
+                id="image-recognition-input"
+              />
+              <label
+                htmlFor="image-recognition-input"
+                className="block w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {uploadingImage ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Analyzing Image...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-5 w-5" />
+                    Take Photo
+                  </>
+                )}
+              </label>
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 mb-2">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="font-medium">AI Recognition</span>
+                </div>
+                <p className="text-sm text-blue-600 dark:text-blue-400">
+                  Our AI can recognize common grocery items and automatically add them to your list with accurate categories.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pantry Inventory Modal */}
+      {showPantry && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full shadow-2xl max-h-[600px] overflow-y-auto transition-colors duration-200">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">My Pantry Inventory</h2>
+                <button
+                  onClick={() => setShowPantry(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {pantryItems.map(item => (
+                  <div key={item.id} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{item.name}</h3>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{item.quantity}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                      <span>{item.category}</span>
+                      {item.expires && <span>Expires: {new Date(item.expires).toLocaleDateString()}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 mb-2">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="font-medium">Smart Suggestions</span>
+                </div>
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  Based on your pantry, you can make: Pasta with tomato sauce, Rice bowls, and more!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Meal Prep Suggestions */}
+      {activeTab === 'meals' && mealPrepSuggestions.length > 0 && (
+        <div className="bg-gradient-to-r from-green-50 dark:from-green-900/20 to-emerald-50 dark:to-emerald-900/20 rounded-2xl p-6 border border-green-200 dark:border-green-800">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
+              <Users className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white text-lg">Meal Prep Suggestions</h3>
+              <p className="text-green-700 dark:text-green-300 text-sm">Save time with batch cooking ideas</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {mealPrepSuggestions.map(suggestion => (
+              <div key={suggestion.id} className="bg-white dark:bg-gray-800 rounded-xl border border-green-200 dark:border-green-700 p-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{suggestion.title}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{suggestion.description}</p>
+                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-3">
+                  <span className="flex items-center gap-1">
+                    <Clock4 className="h-4 w-4" />
+                    Saves {suggestion.timeSaved}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    suggestion.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                  }`}>
+                    {suggestion.difficulty}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {suggestion.items.slice(0, 3).map((item, index) => (
+                    <span key={index} className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded text-xs">
+                      {item}
+                    </span>
+                  ))}
+                  {suggestion.items.length > 3 && (
+                    <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded text-xs">
+                      +{suggestion.items.length - 3} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

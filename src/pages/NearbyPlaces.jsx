@@ -638,13 +638,61 @@ export default function NearbyPlaces() {
                                 <MapPin className="h-8 w-8 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
+                                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-400 bg-clip-text text-transparent">
                                     Nearby Places
                                 </h1>
-                                <p className="text-gray-600 mt-1 flex items-center">
-                                    <Sparkles className="h-4 w-4 mr-1 text-yellow-500" />
-                                    Discover amazing places around you
-                                </p>
+                                <div className="mt-1 space-y-1">
+                                    <p className="text-gray-600 dark:text-gray-400 flex items-center">
+                                        <Sparkles className="h-4 w-4 mr-1 text-yellow-500" />
+                                        Discover amazing places around you
+                                    </p>
+                                    {currentLocationName && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-500 flex items-center gap-1">
+                                            <MapPin className="h-3 w-3" />
+                                            {currentLocationName}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Address Search Bar */}
+                        <div className="flex-1 max-w-md">
+                            <div className="flex gap-2">
+                                <div className="flex-1 relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                    <input
+                                        type="text"
+                                        value={addressSearch}
+                                        onChange={(e) => setAddressSearch(e.target.value)}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleAddressSearch();
+                                            }
+                                        }}
+                                        placeholder="Search for an address..."
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                        disabled={isSearchingAddress}
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleAddressSearch}
+                                    disabled={!addressSearch.trim() || isSearchingAddress}
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                                >
+                                    {isSearchingAddress ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Search className="h-4 w-4" />
+                                    )}
+                                </button>
+                                <button
+                                    onClick={getUserLocation}
+                                    className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                                    title="Use current location"
+                                >
+                                    <Target className="h-4 w-4" />
+                                </button>
                             </div>
                         </div>
 
@@ -1089,6 +1137,63 @@ export default function NearbyPlaces() {
                                     <span>View on Maps</span>
                                 </a>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* AI Assistant Modal */}
+            {showAIAssistant && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className={`bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col`}>
+                        <div className={`p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-t-2xl`}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl">
+                                        <Brain className="h-6 w-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">AI Location Assistant</h2>
+                                        <p className="text-purple-700 dark:text-purple-300 text-sm">Ask me to find places near you</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowAIAssistant(false)}
+                                    className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                >
+                                    <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="p-6 space-y-4">
+                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                                <p className="text-sm text-blue-800 dark:text-blue-300">
+                                    💡 <strong>Try asking:</strong>
+                                </p>
+                                <ul className="mt-2 space-y-1 text-sm text-blue-700 dark:text-blue-400">
+                                    <li>• "Find the best restaurants near me"</li>
+                                    <li>• "Where's the nearest gym?"</li>
+                                    <li>• "Show me coffee shops within 1km"</li>
+                                    <li>• "What grocery stores are open now?"</li>
+                                </ul>
+                            </div>
+                            
+                            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    Type your question in the search bar above, and I'll help you find the perfect places!
+                                </p>
+                            </div>
+                            
+                            <button
+                                onClick={() => {
+                                    setShowAIAssistant(false);
+                                    setSearchQuery('best restaurants near me');
+                                }}
+                                className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                            >
+                                Try Example Search
+                            </button>
                         </div>
                     </div>
                 </div>

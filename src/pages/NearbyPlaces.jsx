@@ -1,18 +1,6 @@
 // src/pages/NearbyPlaces.jsx - AI-ENHANCED & LOCATION-BASED
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import {
-    Brain,
-    Target,
-    RotateCw,
-    Compass,
-    Zap,
-    TrendingUp,
-    Loader2,
-    AlertCircle,
-    CheckCircle,
-    Info
-} from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import {
     MapPin,

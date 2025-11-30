@@ -1,5 +1,27 @@
 // API service for Python backend
+// Try to use Python backend, fallback to direct API calls if not available
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://family-housing-hub-api.onrender.com';
+
+// Check if backend is available
+let backendAvailable = false;
+const checkBackendHealth = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/health`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(3000) // 3 second timeout
+    });
+    if (response.ok) {
+      backendAvailable = true;
+      return true;
+    }
+  } catch (error) {
+    backendAvailable = false;
+  }
+  return false;
+};
+
+// Check backend on load
+checkBackendHealth();
 
 class ApiService {
   async request(endpoint, options = {}) {
@@ -33,10 +55,45 @@ class ApiService {
 
   // AI Services
   async aiChat(message, context = {}) {
-    return this.request('/api/ai/chat', {
+    try {
+      return await this.request('/api/ai/chat', {
+        method: 'POST',
+        body: { message, context, use_gemini: true },
+      });
+    } catch (error) {
+      // Fallback to direct Gemini API if backend unavailable
+      if (!backendAvailable) {
+        return this.fallbackAIChat(message, context);
+      }
+      throw error;
+    }
+  }
+
+  // Fallback AI chat (direct API call)
+  async fallbackAIChat(message, context = {}) {
+    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!geminiApiKey) {
+      throw new Error('No AI service available');
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`;
+    const response = await fetch(url, {
       method: 'POST',
-      body: { message, context, use_gemini: true },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: message }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
+      })
     });
+
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        response: data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response',
+        timestamp: new Date().toISOString()
+      };
+    }
+    throw new Error('AI service unavailable');
   }
 
   async analyzeImage(imageBase64) {

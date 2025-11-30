@@ -31,6 +31,7 @@ const FamilyCalendar = lazy(() => import('./pages/FamilyCalendar'));
 const CommunityResources = lazy(() => import('./pages/CommunityResources'));
 const AIAssistant = lazy(() => import('./pages/AIAssistant'));
 const ShoppingMeals = lazy(() => import('./pages/ShoppingMeals'));
+const NearbyPlaces = lazy(() => import('./pages/NearbyPlaces'));
 const FamilySafety = lazy(() => import('./pages/FamilySafety'));
 const Security = lazy(() => import('./pages/Security'));
 const ChildDashboard = lazy(() => import('./pages/ChildDashboard'));
@@ -54,7 +55,7 @@ const ProtectedRoute = ({ children }) => {
   const parentOnlyRoutes = [
     '/', '/rent', '/maintenance', '/documents', '/messages', '/landlord',
     '/profile', '/settings', '/help', '/children', '/health', '/budget',
-    '/calendar', '/resources', '/assistant', '/shopping', '/safety', '/security',
+    '/calendar', '/resources', '/assistant', '/shopping', '/nearby-places', '/safety', '/security',
     '/parent-children', '/onboarding'
   ];
   
@@ -254,6 +255,14 @@ const AppRouter = () => {
           <ProtectedRoute>
             <Layout>
               <ShoppingMeals />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/nearby-places" element={
+          <ProtectedRoute>
+            <Layout>
+              <NearbyPlaces />
             </Layout>
           </ProtectedRoute>
         } />

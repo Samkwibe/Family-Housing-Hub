@@ -65,6 +65,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import apiService from '../services/api';
 import {
   collection,
   query,

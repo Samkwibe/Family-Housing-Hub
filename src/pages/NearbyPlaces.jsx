@@ -39,6 +39,7 @@ import {
     Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import apiService from '../services/api';
 
 // Enhanced categories with better colors and icons
 const categories = [
@@ -198,58 +199,30 @@ const getCategoryEmoji = (category) => {
 // Google Maps API Key
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBfm3u4-vEnsVvHEqjqpoGdlbNgaza8JnA';
 
-// AI Assistant for place recommendations
+// AI Assistant for place recommendations - Uses Python backend
 const callAIForPlaces = async (userQuery, userLocation, nearbyPlaces = []) => {
-    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  try {
+    const context = {
+      location: `${userLocation.lat}, ${userLocation.lng}`,
+      nearby_places_count: nearbyPlaces.length,
+      nearby_places: nearbyPlaces.slice(0, 10).map(p => ({
+        name: p.name,
+        category: p.category,
+        distance: p.distance?.toFixed(1),
+        rating: p.rating
+      }))
+    };
 
-    if (!geminiApiKey) {
-        return null; // No AI available
-    }
+    const response = await apiService.aiChat(
+      `Help me find: ${userQuery}. I'm at ${userLocation.lat}, ${userLocation.lng} and have ${nearbyPlaces.length} places nearby.`,
+      context
+    );
 
-    try {
-        const systemPrompt = `You are a helpful location assistant. The user is at coordinates ${userLocation.lat}, ${userLocation.lng} and has ${nearbyPlaces.length} places nearby. 
-
-Help them find places by:
-1. Understanding their search query: "${userQuery}"
-2. Suggesting relevant places from nearby options
-3. Providing helpful recommendations based on their needs
-4. If they ask about a specific type of place, suggest the best options nearby
-
-Available nearby places: ${nearbyPlaces.slice(0, 10).map(p => `${p.name} (${p.category}, ${p.distance.toFixed(1)}km away, rating: ${p.rating})`).join(', ')}
-
-Respond in a friendly, helpful way. If the query is about finding a place, suggest specific places from the list.`;
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`;
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: systemPrompt
-                    }]
-                }],
-                generationConfig: {
-                    temperature: 0.7,
-                    topK: 40,
-                    topP: 0.95,
-                    maxOutputTokens: 500,
-                }
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-        }
-    } catch (error) {
-        console.warn('AI API error:', error);
-    }
-
+    return response.response || null;
+  } catch (error) {
+    console.warn('AI API error:', error);
     return null;
+  }
 };
 
 // Geocode address to coordinates

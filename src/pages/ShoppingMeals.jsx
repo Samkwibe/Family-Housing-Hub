@@ -259,7 +259,7 @@ Analyze this image now and provide the JSON response.`
         return content;
       }
     }
-    } catch (error) {
+  } catch (error) {
     console.warn('Gemini API call failed, trying alternatives:', error);
   }
 
@@ -611,7 +611,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
     if (uploadedImage) {
       try {
         imageBase64 = await imageToBase64(uploadedImage);
-    } catch (error) {
+      } catch (error) {
         console.error('Error converting image:', error);
         toast.error('Failed to process image');
         return;
@@ -716,14 +716,14 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
   return (
     <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn`}>
       <div className={`bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl h-[600px] shadow-2xl flex flex-col animate-slideUp transition-colors duration-200`}>
-      {/* Header */}
+        {/* Header */}
         <div className={`p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-t-2xl`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-lg">
                 <Brain className="h-6 w-6 text-white" />
               </div>
-        <div>
+              <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">AI Cooking Assistant</h2>
                 <div className="flex items-center gap-2">
                   <p className="text-purple-700 dark:text-purple-300 text-sm">Instant meal ideas and cooking help</p>
@@ -737,28 +737,28 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                       <Sparkle className="h-3 w-3" />
                       Free Mode
                     </span>
-              )}
-            </div>
-        </div>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="flex items-center gap-2">
-            <button
+              <button
                 onClick={() => setIsMuted(!isMuted)}
                 className={`p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors`}
                 title={isMuted ? "Enable audio" : "Disable audio"}
               >
                 {isMuted ? <VolumeX className="h-5 w-5 text-gray-500 dark:text-gray-400" /> : <Volume2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />}
-            </button>
-            <button
+              </button>
+              <button
                 onClick={onClose}
                 className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
                 aria-label="Close"
               >
                 <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            </button>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-gray-900/50">
@@ -777,7 +777,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                   <div className="flex items-center gap-1 mb-2 text-xs text-purple-600 dark:text-purple-400">
                     <Sparkle className="h-3 w-3" />
                     <span>AI Enhanced</span>
-                </div>
+                  </div>
                 )}
                 {message.image && (
                   <div className="mb-3 rounded-lg overflow-hidden">
@@ -786,7 +786,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                       alt="Uploaded food"
                       className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-gray-700"
                     />
-              </div>
+                  </div>
                 )}
 
                 {/* Advanced Image Analysis Display */}
@@ -801,7 +801,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                       {message.imageAnalysis.description && (
                         <p className="text-gray-700 dark:text-gray-300">{message.imageAnalysis.description}</p>
                       )}
-            </div>
+                    </div>
 
                     {/* Ingredients List */}
                     {message.imageAnalysis.ingredients && message.imageAnalysis.ingredients.length > 0 && (
@@ -816,8 +816,8 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                               {ingredient}
                             </span>
                           ))}
-                </div>
-              </div>
+                        </div>
+                      </div>
                     )}
 
                     {/* Nutrition Info */}
@@ -832,27 +832,27 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                             <div className="text-center p-2 bg-white dark:bg-gray-700 rounded-lg">
                               <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{message.imageAnalysis.nutrition.calories}</div>
                               <div className="text-xs text-gray-600 dark:text-gray-400">Calories</div>
-            </div>
+                            </div>
                           )}
                           {message.imageAnalysis.nutrition.protein && (
                             <div className="text-center p-2 bg-white dark:bg-gray-700 rounded-lg">
                               <div className="text-lg font-bold text-gray-900 dark:text-white">{message.imageAnalysis.nutrition.protein}</div>
                               <div className="text-xs text-gray-600 dark:text-gray-400">Protein</div>
-                </div>
+                            </div>
                           )}
                           {message.imageAnalysis.nutrition.carbs && (
                             <div className="text-center p-2 bg-white dark:bg-gray-700 rounded-lg">
                               <div className="text-lg font-bold text-gray-900 dark:text-white">{message.imageAnalysis.nutrition.carbs}</div>
                               <div className="text-xs text-gray-600 dark:text-gray-400">Carbs</div>
-              </div>
+                            </div>
                           )}
                           {message.imageAnalysis.nutrition.fat && (
                             <div className="text-center p-2 bg-white dark:bg-gray-700 rounded-lg">
                               <div className="text-lg font-bold text-gray-900 dark:text-white">{message.imageAnalysis.nutrition.fat}</div>
                               <div className="text-xs text-gray-600 dark:text-gray-400">Fat</div>
-            </div>
+                            </div>
                           )}
-          </div>
+                        </div>
                       </div>
                     )}
 
@@ -886,7 +886,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                             ))}
                           </ul>
                         )}
-              </div>
+                      </div>
                     )}
 
                     {/* Allergen Alerts */}
@@ -902,8 +902,8 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                               ⚠️ {allergen}
                             </span>
                           ))}
-            </div>
-          </div>
+                        </div>
+                      </div>
                     )}
 
                     {/* Portion Size */}
@@ -913,7 +913,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                         <div>
                           <div className="font-semibold text-gray-900 dark:text-white">Estimated Portion</div>
                           <div className="text-sm text-gray-600 dark:text-gray-400">{message.imageAnalysis.portionSize}</div>
-              </div>
+                        </div>
                       </div>
                     )}
 
@@ -946,7 +946,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                           Watch Tutorial
                         </button>
                       )}
-                        </div>
+                    </div>
                   </div>
                 )}
 
@@ -955,7 +955,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                   <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border-2 border-amber-300 dark:border-amber-800">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
+                      <div className="flex-1">
                         <h4 className="font-semibold text-amber-900 dark:text-amber-300 mb-2">Not a Food Item</h4>
                         <p className="text-sm text-amber-800 dark:text-amber-400 mb-3">
                           This doesn't appear to be food. Please try capturing a food item or ingredient.
@@ -1009,7 +1009,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                 )}
                 {message.hasActions && (
                   <div className="flex gap-2 mt-3">
-                        <button
+                    <button
                       onClick={() => {
                         toast.success('Recipe details coming soon!');
                         onAddMeal?.();
@@ -1017,7 +1017,7 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                       className="px-3 py-1.5 bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 rounded-full text-sm font-medium hover:bg-orange-50 dark:hover:bg-gray-600 transition-colors shadow-sm border border-orange-200 dark:border-orange-800"
                     >
                       Get Full Recipe
-                        </button>
+                    </button>
                     <button
                       onClick={() => onAddMeal?.()}
                       className="px-3 py-1.5 bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 rounded-full text-sm font-medium hover:bg-orange-50 dark:hover:bg-gray-600 transition-colors shadow-sm border border-orange-200 dark:border-orange-800"
@@ -1043,9 +1043,9 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                       <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
                       <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                       <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-          </div>
+                    </div>
                   )}
-        </div>
+                </div>
               </div>
             </div>
           )}
@@ -1074,14 +1074,14 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
                   alt="Preview"
                   className="w-32 h-32 object-cover rounded-lg border-2 border-purple-300 dark:border-purple-700"
                 />
-              <button
+                <button
                   onClick={removeImage}
                   className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-colors"
                   title="Remove image"
-              >
+                >
                   <X className="h-4 w-4" />
-              </button>
-            </div>
+                </button>
+              </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Food image ready to analyze</p>
             </div>
           )}
@@ -1521,25 +1521,25 @@ const NearbyStores = ({ onClose }) => {
           lat: parseFloat(result.lat),
           lng: parseFloat(result.lon)
         };
-        
+
         // Verify the location is valid
         if (isNaN(location.lat) || isNaN(location.lng)) {
           throw new Error('Invalid coordinates received');
         }
-        
+
         console.log('Geocoded address:', {
           searched: address,
           found: result.display_name,
           coordinates: location,
           addressDetails: result.address
         });
-        
+
         // Get a more readable address name
-        const addressName = result.display_name || 
-          (result.address ? 
-            `${result.address.road || ''} ${result.address.house_number || ''}, ${result.address.city || result.address.town || result.address.village || ''}, ${result.address.state || ''} ${result.address.postcode || ''}`.trim() 
+        const addressName = result.display_name ||
+          (result.address ?
+            `${result.address.road || ''} ${result.address.house_number || ''}, ${result.address.city || result.address.town || result.address.village || ''}, ${result.address.state || ''} ${result.address.postcode || ''}`.trim()
             : address);
-        
+
         setUserLocation(location);
         setCurrentLocationName(addressName);
         setLocationPermission('granted');
@@ -1646,31 +1646,31 @@ const NearbyStores = ({ onClose }) => {
   // Generate store coordinates near the user's location
   const generateStoreCoordinates = (userLocation) => {
     console.log('Generating stores near location:', userLocation);
-    
+
     // Generate stores in a radius around the user's location
     // Each store is placed at a random angle and distance (0.3 to 4.5 miles)
     const stores = [];
     const baseLat = userLocation.lat;
     const baseLng = userLocation.lng;
-    
+
     // Convert miles to degrees (approximate: 1 degree ≈ 69 miles)
     const milesToDegrees = 1 / 69;
-    
+
     for (let i = 0; i < 15; i++) {
       // Random angle in radians - spread evenly in a circle
       const angle = (Math.PI * 2 * i) / 15 + (Math.random() * 0.2 - 0.1); // Spread evenly with slight randomness
       // Distance between 0.3 and 4.5 miles - increasing with index
       const distanceMiles = 0.3 + (i * 0.28) + (Math.random() * 0.2);
       const distanceDegrees = distanceMiles * milesToDegrees;
-      
+
       // Calculate new coordinates using proper lat/lng distance calculation
       const lat = baseLat + (distanceDegrees * Math.cos(angle));
       // Adjust longitude for latitude (longitude lines get closer at higher latitudes)
       const lng = baseLng + (distanceDegrees * Math.sin(angle) / Math.cos(baseLat * Math.PI / 180));
-      
+
       stores.push({ lat, lng, distanceMiles });
     }
-    
+
     console.log('Generated store coordinates:', stores.slice(0, 3)); // Log first 3 for debugging
     return stores;
   };
@@ -1695,7 +1695,7 @@ const NearbyStores = ({ onClose }) => {
         storeCoord.lat,
         storeCoord.lng
       );
-      
+
       return {
         ...store,
         distance: formatDistance(distance),
@@ -1736,7 +1736,7 @@ const NearbyStores = ({ onClose }) => {
     }
   };
 
-              return (
+  return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
       <div className={`bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl h-[600px] shadow-2xl flex overflow-hidden animate-slideUp transition-colors duration-200`}>
         {/* Store List */}
@@ -1751,7 +1751,7 @@ const NearbyStores = ({ onClose }) => {
               >
                 <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               </button>
-                  </div>
+            </div>
             {/* Location Status */}
             <div className="space-y-2">
               {locationLoading && (
@@ -1777,7 +1777,7 @@ const NearbyStores = ({ onClose }) => {
                   >
                     Try again
                   </button>
-                            </div>
+                </div>
               )}
 
               {locationPermission === 'prompt' && !locationLoading && !userLocation && (
@@ -1785,12 +1785,12 @@ const NearbyStores = ({ onClose }) => {
                   <p className="text-xs text-blue-800 dark:text-blue-300 mb-2">
                     Allow location access to see stores near you
                   </p>
-                                <button
+                  <button
                     onClick={getUserLocation}
                     className="text-xs text-blue-700 dark:text-blue-400 hover:underline font-medium"
-                                >
+                  >
                     Enable location
-                                </button>
+                  </button>
                 </div>
               )}
 
@@ -1815,7 +1815,7 @@ const NearbyStores = ({ onClose }) => {
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {stores.map(store => (
-                              <button
+                <button
                   key={store.id}
                   onClick={() => setSelectedStore(store)}
                   className={`w-full p-4 cursor-pointer transition-all text-left ${selectedStore?.id === store.id
@@ -1836,11 +1836,11 @@ const NearbyStores = ({ onClose }) => {
                     <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{store.rating}</span>
                   </div>
-                              </button>
+                </button>
               ))}
-                            </div>
+            </div>
           )}
-                          </div>
+        </div>
 
         {/* Store Details */}
         <div className={`flex-1 overflow-y-auto bg-white dark:bg-gray-800`}>
@@ -1863,13 +1863,13 @@ const NearbyStores = ({ onClose }) => {
                   )}
                 </div>
                 <div className="flex gap-2">
-                      <button
+                  <button
                     onClick={handleGetDirections}
                     className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors shadow-sm"
                     title="Get directions"
                   >
                     <Navigation className="h-5 w-5" />
-                      </button>
+                  </button>
                   <button
                     onClick={() => window.location.href = `tel:${selectedStore.phone}`}
                     className="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors shadow-sm"
@@ -1929,19 +1929,19 @@ const NearbyStores = ({ onClose }) => {
                           <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-2 py-0.5 rounded-full font-medium">
                             Best Price
                           </span>
-                    )}
-                  </div>
-                </div>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
-          </div>
+              </div>
 
               {/* Current Deals */}
               <div>
-            <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-4">
                   <Tag className="h-5 w-5 text-green-600 dark:text-green-400" />
                   <h3 className="font-semibold text-gray-900 dark:text-white text-lg">Current Deals</h3>
-            </div>
+                </div>
                 <div className="space-y-2">
                   {selectedStore.deals.map((deal, index) => (
                     <div key={index} className={`flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg`}>
@@ -1953,20 +1953,20 @@ const NearbyStores = ({ onClose }) => {
               </div>
 
               {/* Action Button */}
-                <button
+              <button
                 onClick={handleGetDirections}
                 className="w-full mt-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
               >
                 <Navigation className="h-5 w-5" />
                 Get Directions to {selectedStore.name}
-                </button>
+              </button>
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
               <Store className="h-16 w-16 mb-4" />
               <p className="text-lg">Select a store to view details</p>
-        </div>
-      )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -2255,7 +2255,7 @@ export default function ShoppingMeals() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-                <button
+          <button
             onClick={() => setShowAIChat(true)}
             className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-500 dark:to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 dark:hover:from-purple-600 dark:hover:to-pink-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
           >
@@ -2269,15 +2269,15 @@ export default function ShoppingMeals() {
           >
             <Store className="h-5 w-5" />
             Nearby Stores
-                </button>
-              </div>
-            </div>
+          </button>
+        </div>
+      </div>
 
       {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
-              <div>
+            <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Items</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{shoppingStats.total}</p>
             </div>
@@ -2285,14 +2285,14 @@ export default function ShoppingMeals() {
               <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
-              </div>
+        </div>
 
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
-                <div>
+            <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Checked</p>
               <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{shoppingStats.checked}</p>
-                </div>
+            </div>
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
               <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
@@ -2301,7 +2301,7 @@ export default function ShoppingMeals() {
 
         <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all duration-200`}>
           <div className="flex items-center justify-between">
-                <div>
+            <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Remaining</p>
               <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{shoppingStats.remaining}</p>
             </div>
@@ -2330,15 +2330,15 @@ export default function ShoppingMeals() {
           <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
-                  <input
-                    type="text"
+              <input
+                type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search items..."
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
-                  />
-                </div>
-              </div>
+              />
+            </div>
+          </div>
 
           <button
             onClick={() => setShowAddItem(true)}
@@ -2361,8 +2361,8 @@ export default function ShoppingMeals() {
         {/* Enhanced Categories */}
         <div className="flex flex-wrap gap-2 mt-4">
           {SHOPPING_CATEGORIES.map(cat => (
-                    <button
-                      key={cat.id}
+            <button
+              key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 border ${selectedCategory === cat.id
                 ? cat.color + ' shadow-md scale-105'
@@ -2371,10 +2371,10 @@ export default function ShoppingMeals() {
             >
               <cat.icon className="h-4 w-4" />
               {cat.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Enhanced Items List */}
       <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm transition-colors duration-200`}>
@@ -2396,7 +2396,7 @@ export default function ShoppingMeals() {
                     }`}
                 >
                   <div className="flex items-center gap-4">
-                <button
+                    <button
                       onClick={() => toggleItemChecked(item.id, item.checked)}
                       className={`flex-shrink-0 w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${item.checked
                         ? 'bg-green-600 dark:bg-green-500 border-green-600 dark:border-green-500 shadow-md'
@@ -2404,7 +2404,7 @@ export default function ShoppingMeals() {
                         }`}
                     >
                       {item.checked && <Check className="h-4 w-4 text-white" />}
-                </button>
+                    </button>
                     <div className={`p-3 rounded-xl ${SHOPPING_CATEGORIES.find(c => c.id === item.category)?.color || 'bg-gray-100 dark:bg-gray-700'
                       }`}>
                       <CategoryIcon className="h-5 w-5" />
@@ -2432,18 +2432,18 @@ export default function ShoppingMeals() {
                         High Priority
                       </span>
                     )}
-                <button
+                    <button
                       onClick={() => handleDeleteItem(item.id)}
                       className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all hover:scale-110"
-                >
+                    >
                       <Trash2 className="h-5 w-5" />
-                </button>
-              </div>
-          </div>
+                    </button>
+                  </div>
+                </div>
               );
             })}
-        </div>
-      )}
+          </div>
+        )}
       </div>
 
       {/* Enhanced Add Item Modal */}
@@ -2504,17 +2504,17 @@ export default function ShoppingMeals() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Category
                 </label>
-                  <select
+                <select
                   value={itemForm.category}
                   onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
                 >
                   {SHOPPING_CATEGORIES.filter(c => c.id !== 'all').map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Priority
                 </label>
@@ -2527,7 +2527,7 @@ export default function ShoppingMeals() {
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                 </select>
-                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Price (optional)

@@ -1,6 +1,19 @@
-// src/pages/NearbyPlaces.jsx - FIXED & ENHANCED
+// src/pages/NearbyPlaces.jsx - AI-ENHANCED & LOCATION-BASED
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import {
+    Brain,
+    Target,
+    RotateCw,
+    Compass,
+    Zap,
+    TrendingUp,
+    Loader2,
+    AlertCircle,
+    CheckCircle,
+    Info
+} from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import {
     MapPin,
     Search,
@@ -25,7 +38,17 @@ import {
     Heart,
     Sparkles,
     Locate,
-    Map as MapIcon
+    Map as MapIcon,
+    Brain,
+    Target,
+    RotateCw,
+    Compass,
+    Zap,
+    TrendingUp,
+    Loader2,
+    AlertCircle,
+    CheckCircle,
+    Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -183,8 +206,98 @@ const getCategoryEmoji = (category) => {
     return emojis[category] || '📍';
 };
 
-// Google Maps API Key - stored here for now, should be moved to .env.local in production
+// Google Maps API Key
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBfm3u4-vEnsVvHEqjqpoGdlbNgaza8JnA';
+
+// AI Assistant for place recommendations
+const callAIForPlaces = async (userQuery, userLocation, nearbyPlaces = []) => {
+  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  
+  if (!geminiApiKey) {
+    return null; // No AI available
+  }
+
+  try {
+    const systemPrompt = `You are a helpful location assistant. The user is at coordinates ${userLocation.lat}, ${userLocation.lng} and has ${nearbyPlaces.length} places nearby. 
+
+Help them find places by:
+1. Understanding their search query: "${userQuery}"
+2. Suggesting relevant places from nearby options
+3. Providing helpful recommendations based on their needs
+4. If they ask about a specific type of place, suggest the best options nearby
+
+Available nearby places: ${nearbyPlaces.slice(0, 10).map(p => `${p.name} (${p.category}, ${p.distance.toFixed(1)}km away, rating: ${p.rating})`).join(', ')}
+
+Respond in a friendly, helpful way. If the query is about finding a place, suggest specific places from the list.`;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: systemPrompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 500,
+        }
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    }
+  } catch (error) {
+    console.warn('AI API error:', error);
+  }
+  
+  return null;
+};
+
+// Geocode address to coordinates
+const geocodeAddress = async (address) => {
+  if (!address.trim()) {
+    toast.error('Please enter an address');
+    return null;
+  }
+
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'Family-Housing-Hub/1.0',
+          'Accept-Language': 'en'
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      const result = data[0];
+      return {
+        lat: parseFloat(result.lat),
+        lng: parseFloat(result.lon),
+        name: result.display_name
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    toast.error('Failed to search address');
+    return null;
+  }
+};
 
 // Interactive Map Component with Google Maps API Key
 const SimpleMap = ({ userLocation, places, selectedPlace, onPlaceSelect }) => {
@@ -272,61 +385,118 @@ export default function NearbyPlaces() {
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
     const [searchDebounceTimer, setSearchDebounceTimer] = useState(null);
 
-    // Get user location with permission request
-    useEffect(() => {
-        const getLocation = async () => {
-            try {
-                setIsLoading(true);
-                toast.loading('Requesting location permission...', { id: 'location' });
+    // Get user location with permission request and address search
+    const getUserLocation = useCallback(async () => {
+        if (!navigator.geolocation) {
+            setLocationError('Geolocation is not supported by your browser');
+            setIsLoading(false);
+            return;
+        }
 
-                // Use browser geolocation with better error handling
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            const location = {
-                                lat: position.coords.latitude,
-                                lng: position.coords.longitude
-                            };
-                            setUserLocation(location);
-                            toast.success('Location found! Loading nearby places...', { id: 'location' });
-                            // Places will be loaded in the other useEffect
-                        },
-                        (error) => {
-                            console.warn('Geolocation failed:', error);
-                            let errorMessage = 'Location access denied. ';
+        setLocationLoading(true);
+        setLocationError(null);
+        setIsLoading(true);
+        toast.loading('Requesting location permission...', { id: 'location' });
 
-                            if (error.code === error.PERMISSION_DENIED) {
-                                errorMessage += 'Please enable location permissions in your browser settings.';
-                            } else if (error.code === error.POSITION_UNAVAILABLE) {
-                                errorMessage += 'Location information unavailable.';
-                            } else if (error.code === error.TIMEOUT) {
-                                errorMessage += 'Location request timed out.';
-                            }
-
-                            toast.error(errorMessage, { id: 'location', duration: 5000 });
-
-                            // Don't set a default location - let user know they need to enable location
-                            setIsLoading(false);
-                        },
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const location = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    accuracy: position.coords.accuracy
+                };
+                
+                // Reverse geocode to get address name
+                try {
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&addressdetails=1`,
                         {
-                            enableHighAccuracy: true,
-                            timeout: 15000,
-                            maximumAge: 0 // Always get fresh location
+                            headers: {
+                                'User-Agent': 'Family-Housing-Hub/1.0',
+                                'Accept-Language': 'en'
+                            }
                         }
                     );
-                } else {
-                    toast.error('Geolocation is not supported by your browser.', { id: 'location' });
-                    setIsLoading(false);
+                    const data = await response.json();
+                    if (data && data.display_name) {
+                        setCurrentLocationName(data.display_name);
+                    }
+                } catch (e) {
+                    console.warn('Reverse geocoding failed:', e);
                 }
-            } catch (error) {
-                console.error('Location error:', error);
-                toast.error('Failed to get location. Please try again.', { id: 'location' });
-                setIsLoading(false);
-            }
-        };
+                
+                setUserLocation(location);
+                setLocationAccuracy(location.accuracy);
+                setLocationLoading(false);
+                toast.success('Location found! Loading nearby places...', { id: 'location' });
+            },
+            (error) => {
+                console.warn('Geolocation failed:', error);
+                setLocationLoading(false);
+                let errorMessage = 'Location access denied. ';
 
-        getLocation();
+                if (error.code === error.PERMISSION_DENIED) {
+                    errorMessage += 'Please enable location permissions or search for an address.';
+                    setLocationError(errorMessage);
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    errorMessage += 'Location information unavailable.';
+                    setLocationError(errorMessage);
+                } else if (error.code === error.TIMEOUT) {
+                    errorMessage += 'Location request timed out.';
+                    setLocationError(errorMessage);
+                } else {
+                    setLocationError(errorMessage);
+                }
+
+                toast.error(errorMessage, { id: 'location', duration: 5000 });
+                setIsLoading(false);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            }
+        );
     }, []);
+
+    // Search for address
+    const handleAddressSearch = useCallback(async () => {
+        if (!addressSearch.trim()) {
+            toast.error('Please enter an address');
+            return;
+        }
+
+        setIsSearchingAddress(true);
+        setLocationError(null);
+        setIsLoading(true);
+
+        try {
+            const result = await geocodeAddress(addressSearch);
+            
+            if (result) {
+                setUserLocation({ lat: result.lat, lng: result.lng, accuracy: null });
+                setCurrentLocationName(result.name);
+                setLocationLoading(false);
+                toast.success(`Found location: ${result.name.split(',')[0]}`);
+                setAddressSearch('');
+            } else {
+                setLocationError('Address not found. Please try a more specific address.');
+                toast.error('Address not found');
+            }
+        } catch (error) {
+            console.error('Address search error:', error);
+            setLocationError('Failed to search address');
+            toast.error('Failed to search address');
+        } finally {
+            setIsSearchingAddress(false);
+            setIsLoading(false);
+        }
+    }, [addressSearch]);
+
+    // Get user location on mount
+    useEffect(() => {
+        getUserLocation();
+    }, [getUserLocation]);
 
     // Wait for Google Maps API to load, then fetch nearby places
     useEffect(() => {
@@ -383,7 +553,7 @@ export default function NearbyPlaces() {
         loadPlaces();
     }, [userLocation, selectedCategory]);
 
-    // Debounced search function
+    // Debounced search function with AI assistance
     useEffect(() => {
         if (searchDebounceTimer) {
             clearTimeout(searchDebounceTimer);
@@ -391,12 +561,25 @@ export default function NearbyPlaces() {
 
         if (searchQuery.trim()) {
             setIsSearching(true);
+            
+            // Get AI suggestion if query is complex
+            if (searchQuery.length > 10 && userLocation && places.length > 0) {
+                callAIForPlaces(searchQuery, userLocation, places).then(suggestion => {
+                    if (suggestion) {
+                        setAiSuggestion(suggestion);
+                    }
+                }).catch(() => {
+                    // Ignore AI errors
+                });
+            }
+            
             const timer = setTimeout(() => {
                 setIsSearching(false);
             }, 300);
             setSearchDebounceTimer(timer);
         } else {
             setIsSearching(false);
+            setAiSuggestion(null);
         }
 
         return () => {
@@ -404,7 +587,7 @@ export default function NearbyPlaces() {
                 clearTimeout(searchDebounceTimer);
             }
         };
-    }, [searchQuery]);
+    }, [searchQuery, userLocation, places]);
 
     // Filter places by search query with better matching
     const filteredPlaces = useMemo(() => {
@@ -465,38 +648,60 @@ export default function NearbyPlaces() {
                             </div>
                         </div>
 
-                        {/* Enhanced Search Bar with Loading Indicator */}
+                        {/* Enhanced Search Bar with AI Assistant */}
                         <div className="flex-1 max-w-2xl">
                             <div className="relative group">
-                                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search for restaurants, gyms, stores..."
-                                    className="w-full pl-12 pr-12 py-4 bg-white/80 backdrop-blur-sm border-2 border-gray-200/50 rounded-2xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 shadow-sm hover:shadow-md"
+                                    placeholder="Search for restaurants, gyms, stores... (AI-powered)"
+                                    className={`w-full pl-12 pr-24 py-4 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm border-2 border-gray-200/50 dark:border-gray-600/50 rounded-2xl focus:ring-3 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 shadow-sm hover:shadow-md text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
                                 />
-                                {isSearching && (
-                                    <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                                    </div>
-                                )}
-                                {searchQuery && !isSearching && (
-                                    <button
-                                        onClick={() => setSearchQuery('')}
-                                        className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
-                                    >
-                                        <X className="h-4 w-4 text-gray-400" />
-                                    </button>
-                                )}
-                                {!searchQuery && !isSearching && (
-                                    <Filter className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                )}
+                                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                                    {isSearching && (
+                                        <Loader2 className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                    )}
+                                    {searchQuery && !isSearching && (
+                                        <button
+                                            onClick={() => {
+                                                setSearchQuery('');
+                                                setAiSuggestion(null);
+                                            }}
+                                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition-colors"
+                                        >
+                                            <X className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                        </button>
+                                    )}
+                                    {!searchQuery && !isSearching && (
+                                        <>
+                                            <button
+                                                onClick={() => setShowAIAssistant(true)}
+                                                className="p-1.5 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                                                title="AI Assistant"
+                                            >
+                                                <Brain className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                            </button>
+                                            <Filter className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                                        </>
+                                    )}
+                                </div>
                             </div>
                             {searchQuery && (
-                                <p className="text-xs text-gray-500 mt-2 ml-4">
-                                    Found {filteredPlaces.length} {filteredPlaces.length === 1 ? 'place' : 'places'}
-                                </p>
+                                <div className="mt-2 ml-4">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Found {filteredPlaces.length} {filteredPlaces.length === 1 ? 'place' : 'places'}
+                                    </p>
+                                    {aiSuggestion && (
+                                        <div className="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                            <div className="flex items-start gap-2">
+                                                <Brain className="h-4 w-4 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
+                                                <p className="text-xs text-purple-800 dark:text-purple-300">{aiSuggestion}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </div>
 

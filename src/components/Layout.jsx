@@ -26,7 +26,8 @@ import {
   UserCog,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  MapPin
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFamily } from '../contexts/FamilyContext';
@@ -42,6 +43,7 @@ const navigation = [
   { name: 'Maintenance', href: '/maintenance', icon: Wrench },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Shopping & Meals', href: '/shopping', icon: ShoppingCart },
+  { name: 'Nearby Places', href: '/nearby-places', icon: MapPin },
   { name: 'Documents', href: '/documents', icon: FileText },
   { name: 'Messages', href: '/messages', icon: MessageCircle },
   { name: 'Children', href: '/children', icon: PiggyBank },

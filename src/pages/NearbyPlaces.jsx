@@ -527,7 +527,7 @@ export default function NearbyPlaces() {
             const handleMapsLoaded = () => {
                 loadPlacesData();
             };
-            
+
             const handleMapsError = () => {
                 console.warn('Google Maps API blocked or failed to load. Using fallback.');
                 showAdBlockerWarning();
@@ -577,7 +577,7 @@ export default function NearbyPlaces() {
             const showAdBlockerWarning = () => {
                 toast.error(
                     'Google Maps API is blocked. Please disable your ad blocker for this site to see real places, or use the address search feature.',
-                    { 
+                    {
                         duration: 8000,
                         icon: '⚠️'
                     }

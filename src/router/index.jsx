@@ -11,6 +11,7 @@ import Landlord from '../pages/Landlord'
 import Profile from '../pages/Profile'
 import ChildDashboard from '../pages/ChildDashboard'
 import ChildrenSavings from '../pages/ChildrenSavings'
+import NearbyPlaces from '../pages/NearbyPlaces'
 import ProtectedRoute from '../components/ProtectedRoute'
 import Layout from '../components/Layout'
 
@@ -77,6 +78,13 @@ export default function AppRouter() {
         <ProtectedRoute>
           <Layout>
             <ChildrenSavings />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/nearby-places" element={
+        <ProtectedRoute>
+          <Layout>
+            <NearbyPlaces />
           </Layout>
         </ProtectedRoute>
       } />

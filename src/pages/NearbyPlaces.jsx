@@ -87,7 +87,8 @@ const fetchNearbyPlaces = async (userLocation, category = 'all', apiKey) => {
 
     // Check if Google Maps API is loaded
     if (typeof google === 'undefined' || !google.maps || !google.maps.places) {
-        console.error('Google Maps JavaScript API not loaded');
+        console.warn('Google Maps JavaScript API not loaded - this may be due to an ad blocker');
+        // Return empty array - the component will handle fallback
         return [];
     }
 
@@ -522,40 +523,87 @@ export default function NearbyPlaces() {
         const loadPlaces = async () => {
             if (!userLocation || !GOOGLE_MAPS_API_KEY) return;
 
-            // Wait for Google Maps API to load (max 10 seconds)
-            let attempts = 0;
-            let status = waitForGoogleMaps();
-            while (status === false && attempts < 20) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                attempts++;
-                status = waitForGoogleMaps();
-            }
+            // Listen for Google Maps load events
+            const handleMapsLoaded = () => {
+                loadPlacesData();
+            };
+            
+            const handleMapsError = () => {
+                console.warn('Google Maps API blocked or failed to load. Using fallback.');
+                showAdBlockerWarning();
+                loadPlacesData(); // Still try to load with fallback
+            };
 
-            if (status === 'error' || status === false) {
-                console.warn('Google Maps API not available. Using fallback data.');
-                toast.error('Google Maps API is not available. Some features may be limited. Please check if you have an ad blocker enabled.', { duration: 5000 });
-                setIsLoading(false);
-                // Continue with mock data instead of returning
-                return;
-            }
+            window.addEventListener('googlemapsloaded', handleMapsLoaded);
+            window.addEventListener('googlemapserror', handleMapsError);
 
-            setIsLoading(true);
-            const startTime = Date.now();
-            try {
-                const realPlaces = await fetchNearbyPlaces(userLocation, selectedCategory, GOOGLE_MAPS_API_KEY);
-                const loadTime = ((Date.now() - startTime) / 1000).toFixed(1);
-                setPlaces(realPlaces);
-                if (realPlaces.length > 0) {
-                    toast.success(`Found ${realPlaces.length} nearby places in ${loadTime}s!`, { duration: 2000 });
-                } else {
-                    toast('No places found nearby. Try a different category.', { icon: 'ℹ️', duration: 3000 });
+            const loadPlacesData = async () => {
+                // Wait for Google Maps API to load (max 10 seconds)
+                let attempts = 0;
+                let status = waitForGoogleMaps();
+                while (status === false && attempts < 20) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    attempts++;
+                    status = waitForGoogleMaps();
                 }
-            } catch (error) {
-                console.error('Error loading places:', error);
-                toast.error('Failed to load nearby places. Please try again.', { duration: 4000 });
-            } finally {
-                setIsLoading(false);
+
+                if (status === 'error' || status === false) {
+                    console.warn('Google Maps API not available. Using fallback data.');
+                    showAdBlockerWarning();
+                    setIsLoading(false);
+                    // Continue with mock data instead of returning
+                    return;
+                }
+
+                setIsLoading(true);
+                const startTime = Date.now();
+                try {
+                    const realPlaces = await fetchNearbyPlaces(userLocation, selectedCategory, GOOGLE_MAPS_API_KEY);
+                    const loadTime = ((Date.now() - startTime) / 1000).toFixed(1);
+                    setPlaces(realPlaces);
+                    if (realPlaces.length > 0) {
+                        toast.success(`Found ${realPlaces.length} nearby places in ${loadTime}s!`, { duration: 2000 });
+                    } else {
+                        toast('No places found nearby. Try a different category.', { icon: 'ℹ️', duration: 3000 });
+                    }
+                } catch (error) {
+                    console.error('Error loading places:', error);
+                    toast.error('Failed to load nearby places. Please try again.', { duration: 4000 });
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const showAdBlockerWarning = () => {
+                toast.error(
+                    'Google Maps API is blocked. Please disable your ad blocker for this site to see real places, or use the address search feature.',
+                    { 
+                        duration: 8000,
+                        icon: '⚠️'
+                    }
+                );
+            };
+
+            // If already loaded, proceed immediately
+            if (waitForGoogleMaps() === true) {
+                loadPlacesData();
+            } else if (waitForGoogleMaps() === 'error') {
+                handleMapsError();
+            } else {
+                // Wait a bit for the script to load
+                setTimeout(() => {
+                    if (waitForGoogleMaps() === true) {
+                        loadPlacesData();
+                    } else {
+                        handleMapsError();
+                    }
+                }, 2000);
             }
+
+            return () => {
+                window.removeEventListener('googlemapsloaded', handleMapsLoaded);
+                window.removeEventListener('googlemapserror', handleMapsError);
+            };
         };
 
         loadPlaces();

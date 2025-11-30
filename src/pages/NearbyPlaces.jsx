@@ -211,14 +211,14 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyB
 
 // AI Assistant for place recommendations
 const callAIForPlaces = async (userQuery, userLocation, nearbyPlaces = []) => {
-  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  
-  if (!geminiApiKey) {
-    return null; // No AI available
-  }
+    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
-  try {
-    const systemPrompt = `You are a helpful location assistant. The user is at coordinates ${userLocation.lat}, ${userLocation.lng} and has ${nearbyPlaces.length} places nearby. 
+    if (!geminiApiKey) {
+        return null; // No AI available
+    }
+
+    try {
+        const systemPrompt = `You are a helpful location assistant. The user is at coordinates ${userLocation.lat}, ${userLocation.lng} and has ${nearbyPlaces.length} places nearby. 
 
 Help them find places by:
 1. Understanding their search query: "${userQuery}"
@@ -230,73 +230,73 @@ Available nearby places: ${nearbyPlaces.slice(0, 10).map(p => `${p.name} (${p.ca
 
 Respond in a friendly, helpful way. If the query is about finding a place, suggest specific places from the list.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: systemPrompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 500,
-        }
-      })
-    });
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`;
 
-    if (response.ok) {
-      const data = await response.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: systemPrompt
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 500,
+                }
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        }
+    } catch (error) {
+        console.warn('AI API error:', error);
     }
-  } catch (error) {
-    console.warn('AI API error:', error);
-  }
-  
-  return null;
+
+    return null;
 };
 
 // Geocode address to coordinates
 const geocodeAddress = async (address) => {
-  if (!address.trim()) {
-    toast.error('Please enter an address');
-    return null;
-  }
-
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&addressdetails=1`,
-      {
-        headers: {
-          'User-Agent': 'Family-Housing-Hub/1.0',
-          'Accept-Language': 'en'
-        }
-      }
-    );
-
-    const data = await response.json();
-
-    if (data && data.length > 0) {
-      const result = data[0];
-      return {
-        lat: parseFloat(result.lat),
-        lng: parseFloat(result.lon),
-        name: result.display_name
-      };
+    if (!address.trim()) {
+        toast.error('Please enter an address');
+        return null;
     }
-    return null;
-  } catch (error) {
-    console.error('Geocoding error:', error);
-    toast.error('Failed to search address');
-    return null;
-  }
+
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&addressdetails=1`,
+            {
+                headers: {
+                    'User-Agent': 'Family-Housing-Hub/1.0',
+                    'Accept-Language': 'en'
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (data && data.length > 0) {
+            const result = data[0];
+            return {
+                lat: parseFloat(result.lat),
+                lng: parseFloat(result.lon),
+                name: result.display_name
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Geocoding error:', error);
+        toast.error('Failed to search address');
+        return null;
+    }
 };
 
 // Interactive Map Component with Google Maps API Key
@@ -377,13 +377,21 @@ export default function NearbyPlaces() {
     const { userProfile } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [addressSearch, setAddressSearch] = useState('');
     const [userLocation, setUserLocation] = useState(null);
+    const [currentLocationName, setCurrentLocationName] = useState(null);
+    const [locationAccuracy, setLocationAccuracy] = useState(null);
     const [places, setPlaces] = useState([]);
     const [selectedPlace, setSelectedPlace] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSearching, setIsSearching] = useState(false);
+    const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+    const [locationLoading, setLocationLoading] = useState(false);
+    const [locationError, setLocationError] = useState(null);
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
     const [searchDebounceTimer, setSearchDebounceTimer] = useState(null);
+    const [aiSuggestion, setAiSuggestion] = useState(null);
+    const [showAIAssistant, setShowAIAssistant] = useState(false);
 
     // Get user location with permission request and address search
     const getUserLocation = useCallback(async () => {
@@ -405,7 +413,7 @@ export default function NearbyPlaces() {
                     lng: position.coords.longitude,
                     accuracy: position.coords.accuracy
                 };
-                
+
                 // Reverse geocode to get address name
                 try {
                     const response = await fetch(
@@ -424,7 +432,7 @@ export default function NearbyPlaces() {
                 } catch (e) {
                     console.warn('Reverse geocoding failed:', e);
                 }
-                
+
                 setUserLocation(location);
                 setLocationAccuracy(location.accuracy);
                 setLocationLoading(false);
@@ -472,7 +480,7 @@ export default function NearbyPlaces() {
 
         try {
             const result = await geocodeAddress(addressSearch);
-            
+
             if (result) {
                 setUserLocation({ lat: result.lat, lng: result.lng, accuracy: null });
                 setCurrentLocationName(result.name);
@@ -561,7 +569,7 @@ export default function NearbyPlaces() {
 
         if (searchQuery.trim()) {
             setIsSearching(true);
-            
+
             // Get AI suggestion if query is complex
             if (searchQuery.length > 10 && userLocation && places.length > 0) {
                 callAIForPlaces(searchQuery, userLocation, places).then(suggestion => {
@@ -572,7 +580,7 @@ export default function NearbyPlaces() {
                     // Ignore AI errors
                 });
             }
-            
+
             const timer = setTimeout(() => {
                 setIsSearching(false);
             }, 300);
@@ -655,7 +663,7 @@ export default function NearbyPlaces() {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Address Search Bar */}
                         <div className="flex-1 max-w-md">
                             <div className="flex gap-2">
@@ -1165,7 +1173,7 @@ export default function NearbyPlaces() {
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div className="p-6 space-y-4">
                             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                                 <p className="text-sm text-blue-800 dark:text-blue-300">
@@ -1178,13 +1186,13 @@ export default function NearbyPlaces() {
                                     <li>• "What grocery stores are open now?"</li>
                                 </ul>
                             </div>
-                            
+
                             <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
                                     Type your question in the search bar above, and I'll help you find the perfect places!
                                 </p>
                             </div>
-                            
+
                             <button
                                 onClick={() => {
                                     setShowAIAssistant(false);

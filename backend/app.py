@@ -524,17 +524,23 @@ def search_properties():
         
         properties = []
         
-        # Try Estated API first (fastest, most affordable)
-        if ESTATED_API_KEY:
-            try:
-                estated_props = search_estated_api(query, lat, lng, filters)
-                if estated_props:
-                    properties.extend(estated_props)
-            except Exception as e:
-                print(f"Estated API error: {e}")
+        # Determine if query is a specific address or area search
+        is_specific_address = any(char.isdigit() for char in query) and any(word in query.lower() for word in ['st', 'street', 'ave', 'avenue', 'rd', 'road', 'dr', 'drive', 'ln', 'lane', 'blvd', 'boulevard'])
         
-        # Try Realtor.com API via RapidAPI (good for listings and area searches)
-        if REALTOR_API_KEY:
+        # Try Zillow API first for specific addresses (Zillow scraper works best with specific property URLs)
+        if ZILLOW_API_KEY and is_specific_address:
+            try:
+                zillow_props = search_zillow_api(query, lat, lng, filters)
+                if zillow_props:
+                    properties.extend(zillow_props)
+                    print(f"✅ Zillow API: Found {len(zillow_props)} properties for '{query}'")
+            except Exception as e:
+                print(f"❌ Zillow API error: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Try Realtor.com API for area searches (cities, zipcodes) - works better than Zillow scraper
+        if REALTOR_API_KEY and (not is_specific_address or not properties):
             try:
                 realtor_props = search_realtor_api(query, lat, lng, filters)
                 if realtor_props:
@@ -543,6 +549,31 @@ def search_properties():
             except Exception as e:
                 print(f"❌ Realtor API error: {e}")
                 import traceback
+                traceback.print_exc()
+        
+        # Try Zillow API for area searches as well (may work for some)
+        if ZILLOW_API_KEY and not is_specific_address and not properties:
+            try:
+                zillow_props = search_zillow_api(query, lat, lng, filters)
+                if zillow_props:
+                    properties.extend(zillow_props)
+                    print(f"✅ Zillow API: Found {len(zillow_props)} properties for '{query}'")
+            except Exception as e:
+                print(f"❌ Zillow API error: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Try Estated API as last fallback (best for specific addresses)
+        if ESTATED_API_KEY and not properties:
+            try:
+                estated_props = search_estated_api(query, lat, lng, filters)
+                if estated_props:
+                    properties.extend(estated_props)
+                    print(f"✅ Estated API: Found {len(estated_props)} property(ies) for '{query}'")
+            except Exception as e:
+                print(f"❌ Estated API error: {e}")
+                import traceback
+                traceback.print_exc()
                 traceback.print_exc()
         
         # Try ATTOM API (fastest, enterprise-level)

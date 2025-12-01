@@ -10,8 +10,6 @@ export default defineConfig({
       fastRefresh: true,
       // Optimize JSX runtime
       jsxRuntime: 'automatic',
-      // Babel config for better optimization
-      // Note: transform-remove-console removed to avoid dependency issues
     })
   ],
 
@@ -53,9 +51,6 @@ export default defineConfig({
 
           // UI libraries
           'ui-vendor': ['lucide-react', 'react-hot-toast'],
-
-          // Date utilities if you use them
-          // 'date-vendor': ['date-fns']
         }
       }
     },
@@ -111,3 +106,4 @@ export default defineConfig({
     maxAssetSize: 512000
   }
 });
+

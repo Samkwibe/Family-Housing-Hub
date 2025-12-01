@@ -1,224 +1,82 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
     // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
     
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
     
-    // Check if user owns the document (for existing documents)
-    function isDocOwner() {
-      return isAuthenticated() && resource.data.userId == request.auth.uid;
+    function isFamilyMember(familyId) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/families/$(familyId)).data.members.hasAny([request.auth.uid]);
     }
     
-    // Check if user is creating their own document
-    function isCreatingOwn() {
-      return isAuthenticated() && request.resource.data.userId == request.auth.uid;
-    }
-    
-    // Users collection - users can read other users' profiles (for messaging/search), but only edit their own
+    // Users collection
     match /users/{userId} {
-      allow read: if isAuthenticated(); // Allow reading any user profile for search/messaging
-      allow write: if isOwner(userId); // Only edit own profile
-    }
-    
-    // Generic rule for user-owned collections
-    // This pattern allows queries filtered by userId
-    match /maintenanceRequests/{docId} {
       allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
+      allow write: if isOwner(userId);
     }
     
-    match /rentPayments/{docId} {
+    // Families collection
+    match /families/{familyId} {
       allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
+      allow write: if isAuthenticated();
     }
     
-    match /documents/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
+    // Transactions collection
+    match /transactions/{transactionId} {
+      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    // Messages - users can read messages where they are sender OR receiver
-    match /messages/{docId} {
-      // Allow read if user is sender or receiver
-      allow read: if isAuthenticated() && 
-        (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
-      // Allow create if user is the sender
-      allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
-      // Allow update if user is sender or receiver (for read receipts)
-      allow update: if isAuthenticated() && 
-        (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
-      // Allow delete only if user is sender
-      allow delete: if isAuthenticated() && resource.data.senderId == request.auth.uid;
+    // Budgets collection
+    match /budgets/{budgetId} {
+      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    match /activities/{docId} {
+    // Maintenance requests
+    match /maintenanceRequests/{requestId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    match /children/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
+    // Rent payments
+    match /rentPayments/{paymentId} {
+      allow read, write: if isAuthenticated();
     }
     
-    match /savingsGoals/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
+    // Documents
+    match /documents/{documentId} {
+      allow read, write: if isAuthenticated();
     }
     
-    match /healthRecords/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
+    // Messages
+    match /messages/{messageId} {
+      allow read, write: if isAuthenticated();
     }
     
-    match /appointments/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
+    // Financial goals
+    match /financialGoals/{goalId} {
+      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    match /transactions/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
+    // Bills
+    match /bills/{billId} {
+      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    match /budgets/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
+    // Accounts
+    match /accounts/{accountId} {
+      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    match /events/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    match /tasks/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    match /shoppingItems/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    match /meals/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    match /emergencyContacts/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    match /safeLocations/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    match /notifications/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    // Security collections
-    match /loginHistory/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    match /sessions/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    match /securitySettings/{userId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    match /securityAlerts/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    match /emergencyAlerts/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    // Enhanced messaging collections
-    match /groupChats/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
-    }
-    
-    match /groupMessages/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
-    }
-    
-    match /broadcastChannels/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
-    }
-    
-    match /broadcastMessages/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow delete: if isAuthenticated();
-    }
-    
-    match /scheduledMessages/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    match /messageTemplates/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isCreatingOwn();
-      allow update, delete: if isDocOwner();
-    }
-    
-    // Family invitations
-    match /familyInvitations/{docId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+    // Recurring transactions
+    match /recurringTransactions/{transactionId} {
+      allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
     }
   }
 }

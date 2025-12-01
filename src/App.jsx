@@ -31,11 +31,10 @@ const FamilyCalendar = lazy(() => import('./pages/FamilyCalendar'));
 const CommunityResources = lazy(() => import('./pages/CommunityResources'));
 const AIAssistant = lazy(() => import('./pages/AIAssistant'));
 const ShoppingMeals = lazy(() => import('./pages/ShoppingMeals'));
-const NearbyPlaces = lazy(() => import('./pages/NearbyPlaces'));
 const FamilySafety = lazy(() => import('./pages/FamilySafety'));
 const Security = lazy(() => import('./pages/Security'));
-const ChildDashboard = lazy(() => import('./pages/ChildDashboard'));
-const ParentChildrenManagement = lazy(() => import('./pages/ParentChildrenManagement'));
+const NearbyPlaces = lazy(() => import('./pages/NearbyPlaces'));
+const HouseSearch = lazy(() => import('./pages/HouseSearch'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Protected Route with Onboarding Check
@@ -51,39 +50,13 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Block child users from accessing any parent routes (routes with Layout)
-  const parentOnlyRoutes = [
-    '/', '/rent', '/maintenance', '/documents', '/messages', '/landlord',
-    '/profile', '/settings', '/help', '/children', '/health', '/budget',
-    '/calendar', '/resources', '/assistant', '/shopping', '/nearby-places', '/safety', '/security',
-    '/parent-children', '/onboarding'
-  ];
-  
-  if (userProfile?.role === 'child' && parentOnlyRoutes.includes(location.pathname)) {
-    return <Navigate to="/child-dashboard" replace />;
-  }
-
-  // Redirect parent users away from child dashboard to main dashboard
-  if (userProfile?.role !== 'child' && location.pathname === '/child-dashboard') {
-    return <Navigate to="/" replace />;
-  }
-
-  // If profile is not complete and not on onboarding page (only for parents)
-  if (!profileComplete && location.pathname !== '/onboarding' && userProfile?.role !== 'child') {
+  // If profile is not complete and not on onboarding page
+  if (!profileComplete && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
-  }
-
-  // Children skip onboarding - they go straight to child dashboard
-  if (userProfile?.role === 'child' && location.pathname === '/onboarding') {
-    return <Navigate to="/child-dashboard" replace />;
   }
 
   // If profile is complete but user is trying to access onboarding
   if (profileComplete && location.pathname === '/onboarding') {
-    // Redirect based on role
-    if (userProfile?.role === 'child') {
-      return <Navigate to="/child-dashboard" replace />;
-    }
     return <Navigate to="/" replace />;
   }
 
@@ -259,14 +232,6 @@ const AppRouter = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="/nearby-places" element={
-          <ProtectedRoute>
-            <Layout>
-              <NearbyPlaces />
-            </Layout>
-          </ProtectedRoute>
-        } />
-
         <Route path="/safety" element={
           <ProtectedRoute>
             <Layout>
@@ -283,16 +248,18 @@ const AppRouter = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="/child-dashboard" element={
+        <Route path="/map" element={
           <ProtectedRoute>
-            <ChildDashboard />
+            <Layout>
+              <NearbyPlaces />
+            </Layout>
           </ProtectedRoute>
         } />
 
-        <Route path="/parent-children" element={
+        <Route path="/house-search" element={
           <ProtectedRoute>
             <Layout>
-              <ParentChildrenManagement />
+              <HouseSearch />
             </Layout>
           </ProtectedRoute>
         } />

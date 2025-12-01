@@ -1,5 +1,5 @@
 // src/components/Layout.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -23,11 +23,10 @@ import {
   Zap,
   ShoppingCart,
   AlertTriangle,
-  UserCog,
-  Sun,
+  MapPin,
   Moon,
-  Monitor,
-  MapPin
+  Sun,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFamily } from '../contexts/FamilyContext';
@@ -43,15 +42,15 @@ const navigation = [
   { name: 'Maintenance', href: '/maintenance', icon: Wrench },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Shopping & Meals', href: '/shopping', icon: ShoppingCart },
-  { name: 'Nearby Places', href: '/nearby-places', icon: MapPin },
   { name: 'Documents', href: '/documents', icon: FileText },
   { name: 'Messages', href: '/messages', icon: MessageCircle },
   { name: 'Children', href: '/children', icon: PiggyBank },
-  { name: 'Manage Children', href: '/parent-children', icon: UserCog },
   { name: 'Health', href: '/health', icon: Heart },
   { name: 'Safety', href: '/safety', icon: AlertTriangle },
   { name: 'AI Assistant', href: '/assistant', icon: Zap },
   { name: 'Resources', href: '/resources', icon: Users },
+  { name: 'Nearby Places', href: '/map', icon: MapPin },
+  { name: 'House Search', href: '/house-search', icon: Building2 },
   { name: 'Landlord', href: '/landlord', icon: Building },
   { name: 'Profile', href: '/profile', icon: User },
 ];
@@ -64,17 +63,6 @@ export default function Layout({ children }) {
   const { theme, toggleTheme, isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Block children from accessing Layout (parent-only routes)
-  useEffect(() => {
-    if (userProfile?.role === 'child') {
-      navigate('/child-dashboard', { replace: true });
-    }
-  }, [userProfile?.role, navigate]);
-
-  if (userProfile?.role === 'child') {
-    return null; // Don't render Layout for children
-  }
 
   // FIX: Add null check for messages to prevent the filter error
   const unreadMessages = messages?.filter(m => !m.read).length || 0;
@@ -93,11 +81,6 @@ export default function Layout({ children }) {
     { name: 'Settings', icon: Settings, action: () => navigate('/settings') },
     { name: 'Security', icon: Shield, action: () => navigate('/security') },
     { name: 'Help & Support', icon: HelpCircle, action: () => navigate('/help') },
-    { 
-      name: `Theme: ${theme === 'system' ? 'System' : theme === 'dark' ? 'Dark' : 'Light'}`, 
-      icon: theme === 'system' ? Monitor : isDark ? Moon : Sun, 
-      action: toggleTheme 
-    },
   ];
 
   return (
@@ -139,7 +122,7 @@ export default function Layout({ children }) {
                 to={item.href}
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${isActive
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 shadow-sm'
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 shadow-sm'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                   }`}
               >
@@ -165,8 +148,8 @@ export default function Layout({ children }) {
                 className="h-10 w-10 rounded-full object-cover"
               />
             ) : (
-              <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
+              <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                <span className="text-blue-600 dark:text-blue-300 font-semibold text-sm">
                   {userProfile?.firstName?.[0]}{userProfile?.lastName?.[0]}
                 </span>
               </div>
@@ -179,7 +162,7 @@ export default function Layout({ children }) {
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 text-gray-400 hover:text-gray-500 transition-colors"
+              className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
               title="Sign out"
             >
               <LogOut className="h-5 w-5" />
@@ -190,7 +173,7 @@ export default function Layout({ children }) {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
-        <div className="flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-colors duration-200">
+        <div className="flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
           {/* Logo */}
           <div className="flex items-center flex-shrink-0 px-6 py-5">
             <Home className="h-8 w-8 text-blue-600 dark:text-blue-400 mr-2" />
@@ -208,7 +191,7 @@ export default function Layout({ children }) {
                   key={item.name}
                   to={item.href}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${isActive
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 shadow-sm'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 shadow-sm'
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                     }`}
                 >
@@ -236,8 +219,8 @@ export default function Layout({ children }) {
                     className="h-10 w-10 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
+                  <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 font-semibold text-sm">
                       {userProfile?.firstName?.[0]}{userProfile?.lastName?.[0]}
                     </span>
                   </div>
@@ -249,65 +232,49 @@ export default function Layout({ children }) {
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Family Account</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {/* Theme Toggle Button */}
+              <div className="relative">
                 <button
-                  onClick={toggleTheme}
-                  className="p-2 text-gray-400 hover:text-gray-500 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-300"
-                  title={`Current theme: ${theme === 'system' ? 'System' : theme === 'dark' ? 'Dark' : 'Light'}. Click to toggle.`}
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="ml-3 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                  {theme === 'system' ? (
-                    <Monitor className="h-5 w-5" />
-                  ) : isDark ? (
-                    <Moon className="h-5 w-5" />
-                  ) : (
-                    <Sun className="h-5 w-5" />
-                  )}
+                  <Settings className="h-5 w-5" />
                 </button>
-                <div className="relative">
-                  <button
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="p-2 text-gray-400 hover:text-gray-500 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-300"
-                  >
-                    <Settings className="h-5 w-5" />
-                  </button>
 
-                  {/* User dropdown menu */}
-                  {userMenuOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setUserMenuOpen(false)}
-                      />
-                      <div className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-20">
-                        {userMenuItems.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <button
-                              key={item.name}
-                              onClick={() => {
-                                item.action();
-                                setUserMenuOpen(false);
-                              }}
-                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            >
-                              <Icon className="h-4 w-4 mr-3" />
-                              {item.name}
-                            </button>
-                          );
-                        })}
-                        <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
-                        <button
-                          onClick={handleLogout}
-                          className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                        >
-                          <LogOut className="h-4 w-4 mr-3" />
-                          Sign Out
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
+                {/* User dropdown menu */}
+                {userMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setUserMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-20">
+                      {userMenuItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.name}
+                            onClick={() => {
+                              item.action();
+                              setUserMenuOpen(false);
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <Icon className="h-4 w-4 mr-3" />
+                            {item.name}
+                          </button>
+                        );
+                      })}
+                      <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4 mr-3" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -317,7 +284,7 @@ export default function Layout({ children }) {
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center">
               <button
@@ -343,6 +310,20 @@ export default function Layout({ children }) {
             </div>
 
             <div className="flex items-center space-x-4">
+              {/* Theme Toggle (Light/Dark Mode) */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 relative"
+                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDark ? (
+                  <Sun className="h-5 w-5 text-yellow-500" />
+                ) : (
+                  <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                )}
+              </button>
+
               {/* Language Switch */}
               <LangSwitch />
 
@@ -353,7 +334,7 @@ export default function Layout({ children }) {
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <div className="text-right hidden sm:block">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -368,8 +349,8 @@ export default function Layout({ children }) {
                       className="h-10 w-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-semibold text-sm">
+                    <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 dark:text-blue-300 font-semibold text-sm">
                         {userProfile?.firstName?.[0]}{userProfile?.lastName?.[0]}
                       </span>
                     </div>
@@ -383,10 +364,10 @@ export default function Layout({ children }) {
                       className="fixed inset-0 z-10"
                       onClick={() => setUserMenuOpen(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
-                      <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900">Account</p>
-                        <p className="text-xs text-gray-500 truncate">{userProfile?.email}</p>
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-20">
+                      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">Account</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{userProfile?.email}</p>
                       </div>
                       {userMenuItems.map((item) => {
                         const Icon = item.icon;
@@ -404,7 +385,7 @@ export default function Layout({ children }) {
                           </button>
                         );
                       })}
-                      <div className="border-t border-gray-100 my-1" />
+                      <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
                       <button
                         onClick={handleLogout}
                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -421,24 +402,24 @@ export default function Layout({ children }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+        <main className="flex-1 overflow-auto dark:bg-gray-900">
           {children}
         </main>
 
         {/* Footer */}
-        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-6 transition-colors duration-200">
+        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-6">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               © 2024 FamilyHub. All rights reserved.
             </p>
             <div className="flex items-center space-x-4">
-              <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Privacy
               </button>
-              <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Terms
               </button>
-              <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <button className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Help
               </button>
             </div>

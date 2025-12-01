@@ -24,6 +24,10 @@ CORS(app, origins=["https://family-housing-hub.web.app", "http://localhost:3001"
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('VITE_GEMINI_API_KEY')
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY') or os.getenv('VITE_GOOGLE_MAPS_API_KEY')
+RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY') or '4d9f4dec85msh34a2b4ff5648991p1dcfccjsn125f4440583c'  # For real estate APIs
+REALTOR_API_KEY = RAPIDAPI_KEY  # Realtor.com API uses RapidAPI key
+ESTATED_API_KEY = os.getenv('ESTATED_API_KEY') or 'ec5c7745e9236b9519809c1d4c3f9c87'  # Estated.com API key
+ATTOM_API_KEY = os.getenv('ATTOM_API_KEY')  # ATTOM Data API key
 
 # Initialize AI clients
 if OPENAI_API_KEY:
@@ -483,6 +487,453 @@ def process_expenses():
                 cat: sum(exp.get('amount', 0) for exp in processed if exp.get('category') == cat)
                 for cat in categories.keys()
             }
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ==================== HEALTH CHECK ====================
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint to verify backend is running"""
+    return jsonify({
+        'status': 'healthy',
+        'estated_configured': bool(ESTATED_API_KEY),
+        'rapidapi_configured': bool(RAPIDAPI_KEY),
+        'attom_configured': bool(ATTOM_API_KEY),
+        'timestamp': datetime.now().isoformat()
+    })
+
+# ==================== REAL ESTATE / ZILLOW INTEGRATION ====================
+
+@app.route('/api/properties/search', methods=['POST'])
+def search_properties():
+    """Search for properties using fast real estate APIs (Estated, Realtor.com, ATTOM)"""
+    try:
+        data = request.json
+        query = data.get('query', '').strip()
+        filters = data.get('filters', {})
+        lat = data.get('lat')
+        lng = data.get('lng')
+        
+        if not query and not (lat and lng):
+            return jsonify({'error': 'Search query or coordinates required'}), 400
+        
+        properties = []
+        
+        # Try Estated API first (fastest, most affordable)
+        if ESTATED_API_KEY:
+            try:
+                estated_props = search_estated_api(query, lat, lng, filters)
+                if estated_props:
+                    properties.extend(estated_props)
+            except Exception as e:
+                print(f"Estated API error: {e}")
+        
+        # Try Realtor.com API via RapidAPI (good for listings and area searches)
+        if REALTOR_API_KEY:
+            try:
+                realtor_props = search_realtor_api(query, lat, lng, filters)
+                if realtor_props:
+                    properties.extend(realtor_props)
+                    print(f"✅ Realtor.com API: Found {len(realtor_props)} properties for '{query}'")
+            except Exception as e:
+                print(f"❌ Realtor API error: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Try ATTOM API (fastest, enterprise-level)
+        if ATTOM_API_KEY and not properties:
+            try:
+                attom_props = search_attom_api(query, lat, lng, filters)
+                if attom_props:
+                    properties.extend(attom_props)
+            except Exception as e:
+                print(f"ATTOM API error: {e}")
+        
+        # If no properties found, provide helpful message
+        if not properties:
+            # Check if it's a city/area search (not a specific address)
+            is_area_search = not any(char.isdigit() for char in query) and (',' in query or len(query.split()) <= 3)
+            
+            return jsonify({
+                'properties': [],
+                'message': 'No properties found. Estated API works best for specific addresses. For area searches, try Realtor.com or Movoto.',
+                'fallbackUrl': f"https://www.realtor.com/realestateandhomes-search/{requests.utils.quote(query)}/",
+                'apiConfigured': bool(ESTATED_API_KEY or RAPIDAPI_KEY or ATTOM_API_KEY),
+                'estatedConfigured': bool(ESTATED_API_KEY),
+                'isAreaSearch': is_area_search,
+                'suggestion': 'Try searching for a specific address (e.g., "123 Main St, Manchester, NH") instead of just a city name.'
+            })
+        
+        return jsonify({
+            'properties': properties[:20],  # Limit to 20 results
+            'count': len(properties),
+            'query': query
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def search_estated_api(query, lat, lng, filters):
+    """Search Estated API - Fast and affordable (best for specific address lookups)"""
+    properties = []
+    
+    if not ESTATED_API_KEY:
+        return []
+    
+    headers = {
+        'Authorization': f'Bearer {ESTATED_API_KEY}',
+        'Content-Type': 'application/json'
+    }
+    
+    # Estated API v3 endpoint - supports address search
+    # Note: Estated is best for specific property lookups, not area searches
+    if query:
+        # Use combined_address parameter for address search
+        url = f"https://api.estated.com/v3/property?combined_address={requests.utils.quote(query)}"
+    elif lat and lng:
+        # Use coordinates if available
+        url = f"https://api.estated.com/v3/property?latitude={lat}&longitude={lng}"
+    else:
+        return []
+    
+    try:
+        print(f"🔍 Calling Estated API: {url}")
+        response = requests.get(url, headers=headers, timeout=10)
+        print(f"📡 Estated API response: {response.status_code}")
+        
+        if response.ok:
+            data = response.json()
+            print(f"📦 Estated API data keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+            
+            # Estated returns property data directly
+            if data.get('data'):
+                prop = data['data']
+                print(f"✅ Found property data for: {query}")
+                
+                address_info = prop.get('address', {})
+                structure_info = prop.get('structure', {})
+                sale_info = prop.get('sale', {})
+                lot_info = prop.get('lot', {})
+                location_info = prop.get('location', {})
+                
+                # Build full address
+                street = address_info.get('line1', '') or address_info.get('formatted_street_address', '')
+                city = address_info.get('city', '')
+                state = address_info.get('state', '')
+                zipcode = address_info.get('postal_code', '') or address_info.get('zip', '')
+                full_address = f"{street}, {city}, {state} {zipcode}".strip().strip(',')
+                
+                # Get coordinates
+                prop_lat = location_info.get('latitude') or lat
+                prop_lng = location_info.get('longitude') or lng
+                
+                property_data = {
+                    'id': f"estated_{prop.get('apn', '') or prop.get('fips', '') or hash(query)}",
+                    'address': full_address or query,
+                    'city': city,
+                    'state': state,
+                    'zipcode': zipcode,
+                    'price': sale_info.get('price'),
+                    'bedrooms': structure_info.get('beds'),
+                    'bathrooms': structure_info.get('baths'),
+                    'sqft': structure_info.get('sqft'),
+                    'yearBuilt': structure_info.get('year_built'),
+                    'lotSize': lot_info.get('sqft'),
+                    'lat': prop_lat,
+                    'lng': prop_lng,
+                    'type': structure_info.get('type', 'house'),
+                    'images': [],
+                    'zpid': None,
+                    'listingType': 'buy',  # Estated provides property data, not listings
+                    'source': 'estated'
+                }
+                
+                print(f"✅ Property data prepared: {property_data.get('address')}, ${property_data.get('price')}")
+                properties.append(property_data)
+            else:
+                print(f"⚠️ Estated API returned no 'data' field. Response: {json.dumps(data, indent=2)[:500]}")
+        else:
+            error_text = response.text[:500]
+            print(f"❌ Estated API error: {response.status_code} - {error_text}")
+            print(f"   URL: {url}")
+            print(f"   Headers: {headers}")
+    except Exception as e:
+        print(f"Estated API request error: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+    
+    return properties
+
+def search_realtor_api(query, lat, lng, filters):
+    """Search Realtor.com API via RapidAPI - Excellent for area searches"""
+    properties = []
+    
+    if not REALTOR_API_KEY:
+        return []
+    
+    headers = {
+        'x-rapidapi-host': 'realtor-search.p.rapidapi.com',
+        'x-rapidapi-key': REALTOR_API_KEY
+    }
+    
+    # Use the endpoint provided by the user
+    url = 'https://realtor-search.p.rapidapi.com/agents/v2/listings'
+    
+    # Build query parameters
+    params = {
+        'fulfillmentId': '3155600',  # Default fulfillment ID from user's example
+    }
+    
+    # Add location-based search
+    # For city/state searches, parse the query
+    if query:
+        query_parts = query.split(',')
+        if len(query_parts) >= 2:
+            city = query_parts[0].strip()
+            state_part = query_parts[1].strip()
+            # Extract state code (first 2 letters or full state name)
+            state = state_part.split()[0][:2].upper() if state_part else ''
+            params['city'] = city
+            params['state_code'] = state
+        else:
+            # Single query - could be city, zipcode, or address
+            # Try to detect zipcode
+            if query.strip().isdigit() and len(query.strip()) == 5:
+                params['postal_code'] = query.strip()
+            else:
+                params['city'] = query.strip()
+    
+    # Add coordinates if available (for more accurate results)
+    if lat and lng:
+        params['lat'] = lat
+        params['lon'] = lng
+    
+    # Add filters
+    if filters.get('bedrooms'):
+        params['beds_min'] = filters['bedrooms']
+    if filters.get('bathrooms'):
+        params['baths_min'] = filters['bathrooms']
+    if filters.get('priceRange'):
+        if filters['priceRange'].get('min'):
+            params['price_min'] = filters['priceRange']['min']
+        if filters['priceRange'].get('max'):
+            params['price_max'] = filters['priceRange']['max']
+    if filters.get('listingType') == 'rent':
+        params['status'] = 'for_rent'
+    elif filters.get('listingType') == 'buy':
+        params['status'] = 'for_sale'
+    
+    try:
+        print(f"🔍 Calling Realtor.com API: {url}")
+        print(f"📋 Params: {params}")
+        
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        print(f"📡 Realtor.com API response: {response.status_code}")
+        
+        if response.ok:
+            data = response.json()
+            print(f"📦 Realtor.com API response keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+            
+            # Parse response - structure may vary
+            listings = []
+            if isinstance(data, dict):
+                # Try different possible response structures
+                if 'data' in data:
+                    if isinstance(data['data'], list):
+                        listings = data['data']
+                    elif isinstance(data['data'], dict):
+                        listings = data['data'].get('listings', []) or data['data'].get('results', [])
+                elif 'listings' in data:
+                    listings = data['listings'] if isinstance(data['listings'], list) else []
+                elif 'results' in data:
+                    listings = data['results'] if isinstance(data['results'], list) else []
+                elif 'properties' in data:
+                    listings = data['properties'] if isinstance(data['properties'], list) else []
+            elif isinstance(data, list):
+                listings = data
+            
+            print(f"✅ Found {len(listings)} listings from Realtor.com")
+            
+            for listing in listings[:50]:  # Limit to 50 results
+                try:
+                    # Extract property data - handle different response structures
+                    address_info = listing.get('address', {}) or listing.get('location', {}) or {}
+                    property_info = listing.get('property', {}) or listing.get('description', {}) or listing
+                    price_info = listing.get('price', {}) or listing.get('list_price', {}) or {}
+                    
+                    # Get address components
+                    street = address_info.get('line', '') or address_info.get('street', '') or address_info.get('address', '') or listing.get('address', '')
+                    city = address_info.get('city', '') or listing.get('city', '')
+                    state = address_info.get('state', '') or address_info.get('state_code', '') or listing.get('state', '')
+                    zipcode = address_info.get('postal_code', '') or address_info.get('zip', '') or listing.get('postal_code', '') or listing.get('zip', '')
+                    
+                    # Build full address
+                    address_parts = [p for p in [street, city, state, zipcode] if p]
+                    full_address = ', '.join(address_parts) if address_parts else query
+                    
+                    # Get coordinates
+                    location = listing.get('location', {}) or address_info.get('coordinate', {}) or {}
+                    prop_lat = location.get('lat') or location.get('latitude') or listing.get('lat') or lat
+                    prop_lng = location.get('lon') or location.get('lng') or location.get('longitude') or listing.get('lng') or lng
+                    
+                    # Get price
+                    price = None
+                    if isinstance(price_info, (int, float)):
+                        price = price_info
+                    elif isinstance(price_info, dict):
+                        price = price_info.get('amount') or price_info.get('value') or price_info.get('price')
+                    else:
+                        price = listing.get('list_price') or listing.get('price') or listing.get('listPrice')
+                    
+                    # Get property details
+                    bedrooms = property_info.get('beds') or listing.get('beds') or property_info.get('bedrooms') or listing.get('bedrooms')
+                    bathrooms = property_info.get('baths') or listing.get('baths') or property_info.get('bathrooms') or listing.get('bathrooms')
+                    sqft = property_info.get('sqft') or listing.get('sqft') or property_info.get('square_feet') or listing.get('squareFeet')
+                    year_built = property_info.get('year_built') or listing.get('year_built') or listing.get('yearBuilt')
+                    lot_size = property_info.get('lot_sqft') or listing.get('lot_sqft') or listing.get('lotSqft')
+                    
+                    # Get images
+                    images = []
+                    if listing.get('photos'):
+                        if isinstance(listing['photos'], list):
+                            images = [photo.get('href') or photo.get('url') or str(photo) for photo in listing['photos'] if photo]
+                        elif isinstance(listing['photos'], dict):
+                            images = [listing['photos'].get('href') or listing['photos'].get('url')]
+                    elif listing.get('primary_photo'):
+                        photo = listing['primary_photo']
+                        images = [photo.get('href') or photo.get('url')] if isinstance(photo, dict) else [str(photo)]
+                    elif listing.get('photo'):
+                        images = [listing['photo']]
+                    
+                    # Determine listing type
+                    listing_type = 'buy'
+                    status = str(listing.get('status', '')).lower()
+                    if 'rent' in status or listing.get('for_rent'):
+                        listing_type = 'rent'
+                    
+                    property_data = {
+                        'id': f"realtor_{listing.get('property_id') or listing.get('id') or listing.get('listing_id') or hash(full_address)}",
+                        'address': full_address,
+                        'city': city,
+                        'state': state,
+                        'zipcode': zipcode,
+                        'price': price,
+                        'bedrooms': bedrooms,
+                        'bathrooms': bathrooms,
+                        'sqft': sqft,
+                        'yearBuilt': year_built,
+                        'lotSize': lot_size,
+                        'lat': prop_lat,
+                        'lng': prop_lng,
+                        'type': property_info.get('type', 'house') or listing.get('property_type', 'house') or 'house',
+                        'images': images[:10] if images else [],
+                        'zpid': listing.get('zpid'),
+                        'listingType': listing_type,
+                        'source': 'realtor.com'
+                    }
+                    
+                    # Only add if we have at least an address or price
+                    if property_data['address'] or property_data['price']:
+                        properties.append(property_data)
+                except Exception as e:
+                    print(f"⚠️ Error parsing listing: {e}")
+                    continue
+        else:
+            error_text = response.text[:500]
+            print(f"❌ Realtor.com API error: {response.status_code} - {error_text}")
+            
+    except Exception as e:
+        print(f"❌ Realtor.com API request error: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    return properties
+                    'zipcode': prop.get('location', {}).get('address', {}).get('postal_code', ''),
+                    'price': prop.get('list_price'),
+                    'bedrooms': prop.get('description', {}).get('beds'),
+                    'bathrooms': prop.get('description', {}).get('baths'),
+                    'sqft': prop.get('description', {}).get('sqft'),
+                    'yearBuilt': prop.get('description', {}).get('year_built'),
+                    'lotSize': prop.get('description', {}).get('lot_sqft'),
+                    'lat': prop.get('location', {}).get('address', {}).get('coordinate', {}).get('lat'),
+                    'lng': prop.get('location', {}).get('address', {}).get('coordinate', {}).get('lon'),
+                    'type': prop.get('description', {}).get('type', 'house'),
+                    'images': [img.get('href', '') for img in prop.get('photos', [])[:5]],
+                    'zpid': prop.get('property_id'),
+                    'listingType': 'rent' if filters.get('listingType') == 'rent' else 'buy',
+                    'source': 'realtor'
+                })
+    
+    return properties
+
+def search_attom_api(query, lat, lng, filters):
+    """Search ATTOM API - Fastest, enterprise-level"""
+    properties = []
+    
+    headers = {
+        'apikey': ATTOM_API_KEY,
+        'Accept': 'application/json'
+    }
+    
+    # ATTOM API endpoint
+    if lat and lng:
+        url = f"https://api.gateway.attomdata.com/propertyapi/v1.0.0/property/detail?latitude={lat}&longitude={lng}"
+    elif query:
+        # Geocode first
+        geocode_url = f"https://api.gateway.attomdata.com/propertyapi/v1.0.0/property/detail?address1={requests.utils.quote(query)}"
+        geocode_resp = requests.get(geocode_url, headers=headers, timeout=2)
+        if geocode_resp.ok:
+            geocode_data = geocode_resp.json()
+            if geocode_data.get('property'):
+                prop = geocode_data['property'][0]
+                properties.append({
+                    'id': prop.get('identifier', {}).get('obPropId', ''),
+                    'address': prop.get('address', {}).get('oneLine', query),
+                    'city': prop.get('address', {}).get('city', ''),
+                    'state': prop.get('address', {}).get('state', ''),
+                    'zipcode': prop.get('address', {}).get('postal1', ''),
+                    'price': prop.get('sale', {}).get('amount', {}).get('saleamt'),
+                    'bedrooms': prop.get('summary', {}).get('beds'),
+                    'bathrooms': prop.get('summary', {}).get('baths'),
+                    'sqft': prop.get('summary', {}).get('sqft'),
+                    'yearBuilt': prop.get('summary', {}).get('yearbuilt'),
+                    'lotSize': prop.get('lot', {}).get('lotsize1'),
+                    'lat': prop.get('location', {}).get('latitude'),
+                    'lng': prop.get('location', {}).get('longitude'),
+                    'type': prop.get('summary', {}).get('propsubtype', 'house'),
+                    'images': [],
+                    'zpid': prop.get('identifier', {}).get('obPropId'),
+                    'listingType': 'buy',
+                    'source': 'attom'
+                })
+    
+    return properties
+
+@app.route('/api/properties/zillow-url', methods=['POST'])
+def build_zillow_url():
+    """Build accurate Zillow URL for a property"""
+    try:
+        data = request.json
+        address = data.get('address', '')
+        zpid = data.get('zpid')  # Zillow Property ID if available
+        
+        if zpid:
+            # Use ZPID for most accurate link
+            zillow_url = f"https://www.zillow.com/homedetails/{zpid}_zpid/"
+        elif address:
+            # Build search URL from address
+            zillow_url = f"https://www.zillow.com/homes/{requests.utils.quote(address)}/"
+        else:
+            return jsonify({'error': 'Address or ZPID required'}), 400
+        
+        return jsonify({
+            'zillowUrl': zillow_url,
+            'address': address,
+            'zpid': zpid
         })
     
     except Exception as e:

@@ -111,11 +111,8 @@ app.post('/api/properties/search', async (req, res) => {
 
     const properties = [];
 
-    // Determine if query is a specific address
-    const isSpecificAddress = /^\d+/.test(query) && /(st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard)/i.test(query);
-
-    // Try Zillow API first for specific addresses
-    if (RAPIDAPI_KEY && isSpecificAddress) {
+    // Try Zillow API FIRST for ALL searches (zipcodes, cities, addresses)
+    if (RAPIDAPI_KEY) {
       try {
         const zillowProps = await searchZillowAPI(query, lat, lng, filters);
         if (zillowProps.length > 0) {
@@ -127,8 +124,8 @@ app.post('/api/properties/search', async (req, res) => {
       }
     }
 
-    // Try Realtor.com API for area searches
-    if (RAPIDAPI_KEY && (!isSpecificAddress || properties.length === 0)) {
+    // Try Realtor.com API as fallback if Zillow didn't return results
+    if (RAPIDAPI_KEY && properties.length === 0) {
       try {
         const realtorProps = await searchRealtorAPI(query, lat, lng, filters);
         if (realtorProps.length > 0) {
@@ -140,7 +137,7 @@ app.post('/api/properties/search', async (req, res) => {
       }
     }
 
-    // Try Estated API as fallback
+    // Try Estated API as last fallback
     if (ESTATED_API_KEY && properties.length === 0) {
       try {
         const estatedProps = await searchEstatedAPI(query, lat, lng, filters);
@@ -198,10 +195,15 @@ async function searchZillowAPI(query, lat, lng, filters) {
       }
     );
 
-    if (response.data) {
-      const property = parseZillowData(response.data, zillowUrl);
-      if (property) properties.push(property);
-    }
+        if (response.data) {
+          // Parse Zillow data (could be single property or search results)
+          const parsed = parseZillowData(response.data, zillowUrl);
+          if (Array.isArray(parsed)) {
+            properties.push(...parsed);
+          } else if (parsed) {
+            properties.push(parsed);
+          }
+        }
   } catch (error) {
     console.error('Zillow API error:', error.message);
   }
@@ -380,13 +382,45 @@ async function searchEstatedAPI(query, lat, lng, filters) {
 }
 
 function buildZillowSearchURL(query, filters) {
-  let url = `https://www.zillow.com/homes/${encodeURIComponent(query)}/`;
+  // Clean query
+  const cleanQuery = query.trim();
+  
+  // Check if it's a zipcode
+  const isZipcode = /^\d{5}(-\d{4})?$/.test(cleanQuery);
+  
+  let url;
+  if (isZipcode) {
+    // For zipcodes, use the _rb suffix for better results
+    const zipOnly = cleanQuery.replace(/-/g, '').substring(0, 5);
+    url = `https://www.zillow.com/homes/${zipOnly}_rb/`;
+  } else {
+    // For cities or addresses
+    url = `https://www.zillow.com/homes/${encodeURIComponent(cleanQuery)}/`;
+  }
+  
   const params = [];
   
   if (filters.listingType === 'rent') {
     params.push('isForRent=1');
   } else if (filters.listingType === 'buy') {
     params.push('isForSale=1');
+  }
+  
+  if (filters.bedrooms) {
+    params.push(`beds=${filters.bedrooms}`);
+  }
+  
+  if (filters.bathrooms) {
+    params.push(`baths=${filters.bathrooms}`);
+  }
+  
+  if (filters.priceRange) {
+    if (filters.priceRange.min) {
+      params.push(`priceMin=${filters.priceRange.min}`);
+    }
+    if (filters.priceRange.max && filters.priceRange.max !== Infinity) {
+      params.push(`priceMax=${filters.priceRange.max}`);
+    }
   }
   
   if (params.length > 0) {

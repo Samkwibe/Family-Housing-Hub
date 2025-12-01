@@ -6,3 +6,16 @@ backend/venv/
 backend/env/
 *.pyc
 __pycache__/
+
+# Node.js
+node_modules/
+.env.local
+.env*.local
+dist/
+.firebase/
+firebase-debug.log
+*.log
+
+# Firebase service account keys
+*-firebase-adminsdk-*.json
+node_modules/

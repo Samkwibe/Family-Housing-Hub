@@ -78,5 +78,19 @@ service cloud.firestore {
     match /recurringTransactions/{transactionId} {
       allow read, write: if isAuthenticated() && isOwner(resource.data.userId);
     }
+    
+    // Receipts collection
+    match /receipts/{receiptId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+    
+    // Shopping items collection
+    match /shoppingItems/{itemId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
   }
 }

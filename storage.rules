@@ -45,8 +45,15 @@ service firebase.storage {
       allow delete: if isAuthenticated() && isOwner(userId);
     }
     
-    // Receipts - 10MB limit
-    match /receipts/{userId}/{paymentId}/{fileName} {
+    // Receipts - 10MB limit (supports nested paths)
+    match /receipts/{userId}/{fileName} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow write: if isAuthenticated() && isOwner(userId) && isValidDocument();
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Receipts with nested paths (fallback)
+    match /receipts/{userId}/{allPaths=**} {
       allow read: if isAuthenticated() && isOwner(userId);
       allow write: if isAuthenticated() && isOwner(userId) && isValidDocument();
       allow delete: if isAuthenticated() && isOwner(userId);

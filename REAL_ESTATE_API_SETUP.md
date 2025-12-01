@@ -128,3 +128,4 @@ If no API keys are configured:
 - Photos shown if available from API
 - Missing data fields are handled gracefully
 
+

@@ -2044,6 +2044,22 @@ export default function ShoppingMeals() {
   const [showNearbyStores, setShowNearbyStores] = useState(false);
   const [pantryItems, setPantryItems] = useState([]);
 
+  // Receipt Scanner state
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
+  const [receiptImage, setReceiptImage] = useState(null);
+  const [receiptImagePreview, setReceiptImagePreview] = useState(null);
+  const [processingReceipt, setProcessingReceipt] = useState(false);
+  const [extractedItems, setExtractedItems] = useState([]);
+  const [extractedTotal, setExtractedTotal] = useState('');
+  const [extractedStore, setExtractedStore] = useState('');
+  const [extractedDate, setExtractedDate] = useState('');
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [receiptHistory, setReceiptHistory] = useState([]);
+  const [showReceiptHistory, setShowReceiptHistory] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [editingItemIndex, setEditingItemIndex] = useState(null);
+  const [manualEntryMode, setManualEntryMode] = useState(false);
+
   // Item form
   const [itemForm, setItemForm] = useState({
     name: '',
@@ -2060,6 +2076,7 @@ export default function ShoppingMeals() {
     if (currentUser) {
       loadData();
       loadPantryItems();
+      loadReceiptHistory();
     }
   }, [currentUser]);
 
@@ -2103,6 +2120,320 @@ export default function ShoppingMeals() {
       { id: 4, name: 'Canned Tomatoes', quantity: '3 cans', category: 'pantry' }
     ];
     setPantryItems(mockPantry);
+  };
+
+  // Load receipt history
+  const loadReceiptHistory = async () => {
+    try {
+      // Use simpler query without orderBy to avoid index requirements
+      const receiptsSnap = await getDocs(query(
+        collection(db, 'receipts'),
+        where('userId', '==', currentUser.uid)
+      ));
+      const receipts = receiptsSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        purchaseDate: doc.data().purchaseDate?.toDate(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
+      // Sort client-side by purchaseDate descending
+      receipts.sort((a, b) => {
+        const dateA = a.purchaseDate || a.createdAt || new Date(0);
+        const dateB = b.purchaseDate || b.createdAt || new Date(0);
+        return dateB - dateA;
+      });
+      setReceiptHistory(receipts);
+    } catch (error) {
+      console.error('Error loading receipt history:', error);
+    }
+  };
+
+  // Convert image to base64
+  const imageToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Process receipt with OCR using Gemini Vision API
+  const processReceipt = async (imageFile) => {
+    setProcessingReceipt(true);
+    try {
+      const imageBase64 = await imageToBase64(imageFile);
+      const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+      if (!geminiApiKey) {
+        throw new Error('Gemini API key not configured. Please set VITE_GEMINI_API_KEY in your environment variables.');
+      }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+
+      const prompt = `You are an expert receipt OCR system. Analyze this receipt image and extract all information in the following JSON format:
+
+{
+  "storeName": "store name if visible, otherwise 'Unknown Store'",
+  "purchaseDate": "date in YYYY-MM-DD format if visible, otherwise today's date",
+  "total": "total amount as number (e.g., 45.67)",
+  "items": [
+    {
+      "name": "item name",
+      "quantity": "quantity as string (e.g., '2' or '1 lb')",
+      "unit": "unit if available (e.g., 'lb', 'oz', 'each')",
+      "price": "price as number (e.g., 5.99)"
+    }
+  ]
+}
+
+CRITICAL INSTRUCTIONS:
+- Extract EVERY item from the receipt
+- For each item, try to get: name, quantity, unit, and price
+- If quantity is not visible, use "1" as default
+- If unit is not visible, use "" (empty string)
+- If price is not visible for an item, try to calculate it or use 0
+- Extract the TOTAL amount from the receipt (look for "TOTAL", "AMOUNT DUE", "TOTAL DUE", etc.)
+- Extract store name from header/top of receipt
+- Extract date from receipt (look for date patterns)
+- Return ONLY valid JSON, no additional text
+- If you cannot read something clearly, use reasonable defaults but mark it clearly`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              {
+                inline_data: {
+                  mime_type: imageFile.type || 'image/jpeg',
+                  data: imageBase64
+                }
+              },
+              { text: prompt }
+            ]
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OCR API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      // Extract JSON from response (handle markdown code blocks)
+      let jsonText = textResponse.trim();
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      } else if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/```\n?/g, '').trim();
+      }
+
+      const receiptData = JSON.parse(jsonText);
+
+      // Process extracted data
+      const items = receiptData.items || [];
+      const processedItems = items.map((item, index) => ({
+        id: `extracted-${index}`,
+        name: item.name || 'Unknown Item',
+        quantity: item.quantity || '1',
+        unit: item.unit || '',
+        price: String(item.price || 0),
+        category: categorizeItem(item.name || ''),
+        notes: 'From receipt scan',
+        priority: 'medium'
+      }));
+
+      setExtractedItems(processedItems);
+      setExtractedTotal(String(receiptData.total || 0));
+      setExtractedStore(receiptData.storeName || 'Unknown Store');
+      setExtractedDate(receiptData.purchaseDate || new Date().toISOString().split('T')[0]);
+      setShowReceiptPreview(true);
+      setManualEntryMode(false);
+
+      toast.success(`Extracted ${processedItems.length} items from receipt!`);
+    } catch (error) {
+      console.error('Error processing receipt:', error);
+      toast.error('Failed to process receipt. You can enter items manually.');
+      setManualEntryMode(true);
+      setExtractedItems([]);
+      setExtractedTotal('');
+      setExtractedStore('');
+      setExtractedDate(new Date().toISOString().split('T')[0]);
+      setShowReceiptPreview(true);
+    } finally {
+      setProcessingReceipt(false);
+    }
+  };
+
+  // Categorize item based on name
+  const categorizeItem = (itemName) => {
+    const name = itemName.toLowerCase();
+    if (name.includes('apple') || name.includes('banana') || name.includes('orange') || name.includes('fruit') || name.includes('vegetable') || name.includes('lettuce') || name.includes('tomato')) {
+      return 'produce';
+    } else if (name.includes('milk') || name.includes('cheese') || name.includes('yogurt') || name.includes('butter') || name.includes('dairy')) {
+      return 'dairy';
+    } else if (name.includes('chicken') || name.includes('beef') || name.includes('pork') || name.includes('fish') || name.includes('meat')) {
+      return 'meat';
+    } else if (name.includes('bread') || name.includes('pasta') || name.includes('rice') || name.includes('cereal')) {
+      return 'pantry';
+    } else if (name.includes('soda') || name.includes('juice') || name.includes('water') || name.includes('drink')) {
+      return 'beverages';
+    } else if (name.includes('snack') || name.includes('chip') || name.includes('candy') || name.includes('cookie')) {
+      return 'snacks';
+    } else {
+      return 'other';
+    }
+  };
+
+  // Handle receipt image upload
+  const handleReceiptImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      toast.error('Please upload an image or PDF file');
+      return;
+    }
+
+    setReceiptImage(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setReceiptImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle camera capture
+  const handleCameraCapture = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment'; // Use back camera on mobile
+    input.onchange = (e) => {
+      handleReceiptImageUpload(e);
+    };
+    input.click();
+  };
+
+  // Handle receipt scan
+  const handleScanReceipt = async () => {
+    if (!receiptImage) {
+      toast.error('Please select or capture a receipt image');
+      return;
+    }
+
+    await processReceipt(receiptImage);
+  };
+
+  // Edit extracted item
+  const handleEditExtractedItem = (index, field, value) => {
+    const updated = [...extractedItems];
+    updated[index] = { ...updated[index], [field]: value };
+    setExtractedItems(updated);
+  };
+
+  // Delete extracted item
+  const handleDeleteExtractedItem = (index) => {
+    const updated = extractedItems.filter((_, i) => i !== index);
+    setExtractedItems(updated);
+  };
+
+  // Add new item to extracted items
+  const handleAddExtractedItem = () => {
+    setExtractedItems([
+      ...extractedItems,
+      {
+        id: `extracted-${extractedItems.length}`,
+        name: '',
+        quantity: '1',
+        unit: '',
+        price: '0',
+        category: 'other',
+        notes: '',
+        priority: 'medium'
+      }
+    ]);
+    setEditingItemIndex(extractedItems.length);
+  };
+
+  // Confirm and save receipt
+  const handleConfirmReceipt = async () => {
+    if (extractedItems.length === 0) {
+      toast.error('Please add at least one item');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Calculate total from items if not provided
+      let finalTotal = parseFloat(extractedTotal) || 0;
+      if (finalTotal === 0) {
+        finalTotal = extractedItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+      }
+
+      // Save receipt to history
+      const receiptRef = await addDoc(collection(db, 'receipts'), {
+        userId: currentUser.uid,
+        storeName: extractedStore || 'Unknown Store',
+        purchaseDate: extractedDate ? new Date(extractedDate) : new Date(),
+        totalCost: finalTotal,
+        items: extractedItems,
+        receiptImage: receiptImagePreview,
+        createdAt: serverTimestamp()
+      });
+
+      // Save items to shopping list
+      const batch = writeBatch(db);
+      for (const item of extractedItems) {
+        if (item.name.trim()) {
+          const docRef = doc(collection(db, 'shoppingItems'));
+          batch.set(docRef, {
+            name: item.name,
+            quantity: item.quantity || '1',
+            unit: item.unit || '',
+            category: item.category || 'other',
+            notes: item.notes || 'From receipt scan',
+            priority: item.priority || 'medium',
+            price: item.price || '0',
+            userId: currentUser.uid,
+            checked: false,
+            createdAt: serverTimestamp()
+          });
+        }
+      }
+      await batch.commit();
+
+      toast.success(`Saved ${extractedItems.length} items from receipt!`);
+
+      // Reset state
+      setReceiptImage(null);
+      setReceiptImagePreview(null);
+      setExtractedItems([]);
+      setExtractedTotal('');
+      setExtractedStore('');
+      setExtractedDate('');
+      setShowReceiptPreview(false);
+      setShowReceiptScanner(false);
+      setManualEntryMode(false);
+
+      // Reload data
+      loadData();
+      loadReceiptHistory();
+    } catch (error) {
+      console.error('Error saving receipt:', error);
+      toast.error('Failed to save receipt');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Add item
@@ -2271,6 +2602,22 @@ export default function ShoppingMeals() {
             <Store className="h-5 w-5" />
             Nearby Stores
           </button>
+
+          <button
+            onClick={() => setShowReceiptScanner(true)}
+            className="px-4 py-3 bg-green-600 dark:bg-green-500 text-white rounded-xl font-medium hover:bg-green-700 dark:hover:bg-green-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
+          >
+            <Camera className="h-5 w-5" />
+            Scan Receipt
+          </button>
+
+          <button
+            onClick={() => setShowReceiptHistory(true)}
+            className="px-4 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
+          >
+            <ImageIcon className="h-5 w-5" />
+            Receipt History
+          </button>
         </div>
       </div>
 
@@ -2321,6 +2668,136 @@ export default function ShoppingMeals() {
             <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
               <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Categories & Stats Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Spending by Category */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <BarChart className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            Spending by Category
+          </h3>
+          <div className="space-y-3">
+            {(() => {
+              const categorySpending = shoppingItems.reduce((acc, item) => {
+                const category = item.category || 'other';
+                const price = parseFloat(item.price) || 0;
+                acc[category] = (acc[category] || 0) + price;
+                return acc;
+              }, {});
+
+              const sortedCategories = Object.entries(categorySpending)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 8);
+
+              if (sortedCategories.length === 0) {
+                return (
+                  <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
+                    No spending data yet. Add items with prices to see category breakdown.
+                  </p>
+                );
+              }
+
+              const maxSpending = Math.max(...sortedCategories.map(([, amount]) => amount));
+
+              return sortedCategories.map(([category, amount]) => {
+                const categoryInfo = SHOPPING_CATEGORIES.find(c => c.id === category) || {
+                  label: category.charAt(0).toUpperCase() + category.slice(1),
+                  color: 'bg-gray-100 dark:bg-gray-700'
+                };
+                const percentage = maxSpending > 0 ? (amount / maxSpending) * 100 : 0;
+
+                return (
+                  <div key={category} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700 dark:text-gray-300 font-medium">{categoryInfo.label}</span>
+                      <span className="text-gray-900 dark:text-white font-semibold">${amount.toFixed(2)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+
+        {/* Receipt Stats */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Activity className="h-5 w-5 text-green-600 dark:text-green-400" />
+            Receipt Statistics
+          </h3>
+          <div className="space-y-4">
+            {(() => {
+              const now = new Date();
+              const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+              const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+              const weeklyReceipts = receiptHistory.filter(
+                r => r.purchaseDate && new Date(r.purchaseDate) >= weekAgo
+              );
+              const monthlyReceipts = receiptHistory.filter(
+                r => r.purchaseDate && new Date(r.purchaseDate) >= monthAgo
+              );
+
+              const weeklyTotal = weeklyReceipts.reduce((sum, r) => sum + (r.totalCost || 0), 0);
+              const monthlyTotal = monthlyReceipts.reduce((sum, r) => sum + (r.totalCost || 0), 0);
+
+              const topCategory = (() => {
+                const categoryTotals = {};
+                receiptHistory.forEach(receipt => {
+                  receipt.items?.forEach(item => {
+                    const category = item.category || 'other';
+                    const price = parseFloat(item.price) || 0;
+                    categoryTotals[category] = (categoryTotals[category] || 0) + price;
+                  });
+                });
+                const sorted = Object.entries(categoryTotals).sort(([, a], [, b]) => b - a);
+                return sorted[0] ? SHOPPING_CATEGORIES.find(c => c.id === sorted[0][0])?.label || sorted[0][0] : 'N/A';
+              })();
+
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">This Week</p>
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${weeklyTotal.toFixed(2)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{weeklyReceipts.length} receipts</p>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">This Month</p>
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">${monthlyTotal.toFixed(2)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{monthlyReceipts.length} receipts</p>
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Top Category</p>
+                    <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{topCategory}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Most spending category</p>
+                  </div>
+                  {receiptHistory.length > 0 && (
+                    <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Total Receipts: <span className="font-semibold text-gray-900 dark:text-white">{receiptHistory.length}</span>
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Average Receipt: <span className="font-semibold text-gray-900 dark:text-white">
+                          ${(receiptHistory.reduce((sum, r) => sum + (r.totalCost || 0), 0) / receiptHistory.length).toFixed(2)}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -2615,6 +3092,411 @@ export default function ShoppingMeals() {
 
       {showNearbyStores && (
         <NearbyStores onClose={() => setShowNearbyStores(false)} />
+      )}
+
+      {/* Receipt Scanner Modal */}
+      {showReceiptScanner && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Camera className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  Receipt Scanner
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowReceiptScanner(false);
+                    setReceiptImage(null);
+                    setReceiptImagePreview(null);
+                    setExtractedItems([]);
+                    setExtractedTotal('');
+                    setExtractedStore('');
+                    setExtractedDate('');
+                    setShowReceiptPreview(false);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {!showReceiptPreview ? (
+                <>
+                  <div className="text-center space-y-4">
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Take a photo of your receipt or upload an existing image
+                    </p>
+
+                    {receiptImagePreview ? (
+                      <div className="space-y-4">
+                        <div className="relative rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+                          <img
+                            src={receiptImagePreview}
+                            alt="Receipt preview"
+                            className="w-full max-h-96 object-contain"
+                          />
+                        </div>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              setReceiptImage(null);
+                              setReceiptImagePreview(null);
+                            }}
+                            className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                          >
+                            Change Image
+                          </button>
+                          <button
+                            onClick={handleScanReceipt}
+                            disabled={processingReceipt}
+                            className="flex-1 px-4 py-3 bg-green-600 dark:bg-green-500 text-white rounded-xl hover:bg-green-700 dark:hover:bg-green-600 transition-colors disabled:opacity-50 font-medium shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                          >
+                            {processingReceipt ? (
+                              <>
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="h-5 w-5" />
+                                Scan Receipt
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <button
+                          onClick={handleCameraCapture}
+                          className="p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-green-600 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all flex flex-col items-center gap-3"
+                        >
+                          <Camera className="h-12 w-12 text-gray-400 dark:text-gray-500" />
+                          <span className="text-gray-700 dark:text-gray-300 font-medium">Take Photo</span>
+                        </button>
+                        <label className="p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-green-600 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all flex flex-col items-center gap-3 cursor-pointer">
+                          <Upload className="h-12 w-12 text-gray-400 dark:text-gray-500" />
+                          <span className="text-gray-700 dark:text-gray-300 font-medium">Upload Image</span>
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={handleReceiptImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-blue-800 dark:text-blue-300">
+                          {manualEntryMode
+                            ? "Couldn't read the receipt clearly. Please review and edit the items below, or enter them manually."
+                            : 'Review the extracted items below. You can edit, delete, or add new items before saving.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Store Name
+                      </label>
+                      <input
+                        type="text"
+                        value={extractedStore}
+                        onChange={(e) => setExtractedStore(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        placeholder="Store name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Purchase Date
+                      </label>
+                      <input
+                        type="date"
+                        value={extractedDate}
+                        onChange={(e) => setExtractedDate(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Total Cost
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={extractedTotal}
+                        onChange={(e) => setExtractedTotal(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Items</h3>
+                      <button
+                        onClick={handleAddExtractedItem}
+                        className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-xl hover:bg-green-700 dark:hover:bg-green-600 transition-colors flex items-center gap-2 text-sm font-medium"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Item
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {extractedItems.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                          No items extracted. Click "Add Item" to add manually.
+                        </div>
+                      ) : (
+                        extractedItems.map((item, index) => (
+                          <div
+                            key={item.id}
+                            className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600"
+                          >
+                            {editingItemIndex === index ? (
+                              <div className="grid grid-cols-12 gap-2">
+                                <div className="col-span-5">
+                                  <input
+                                    type="text"
+                                    value={item.name}
+                                    onChange={(e) => handleEditExtractedItem(index, 'name', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                    placeholder="Item name"
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <input
+                                    type="text"
+                                    value={item.quantity}
+                                    onChange={(e) => handleEditExtractedItem(index, 'quantity', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                    placeholder="Qty"
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <input
+                                    type="text"
+                                    value={item.unit}
+                                    onChange={(e) => handleEditExtractedItem(index, 'unit', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                    placeholder="Unit"
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={item.price}
+                                    onChange={(e) => handleEditExtractedItem(index, 'price', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                    placeholder="Price"
+                                  />
+                                </div>
+                                <div className="col-span-1 flex gap-1">
+                                  <button
+                                    onClick={() => setEditingItemIndex(null)}
+                                    className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteExtractedItem(index)}
+                                    className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium text-gray-900 dark:text-white">{item.name || 'Unnamed Item'}</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {item.quantity} {item.unit} • ${item.price}
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => setEditingItemIndex(index)}
+                                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg"
+                                >
+                                  <Edit3 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => {
+                        setShowReceiptPreview(false);
+                        setReceiptImage(null);
+                        setReceiptImagePreview(null);
+                        setExtractedItems([]);
+                        setExtractedTotal('');
+                        setExtractedStore('');
+                        setExtractedDate('');
+                      }}
+                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmReceipt}
+                      disabled={submitting || extractedItems.length === 0}
+                      className="flex-1 px-4 py-3 bg-green-600 dark:bg-green-500 text-white rounded-xl hover:bg-green-700 dark:hover:bg-green-600 transition-colors disabled:opacity-50 font-medium shadow-lg hover:shadow-xl"
+                    >
+                      {submitting ? 'Saving...' : 'Confirm & Save'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Receipt History Modal */}
+      {showReceiptHistory && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <ImageIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                  Receipt History
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowReceiptHistory(false);
+                    setSelectedReceipt(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {selectedReceipt ? (
+                <div className="space-y-6">
+                  <button
+                    onClick={() => setSelectedReceipt(null)}
+                    className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                    Back to History
+                  </button>
+
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6 space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Store</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{selectedReceipt.storeName}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Date</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          {selectedReceipt.purchaseDate?.toLocaleDateString() || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
+                        <p className="font-semibold text-green-600 dark:text-green-400">${selectedReceipt.totalCost?.toFixed(2) || '0.00'}</p>
+                      </div>
+                    </div>
+
+                    {selectedReceipt.receiptImage && (
+                      <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <img
+                          src={selectedReceipt.receiptImage}
+                          alt="Receipt"
+                          className="w-full max-h-96 object-contain"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Items</h3>
+                      <div className="space-y-2">
+                        {selectedReceipt.items?.map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                          >
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {item.quantity} {item.unit}
+                              </p>
+                            </div>
+                            <p className="font-semibold text-gray-900 dark:text-white">${item.price}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {receiptHistory.length === 0 ? (
+                    <div className="text-center py-12">
+                      <ImageIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400">No receipt history yet</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                        Scan your first receipt to get started!
+                      </p>
+                    </div>
+                  ) : (
+                    receiptHistory.map((receipt) => (
+                      <div
+                        key={receipt.id}
+                        onClick={() => setSelectedReceipt(receipt)}
+                        className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 cursor-pointer transition-all hover:shadow-md"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">{receipt.storeName}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {receipt.purchaseDate?.toLocaleDateString() || 'Unknown date'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-green-600 dark:text-green-400">
+                              ${receipt.totalCost?.toFixed(2) || '0.00'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {receipt.items?.length || 0} items
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       <style jsx>{`

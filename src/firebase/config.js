@@ -5,7 +5,7 @@ import { getFirestore, enableIndexedDbPersistence, initializeFirestore } from 'f
 import { getStorage } from 'firebase/storage';
 
 // Firebase configuration
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyB9rONAKw6unIEsS2f0qptmSIyflM3q-OM",
   authDomain: "family-housing-hub.firebaseapp.com",
   projectId: "family-housing-hub",

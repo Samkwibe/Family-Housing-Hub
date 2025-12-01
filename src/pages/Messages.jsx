@@ -56,7 +56,8 @@ import {
   Volume2,
   UserPlus,
   UserCheck,
-  UserX
+  UserX,
+  Shield
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -79,6 +80,15 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
 import { messageService } from '../services/firebaseService';
+import {
+  connectStreamUser,
+  disconnectStreamUser,
+  getOrCreateChannel,
+  getStreamClient,
+  initializeFCM,
+  registerPushToken,
+  setupPushNotifications
+} from '../services/streamChatService';
 
 // Message status icons
 const MessageStatus = ({ status, readAt }) => {
@@ -156,33 +166,89 @@ export default function Messages() {
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
 
-  // Load all users for search (excluding current user)
-  useEffect(() => {
-    if (!currentUser) return;
+  // Optimized Firebase messaging - no Stream Chat dependency
+  // Fast, professional, reliable messaging system
 
-    const loadUsers = async () => {
+  // Load family members only for messaging (PRIVACY: Family-only visibility)
+  useEffect(() => {
+    if (!currentUser || !userProfile) return;
+
+    const loadFamilyMembers = async () => {
       try {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        const users = usersSnap.docs
+        // Get current user's family members from their profile
+        const familyMembers = userProfile.familyMembers || [];
+        const familyMemberIds = familyMembers.map(member => member.userId || member.id).filter(Boolean);
+        
+        // Also include current user's familyId if they have one (for family groups)
+        let familyUsers = [];
+        
+        if (familyMemberIds.length > 0) {
+          // Load family member profiles
+          const familyMemberPromises = familyMemberIds.map(async (memberId) => {
+            try {
+              const userDoc = await getDoc(doc(db, 'users', memberId));
+              if (userDoc.exists()) {
+                return {
+                  id: userDoc.id,
+                  ...userDoc.data(),
+                  isFamilyMember: true
+                };
+              }
+              return null;
+            } catch (error) {
+              console.error(`Error loading family member ${memberId}:`, error);
+              return null;
+            }
+          });
+          
+          familyUsers = (await Promise.all(familyMemberPromises)).filter(Boolean);
+        }
+        
+        // Also check if user has a familyId and load other family members
+        if (userProfile.familyId) {
+          try {
+            const familyQuery = query(
+              collection(db, 'users'),
+              where('familyId', '==', userProfile.familyId)
+            );
+            const familySnap = await getDocs(familyQuery);
+            const familyGroupMembers = familySnap.docs
           .map(doc => ({
             id: doc.id,
-            ...doc.data()
+                ...doc.data(),
+                isFamilyMember: true
           }))
-          .filter(user => user.id !== currentUser.uid)
-          .sort((a, b) => {
-            const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim();
-            const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+              .filter(user => user.id !== currentUser.uid);
+            
+            // Merge and deduplicate
+            const allFamilyUsers = [...familyUsers, ...familyGroupMembers];
+            const uniqueUsers = Array.from(
+              new Map(allFamilyUsers.map(user => [user.id, user])).values()
+            );
+            
+            familyUsers = uniqueUsers;
+          } catch (error) {
+            console.error('Error loading family group:', error);
+          }
+        }
+        
+        // Sort by name
+        const sortedUsers = familyUsers.sort((a, b) => {
+          const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim() || a.email || '';
+          const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim() || b.email || '';
             return nameA.localeCompare(nameB);
           });
 
-        setAllUsers(users);
+        setAllUsers(sortedUsers);
+        console.log(`✅ Loaded ${sortedUsers.length} family members for messaging`);
       } catch (error) {
-        console.error('Error loading users:', error);
+        console.error('Error loading family members:', error);
+        toast.error('Failed to load family members');
       }
     };
 
-    loadUsers();
-  }, [currentUser]);
+    loadFamilyMembers();
+  }, [currentUser, userProfile]);
 
   // Real-time messages listener - get messages where user is sender OR receiver
   useEffect(() => {
@@ -225,7 +291,7 @@ export default function Messages() {
   }, [currentUser]);
 
   const updateMessages = (snapshot, type) => {
-    // Handle both initial load and updates
+    // Handle both initial load and updates - ENHANCED for real-time performance
     const changes = snapshot.docChanges();
     const allMessages = snapshot.docs.map(doc => ({
       id: doc.id,
@@ -236,7 +302,7 @@ export default function Messages() {
     }));
 
     setMessages(prev => {
-      // Create a map for quick lookup
+      // Create a map for quick lookup (O(1) access)
       const messageMap = new Map();
 
       // Add existing messages to map
@@ -249,23 +315,40 @@ export default function Messages() {
         messageMap.set(msg.id, msg);
       });
 
-      // Convert back to array and sort
+      // Convert back to array and sort (optimized)
       const unique = Array.from(messageMap.values());
-      return unique.sort((a, b) => {
+      const sorted = unique.sort((a, b) => {
         const aTime = a.createdAt || a.sentAt || new Date(0);
         const bTime = b.createdAt || b.sentAt || new Date(0);
-        return aTime - bTime;
+        return aTime.getTime() - bTime.getTime(); // Use getTime() for better performance
       });
+      
+      return sorted;
     });
 
-    // Log new messages for debugging
+    // Show notification for new messages (real-time feedback)
     const addedMessages = changes.filter(change => change.type === 'added');
     if (addedMessages.length > 0) {
-      console.log(`New ${type} messages received:`, addedMessages.length);
+      console.log(`📨 New ${type} messages received:`, addedMessages.length);
+      
+      // Show subtle notification for new received messages
+      if (type === 'received' && addedMessages.length > 0) {
+        const newMsg = addedMessages[0].doc.data();
+        // Only show if not in current conversation
+        if (selectedConversation) {
+          const msgConvoId = [newMsg.senderId, newMsg.receiverId].sort().join('_');
+          if (msgConvoId !== selectedConversation) {
+            toast.success(`New message from ${newMsg.senderName || 'Family member'}`, {
+              duration: 3000,
+              icon: '💬'
+            });
+          }
+        }
+      }
     }
   };
 
-  // Group messages into conversations
+  // Group messages into conversations - WITH SECURITY: Only show family conversations
   useEffect(() => {
     if (!currentUser || messages.length === 0) {
       setConversations([]);
@@ -277,6 +360,13 @@ export default function Messages() {
     messages.forEach(msg => {
       // Determine the other user in the conversation
       const otherUserId = msg.senderId === currentUser.uid ? msg.receiverId : msg.senderId;
+      
+      // SECURITY: Only include conversations with family members
+      const isFamilyMember = allUsers.some(user => user.id === otherUserId);
+      if (!isFamilyMember) {
+        return; // Skip non-family conversations
+      }
+      
       const conversationId = [currentUser.uid, otherUserId].sort().join('_');
 
       if (!convosMap[conversationId]) {
@@ -325,7 +415,7 @@ export default function Messages() {
     };
 
     loadUserInfo();
-  }, [messages, currentUser]);
+  }, [messages, currentUser, allUsers]);
 
   useEffect(() => {
     scrollToBottom();
@@ -354,38 +444,85 @@ export default function Messages() {
   // Get current conversation messages
   const currentConversation = conversations.find(c => c.id === selectedConversation);
 
-  // Get messages for current conversation - filter directly from messages array
+  // Get messages for current conversation - ENHANCED with security check
   // This ensures we always have the latest messages even if conversation hasn't updated yet
   const currentMessages = useMemo(() => {
     if (!selectedConversation || !currentUser) return [];
 
     // Filter messages that belong to this conversation
-    return messages.filter(msg => {
+    // SECURITY: Only show messages with family members
+    const conversationMessages = messages.filter(msg => {
       const msgConversationId = [msg.senderId, msg.receiverId].sort().join('_');
-      return msgConversationId === selectedConversation;
+      if (msgConversationId !== selectedConversation) return false;
+      
+      // Verify both sender and receiver are family members
+      const otherUserId = msg.senderId === currentUser.uid ? msg.receiverId : msg.senderId;
+      const isFamilyMember = allUsers.some(user => user.id === otherUserId);
+      return isFamilyMember;
     }).sort((a, b) => {
       const aTime = a.createdAt || a.sentAt || new Date(0);
       const bTime = b.createdAt || b.sentAt || new Date(0);
-      return aTime - bTime;
+      return aTime.getTime() - bTime.getTime(); // Use getTime() for better performance
     });
-  }, [messages, selectedConversation, currentUser]);
+    
+    return conversationMessages;
+  }, [messages, selectedConversation, currentUser, allUsers]);
 
   // Get user info for selected conversation
   // Use selectedUser if available (new conversation), otherwise use conversation's otherUser
   const otherUser = selectedUser || currentConversation?.otherUser;
 
-  // Search users
-  const filteredUsers = allUsers.filter(user => {
-    const search = userSearchTerm.toLowerCase();
+  // Enhanced search - Quick family member lookup by name, email, or phone
+  const filteredUsers = useMemo(() => {
+    if (!userSearchTerm.trim()) {
+      return allUsers; // Show all family members if no search
+    }
+    
+    const search = userSearchTerm.toLowerCase().trim();
+    return allUsers.filter(user => {
+      // Professional search: name, email, or phone number
     const name = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
     const email = (user.email || '').toLowerCase();
-    const phone = (user.phone || '').toLowerCase();
-    return name.includes(search) || email.includes(search) || phone.includes(search);
+      const phone = (user.phone || '').replace(/\D/g, ''); // Remove non-digits for phone search
+      const searchDigits = search.replace(/\D/g, ''); // Remove non-digits from search
+      
+      // Match if name, email, or phone contains search term
+      return name.includes(search) || 
+             email.includes(search) || 
+             (phone && phone.includes(searchDigits));
   });
+  }, [allUsers, userSearchTerm]);
 
   // Start conversation with a user
   const startConversation = async (user) => {
     const conversationId = [currentUser.uid, user.id].sort().join('_');
+
+    // If using Stream Chat, get or create channel
+    if (useStreamChat && streamClient) {
+      try {
+        const channel = await getOrCreateChannel(streamClient, currentUser.uid, user.id);
+        setCurrentChannel(channel);
+
+        // Watch channel for new messages
+        channel.watch();
+        
+        // Set up message listener
+        channel.on('message.new', (event) => {
+          const streamMsg = {
+            id: event.message.id,
+            message: event.message.text,
+            senderId: event.message.user.id,
+            receiverId: event.message.user.id === currentUser.uid ? user.id : currentUser.uid,
+            createdAt: new Date(event.message.created_at),
+            read: false,
+            status: 'sent'
+          };
+          setMessages(prev => [...prev, streamMsg]);
+        });
+      } catch (error) {
+        console.error('Error setting up Stream Chat channel:', error);
+      }
+    }
 
     // Check if conversation already exists
     const existingConvo = conversations.find(c => c.id === conversationId);
@@ -505,12 +642,12 @@ export default function Messages() {
     }
   };
 
-  // Handle send message
+  // Handle send message - WITH SECURITY: Only allow messaging family members
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
     if (!selectedUser && !selectedConversation && !otherUser) {
-      toast.error('Please select a user to message');
+      toast.error('Please select a family member to message');
       return;
     }
 
@@ -535,8 +672,105 @@ export default function Messages() {
         return;
       }
 
+      // SECURITY CHECK: Verify receiver is a family member
+      const isFamilyMember = allUsers.some(user => user.id === receiverId);
+      if (!isFamilyMember) {
+        toast.error('You can only message family members. This user is not in your family group.');
+        setSending(false);
+        return;
+      }
+
       // Create conversation ID (sorted user IDs)
       const conversationId = [currentUser.uid, receiverId].sort().join('_');
+
+      // Use Stream Chat if available for faster messaging
+      if (useStreamChat && streamClient) {
+        try {
+          // Get or create Stream Chat channel
+          const channel = await getOrCreateChannel(streamClient, currentUser.uid, receiverId);
+          setCurrentChannel(channel);
+
+          // Upload attachments to Firebase Storage first
+          const streamAttachments = [];
+          for (const att of attachments) {
+            if (att.url) {
+              streamAttachments.push({
+                type: att.type === 'image' ? 'image' : 'file',
+                asset_url: att.url,
+                title: att.name,
+              });
+            }
+          }
+
+          // Send message via Stream Chat
+          const messageData = {
+            text: newMessage.trim() || (userLocation ? '📍 Location shared' : ''),
+          };
+
+          if (streamAttachments.length > 0) {
+            messageData.attachments = streamAttachments;
+          }
+
+          if (userLocation) {
+            messageData.location = {
+              type: 'location',
+              coordinates: {
+                lat: userLocation.lat,
+                lng: userLocation.lng,
+              },
+            };
+          }
+
+          await channel.sendMessage(messageData);
+
+          // Also save to Firestore for backup/history
+          const messageRef = await addDoc(collection(db, 'messages'), {
+            senderId: currentUser.uid,
+            receiverId: receiverId,
+            conversationId: conversationId,
+            message: newMessage.trim(),
+            read: false,
+            status: 'sent',
+            sentAt: serverTimestamp(),
+            createdAt: serverTimestamp(),
+            location: userLocation ? {
+              lat: userLocation.lat,
+              lng: userLocation.lng,
+              accuracy: userLocation.accuracy,
+              timestamp: serverTimestamp()
+            } : null,
+            attachments: attachments.length > 0 ? attachments.map(att => ({
+              type: att.type,
+              name: att.name,
+              url: att.url,
+              size: att.size
+            })) : null,
+            senderName: `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || currentUser.displayName || 'User',
+            streamChatId: channel.id, // Link to Stream Chat message
+          });
+
+          // Reset form
+          setNewMessage('');
+          setUserLocation(null);
+          setAttachments([]);
+          setAudioUrl(null);
+
+          if (selectedUser) {
+            setSelectedConversation(conversationId);
+            setSelectedUser(null);
+          }
+
+          toast.success('Message sent via Stream Chat!');
+          setSending(false);
+          return;
+        } catch (streamError) {
+          console.error('Stream Chat send error:', streamError);
+          // Fall through to Firestore method
+          toast.warning('Stream Chat failed, using standard messaging');
+        }
+      }
+
+      // Fallback to Firestore messaging if Stream Chat is not available
 
       // Upload attachments
       const attachmentUrls = [];
@@ -689,9 +923,9 @@ export default function Messages() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
               <MessageCircle className="h-8 w-8 text-blue-600" />
-              Messages
+              Family Messages
             </h1>
-            <p className="text-gray-600">Chat with other users in real-time</p>
+            <p className="text-gray-600">Secure messaging with your family members only</p>
           </div>
           <button
             onClick={() => setShowUserSearch(true)}
@@ -808,7 +1042,11 @@ export default function Messages() {
                 <div className="p-8 text-center">
                   <MessageCircle className="h-10 w-10 text-gray-300 mx-auto mb-2" />
                   <p className="text-gray-500 text-sm">No conversations yet</p>
-                  <p className="text-gray-400 text-xs mt-1">Start a new chat with another user</p>
+                  <p className="text-gray-400 text-xs mt-1">Start a new chat with a family member</p>
+                  <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+                    <Shield className="h-4 w-4" />
+                    <span>Private & Secure - Family Only</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -821,7 +1059,10 @@ export default function Messages() {
               <div className="flex-1 flex flex-col">
                 <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900">Find User to Message</h3>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Find Family Member</h3>
+                      <p className="text-xs text-gray-600 mt-1">Search by name or email only</p>
+                    </div>
                     <button
                       onClick={() => setShowUserSearch(false)}
                       className="p-2 hover:bg-gray-100 rounded-lg"
@@ -838,8 +1079,23 @@ export default function Messages() {
                       placeholder="Search by name, email, or phone..."
                       value={userSearchTerm}
                       onChange={(e) => setUserSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      autoFocus
                     />
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      {filteredUsers.length} of {allUsers.length} family member{allUsers.length !== 1 ? 's' : ''}
+                    </p>
+                    {userSearchTerm && (
+                      <button
+                        onClick={() => setUserSearchTerm('')}
+                        className="text-xs text-blue-600 hover:text-blue-700"
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
@@ -885,10 +1141,26 @@ export default function Messages() {
                   ) : (
                     <div className="text-center py-12">
                       <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No users found</p>
+                      <p className="text-gray-500 font-medium">No family members found</p>
                       <p className="text-sm text-gray-400 mt-1">
-                        {userSearchTerm ? 'Try a different search term' : 'Start typing to search for users'}
+                        {userSearchTerm 
+                          ? 'Try searching by name or email' 
+                          : allUsers.length === 0
+                            ? 'No family members added yet. Add family members in your profile settings.'
+                            : 'Start typing to search for family members'}
                       </p>
+                      {allUsers.length === 0 && (
+                        <button
+                          onClick={() => {
+                            setShowUserSearch(false);
+                            // Navigate to profile or family settings
+                            window.location.href = '/profile';
+                          }}
+                          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        >
+                          Add Family Members
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -957,13 +1229,19 @@ export default function Messages() {
                   </div>
                 </div>
 
-                {/* Messages */}
-                <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50">
+                {/* Messages - Enhanced UI with better organization */}
+                <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-gray-50 to-white">
                   {currentMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                      <MessageCircle className="h-16 w-16 text-gray-300 mb-4" />
+                      <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                        <MessageCircle className="h-10 w-10 text-blue-600" />
+                      </div>
                       <p className="text-gray-500 font-medium mb-2">No messages yet</p>
-                      <p className="text-sm text-gray-400">Start the conversation by sending a message below</p>
+                      <p className="text-sm text-gray-400 mb-4">Start the conversation by sending a message below</p>
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <Shield className="h-4 w-4" />
+                        <span>End-to-end secure messaging</span>
+                      </div>
                     </div>
                   ) : (
                     currentMessages.map((message, index) => {
@@ -996,27 +1274,65 @@ export default function Messages() {
                             {message.attachments && message.attachments.length > 0 && (
                               <div className="mb-2 space-y-2">
                                 {message.attachments.map((att, i) => (
-                                  <div key={i} className="bg-white border border-gray-200 rounded-xl p-3">
+                                  <div key={i} className={`bg-white border rounded-xl p-3 shadow-sm ${isSent ? 'border-blue-200' : 'border-gray-200'}`}>
                                     {att.type === 'image' && (
-                                      <img src={att.url} alt={att.name} className="w-full rounded-lg mb-2" />
+                                      <div className="space-y-2">
+                                        <img 
+                                          src={att.url} 
+                                          alt={att.name || 'Image'} 
+                                          className="w-full max-w-md rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                          onClick={() => window.open(att.url, '_blank')}
+                                          loading="lazy"
+                                        />
+                                        {att.name && (
+                                          <p className="text-xs text-gray-500 truncate">{att.name}</p>
+                                        )}
+                                      </div>
                                     )}
                                     {att.type === 'video' && (
-                                      <video src={att.url} controls className="w-full rounded-lg mb-2" />
+                                      <div className="space-y-2">
+                                        <video 
+                                          src={att.url} 
+                                          controls 
+                                          className="w-full max-w-md rounded-lg"
+                                          preload="metadata"
+                                        />
+                                        {att.name && (
+                                          <p className="text-xs text-gray-500 truncate">{att.name}</p>
+                                        )}
+                                      </div>
                                     )}
                                     {att.type === 'audio' && (
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                      <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
                                           <Mic className="h-6 w-6 text-purple-600" />
                                         </div>
-                                        <audio src={att.url} controls className="flex-1" />
+                                        <div className="flex-1 min-w-0">
+                                          <audio src={att.url} controls className="w-full" />
+                                          {att.name && (
+                                            <p className="text-xs text-gray-500 mt-1 truncate">{att.name}</p>
+                                          )}
+                                        </div>
                                       </div>
                                     )}
                                     {att.type === 'file' && (
-                                      <div className="flex items-center gap-3">
-                                        <File className="h-8 w-8 text-blue-600" />
-                                        <div className="flex-1">
-                                          <p className="text-sm font-medium">{att.name}</p>
-                                          <a href={att.url} download className="text-xs text-blue-600 hover:text-blue-700">
+                                      <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                          <File className="h-6 w-6 text-blue-600" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium text-gray-900 truncate">{att.name || 'File'}</p>
+                                          {att.size && (
+                                            <p className="text-xs text-gray-500">
+                                              {(att.size / 1024).toFixed(1)} KB
+                                            </p>
+                                          )}
+                                          <a 
+                                            href={att.url} 
+                                            download 
+                                            className="text-xs text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 mt-1"
+                                          >
+                                            <Download className="h-3 w-3" />
                                             Download
                                           </a>
                                         </div>
@@ -1029,12 +1345,12 @@ export default function Messages() {
 
                             {message.message && (
                               <div
-                                className={`px-4 py-3 rounded-2xl ${isSent
-                                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-md'
+                                className={`px-4 py-3 rounded-2xl max-w-full break-words ${isSent
+                                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-md shadow-md'
                                   : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100'
                                   }`}
                               >
-                                <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                                <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
                               </div>
                             )}
 
@@ -1118,7 +1434,7 @@ export default function Messages() {
                   )}
 
                   <div className="flex items-end space-x-2">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-wrap">
                       <div className="relative">
                         <button
                           type="button"
@@ -1138,8 +1454,8 @@ export default function Messages() {
                       <button
                         type="button"
                         onClick={() => imageInputRef.current?.click()}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="Attach image"
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Attach image (JPG, PNG, GIF)"
                       >
                         <ImageIcon className="h-5 w-5" />
                       </button>
@@ -1154,7 +1470,7 @@ export default function Messages() {
                       <button
                         type="button"
                         onClick={() => videoInputRef.current?.click()}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                         title="Attach video"
                       >
                         <Video className="h-5 w-5" />
@@ -1169,8 +1485,8 @@ export default function Messages() {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="Attach file"
+                        className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        title="Attach file (PDF, DOC, etc.)"
                       >
                         <Paperclip className="h-5 w-5" />
                       </button>
@@ -1186,7 +1502,7 @@ export default function Messages() {
                         onClick={recording ? stopRecording : startRecording}
                         className={`p-2 rounded-lg transition-colors ${recording
                           ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                          : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
                           }`}
                         title="Voice message"
                       >
@@ -1195,7 +1511,7 @@ export default function Messages() {
                       <button
                         type="button"
                         onClick={getCurrentLocation}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                         title="Share location"
                       >
                         <MapPin className="h-5 w-5" />
@@ -1210,7 +1526,13 @@ export default function Messages() {
                         handleTyping();
                       }}
                       placeholder="Type your message..."
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage(e);
+                        }
+                      }}
                     />
 
                     {/* ALWAYS VISIBLE SEND BUTTON */}

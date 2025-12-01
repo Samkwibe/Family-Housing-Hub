@@ -412,6 +412,21 @@ function parseZillowData(data, originalUrl) {
   }
 }
 
+// ==================== ROOT ENDPOINT ====================
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Family Housing Hub API',
+    version: '1.0.0',
+    status: 'online',
+    endpoints: {
+      'POST /api/ai/chat': 'AI chat with Gemini/OpenAI',
+      'POST /api/properties/search': 'Search properties (Zillow, Realtor.com, Estated)',
+      'GET /api/health': 'Health check and API key status'
+    },
+    documentation: 'Visit /api/health for detailed API status'
+  });
+});
+
 // ==================== HEALTH CHECK ====================
 app.get('/api/health', (req, res) => {
   res.json({

@@ -10,6 +10,7 @@ import openai
 import google.generativeai as genai
 import requests
 import json
+import re
 from datetime import datetime, timedelta
 import schedule
 import threading
@@ -25,6 +26,7 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('VITE_GEMINI_API_KEY')
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY') or os.getenv('VITE_GOOGLE_MAPS_API_KEY')
 RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY') or '4d9f4dec85msh34a2b4ff5648991p1dcfccjsn125f4440583c'  # For real estate APIs
+ZILLOW_API_KEY = RAPIDAPI_KEY  # Zillow scraper uses RapidAPI key
 REALTOR_API_KEY = RAPIDAPI_KEY  # Realtor.com API uses RapidAPI key
 ESTATED_API_KEY = os.getenv('ESTATED_API_KEY') or 'ec5c7745e9236b9519809c1d4c3f9c87'  # Estated.com API key
 ATTOM_API_KEY = os.getenv('ATTOM_API_KEY')  # ATTOM Data API key
@@ -667,6 +669,216 @@ def search_estated_api(query, lat, lng, filters):
         return []
     
     return properties
+
+def search_zillow_api(query, lat, lng, filters):
+    """Search Zillow using RapidAPI scraper - Works for cities, zipcodes, and addresses"""
+    properties = []
+    
+    if not ZILLOW_API_KEY:
+        return []
+    
+    headers = {
+        'Content-Type': 'application/json',
+        'x-rapidapi-host': 'zillow-data-scraper1.p.rapidapi.com',
+        'x-rapidapi-key': ZILLOW_API_KEY
+    }
+    
+    try:
+        # Get Zillow property URLs from search
+        # We'll use Zillow's search page format and try to get listing URLs
+        zillow_urls = get_zillow_listing_urls(query, filters)
+        
+        if not zillow_urls:
+            print(f"⚠️ No Zillow URLs found for query: {query}")
+            return []
+        
+        print(f"✅ Found {len(zillow_urls)} Zillow listings to scrape")
+        
+        # Scrape each property using the Zillow scraper API
+        for listing_url in zillow_urls[:15]:  # Limit to 15 properties to avoid rate limits
+            try:
+                property_data = scrape_zillow_listing(listing_url, headers)
+                if property_data:
+                    properties.append(property_data)
+                    print(f"✅ Scraped: {property_data.get('address', 'Unknown')}")
+            except Exception as e:
+                print(f"⚠️ Error scraping {listing_url}: {e}")
+                continue
+        
+    except Exception as e:
+        print(f"❌ Zillow API error: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    return properties
+
+def get_zillow_listing_urls(query, filters):
+    """Get Zillow listing URLs from a search query"""
+    # Since Zillow scraper needs specific URLs, we need to get them first
+    # We'll use Zillow's search URL format and try to extract property URLs
+    
+    listing_urls = []
+    clean_query = query.strip()
+    
+    # Check if it's a specific address (has numbers and street name)
+    is_address = any(char.isdigit() for char in clean_query) and any(word in clean_query.lower() for word in ['st', 'street', 'ave', 'avenue', 'rd', 'road', 'dr', 'drive', 'ln', 'lane'])
+    
+    if is_address:
+        # For specific addresses, construct Zillow search URL
+        # Zillow format: https://www.zillow.com/homes/{address}/
+        zillow_search_url = f"https://www.zillow.com/homes/{requests.utils.quote(clean_query)}/"
+        listing_urls.append(zillow_search_url)
+    else:
+        # For area searches (city, zipcode), use Zillow's search format
+        # Format: https://www.zillow.com/homes/{city-state}/
+        # For zipcodes: https://www.zillow.com/homes/{zipcode}_rb/
+        
+        if clean_query.isdigit() and len(clean_query) == 5:
+            # It's a zipcode
+            zillow_search_url = f"https://www.zillow.com/homes/{clean_query}_rb/"
+        else:
+            # It's a city/area
+            zillow_search_url = f"https://www.zillow.com/homes/{requests.utils.quote(clean_query)}/"
+        
+        # For area searches, we'd normally scrape the search results page
+        # to get individual property URLs. For now, we'll return the search URL
+        # and the scraper might handle it, or we can try to get listings from search page
+        
+        # Try to get property URLs from Zillow search page
+        # This is a simplified approach - in production you'd parse the HTML
+        listing_urls.append(zillow_search_url)
+    
+    return listing_urls
+
+def scrape_zillow_listing(zillow_url, headers):
+    """Scrape a single Zillow listing using the RapidAPI scraper"""
+    try:
+        url = 'https://zillow-data-scraper1.p.rapidapi.com/scrape-listing'
+        
+        payload = {
+            'url': zillow_url
+        }
+        
+        print(f"📡 Scraping Zillow: {zillow_url[:80]}...")
+        
+        response = requests.post(url, headers=headers, json=payload, timeout=20)
+        
+        if response.ok:
+            data = response.json()
+            print(f"✅ Zillow scraper response received")
+            
+            # Parse the scraped data
+            property_data = parse_zillow_scraped_data(data, zillow_url)
+            
+            return property_data
+        else:
+            print(f"❌ Zillow scraper error: {response.status_code} - {response.text[:200]}")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Error scraping Zillow listing: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def parse_zillow_scraped_data(data, original_url):
+    """Parse scraped Zillow data into our property format"""
+    try:
+        # Handle different possible response structures
+        prop = data.get('data', {}) or data.get('property', {}) or data.get('result', {}) or data
+        
+        # Extract address
+        address_info = prop.get('address', {}) or {}
+        street = address_info.get('street', '') or address_info.get('line', '') or address_info.get('streetAddress', '') or prop.get('street', '')
+        city = address_info.get('city', '') or prop.get('city', '')
+        state = address_info.get('state', '') or address_info.get('stateCode', '') or prop.get('state', '')
+        zipcode = address_info.get('zipcode', '') or address_info.get('zip', '') or address_info.get('postalCode', '') or prop.get('zipcode', '')
+        
+        full_address = ', '.join([p for p in [street, city, state, zipcode] if p]) if any([street, city, state, zipcode]) else 'Address not available'
+        
+        # Extract price
+        price = prop.get('price', '') or prop.get('listPrice', '') or prop.get('estimatedPrice', '') or prop.get('zestimate', '')
+        if isinstance(price, str):
+            # Remove currency symbols, commas, and spaces
+            price_clean = price.replace('$', '').replace(',', '').replace(' ', '').strip()
+            try:
+                price = int(price_clean) if price_clean else None
+            except:
+                price = None
+        elif not isinstance(price, (int, float)):
+            price = None
+        
+        # Extract property details
+        bedrooms = prop.get('bedrooms', '') or prop.get('beds', '') or prop.get('bed', '')
+        bathrooms = prop.get('bathrooms', '') or prop.get('baths', '') or prop.get('bath', '')
+        sqft = prop.get('sqft', '') or prop.get('squareFeet', '') or prop.get('livingArea', '') or prop.get('area', '')
+        year_built = prop.get('yearBuilt', '') or prop.get('year', '')
+        lot_size = prop.get('lotSize', '') or prop.get('lotSqft', '') or prop.get('lotSquareFeet', '')
+        
+        # Extract coordinates
+        location = prop.get('location', {}) or {}
+        lat = location.get('lat') or location.get('latitude') or prop.get('lat')
+        lng = location.get('lng') or location.get('longitude') or location.get('lon') or prop.get('lng')
+        
+        # Extract images
+        images = []
+        if prop.get('images'):
+            if isinstance(prop['images'], list):
+                images = prop['images']
+            else:
+                images = [prop['images']]
+        elif prop.get('photo'):
+            images = [prop['photo']] if isinstance(prop['photo'], str) else prop['photo']
+        elif prop.get('photos'):
+            if isinstance(prop['photos'], list):
+                images = [p.get('url', p) if isinstance(p, dict) else p for p in prop['photos']]
+        
+        # Extract ZPID from URL
+        zpid = None
+        if original_url:
+            zpid_match = re.findall(r'/(\d+)_zpid/', original_url)
+            if zpid_match:
+                zpid = zpid_match[0]
+            else:
+                # Try to get from data
+                zpid = prop.get('zpid') or prop.get('id')
+        
+        # Determine listing type
+        listing_type = 'buy'
+        status = str(prop.get('status', '')).lower()
+        prop_type = str(prop.get('type', '')).lower()
+        if 'rent' in status or 'rent' in prop_type or prop.get('forRent'):
+            listing_type = 'rent'
+        
+        property_data = {
+            'id': f"zillow_{zpid or hash(full_address)}",
+            'address': full_address,
+            'city': city,
+            'state': state,
+            'zipcode': zipcode,
+            'price': price,
+            'bedrooms': bedrooms,
+            'bathrooms': bathrooms,
+            'sqft': sqft,
+            'yearBuilt': year_built,
+            'lotSize': lot_size,
+            'lat': lat,
+            'lng': lng,
+            'type': prop.get('propertyType', 'house') or prop.get('type', 'house') or 'house',
+            'images': images[:10] if images else [],
+            'zpid': zpid,
+            'listingType': listing_type,
+            'source': 'zillow',
+            'zillowUrl': original_url
+        }
+        
+        return property_data
+        
+    except Exception as e:
+        print(f"⚠️ Error parsing Zillow data: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 def search_realtor_api(query, lat, lng, filters):
     """Search Realtor.com API via RapidAPI - Excellent for area searches"""

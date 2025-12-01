@@ -1350,6 +1350,7 @@ export default function HouseSearch() {
                                     </button>
                                 </div>
                             </div>
+                            ) : null
                         )}
                     </>
                 )}

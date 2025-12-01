@@ -60306,3 +60306,259 @@ Please deploy your functions for the change to take effect by running firebase d
 [warn] ⚠  functions: No cleanup policy detected for repositories in us-central1. This may result in a small monthly bill as container images accumulate over time. 
 [error] 
 [error] Error: Functions successfully deployed but could not set up cleanup policy in location us-central1. Pass the --force option to automatically set up a cleanup policy or run 'firebase functions:artifacts:setpolicy' to manually set up a cleanup policy.
+[debug] [2025-12-01T01:16:11.659Z] ----------------------------------------------------------------------
+[debug] [2025-12-01T01:16:11.661Z] Command:       /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/node /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/firebase deploy --only hosting
+[debug] [2025-12-01T01:16:11.661Z] CLI Version:   14.26.0
+[debug] [2025-12-01T01:16:11.661Z] Platform:      darwin
+[debug] [2025-12-01T01:16:11.661Z] Node Version:  v24.11.0
+[debug] [2025-12-01T01:16:11.661Z] Time:          Sun Nov 30 2025 20:16:11 GMT-0500 (Eastern Standard Time)
+[debug] [2025-12-01T01:16:11.661Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-12-01T01:16:11.763Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-01T01:16:11.763Z] > authorizing via signed-in user (kwibesamuel@gmail.com)
+[debug] [2025-12-01T01:16:11.763Z] [iam] checking project family-housing-hub for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2025-12-01T01:16:11.764Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:11.764Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:11.765Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions [none]
+[debug] [2025-12-01T01:16:11.765Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T01:16:11.765Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-12-01T01:16:12.032Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions 200
+[debug] [2025-12-01T01:16:12.033Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-12-01T01:16:12.034Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:12.034Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:12.034Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub [none]
+[debug] [2025-12-01T01:16:12.509Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub 200
+[debug] [2025-12-01T01:16:12.510Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub {"projectId":"family-housing-hub","projectNumber":"677200955206","displayName":"Family-Housing-Hub","name":"projects/family-housing-hub","resources":{"hostingSite":"family-housing-hub"},"state":"ACTIVE","etag":"1_d7038f16-d0f7-4c7a-aa1e-e06c74e843f6"}
+[info] 
+[info] === Deploying to 'family-housing-hub'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2025-12-01T01:16:12.517Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:12.517Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:12.517Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions [none]
+[debug] [2025-12-01T01:16:12.517Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2025-12-01T01:16:13.090Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions 200
+[debug] [2025-12-01T01:16:13.091Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions {"name":"projects/677200955206/sites/family-housing-hub/versions/f65ac5c9fbd73cc5","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[info] i  hosting[family-housing-hub]: beginning deploy... 
+[info] i  hosting[family-housing-hub]: found 34 files in dist 
+[debug] [2025-12-01T01:16:13.100Z] [hosting] uploading with 200 concurrency
+[debug] [2025-12-01T01:16:13.121Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.121Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.121Z] [hosting] hash cache [ZGlzdA] stored for 34 files
+[debug] [2025-12-01T01:16:13.121Z] [hosting][hash queue][FINAL] {"max":19,"min":6,"avg":7.147058823529412,"active":0,"complete":34,"success":34,"errored":0,"retried":0,"total":34,"elapsed":20}
+[debug] [2025-12-01T01:16:13.122Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/677200955206/sites/family-housing-hub/versions/f65ac5c9fbd73cc5:populateFiles [none]
+[debug] [2025-12-01T01:16:13.122Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/677200955206/sites/family-housing-hub/versions/f65ac5c9fbd73cc5:populateFiles {"files":{"/index.html":"1542e6f79045dfeb79946056dda9ea370ef2db467d59ce49a4d0aed29f1e4c0f","/favicon.svg":"1c6e0536981add84a5f3baa06989d1976429815ed743dfebe6ff373289d605b1","/favicon.ico":"6ae536b2e0c59d0d677178282737e43b004d78ba939878b6dfc1eb193e26fef6","/assets/ui-vendor-9a0f6a23.js":"0bcbd408656ace23c81a17524d0347549e85566de2b252d62c8de95152f3ec68","/assets/api-28858fe5.js":"9d7af22c8bc93680900ba2c9cf4f2d98e99f0cdfdef2e8238f175fba9378d886","/assets/Security-81352fe7.js":"e66627b425a36e944200bf7f63f68ccab0592ccf5f1e69f04d7e9dd88a1749c2","/assets/Settings-939df5a9.js":"ffac5a30e759e4a3edbcdba52cdc3058bf3a8f16902a9c05cc346a640baf1364","/assets/Register-18b91311.js":"31cfa70ca46b6b27d4beaa81d88e827ab2e4fedf3d12a70c94053576a146ca35","/assets/Rent-f3a0ffc1.js":"fc83de6fd3ce928000f1d11c2b5669ef668d2401664a129eae7454e136049a9c","/assets/NotFound-aff37ffa.js":"9b1076526f05781ad18eddcbbf62dd6a3964b385c466663ebf9d6488c14f2a0f","/assets/Onboarding-15880be8.js":"dbf3b9b7d498860ae09a66ec76ab9c9bfd5373e4b5ad571497544e8e20f2bb1b","/assets/Profile-f0b3ee4e.js":"355ec9c8d108c3af6f362f70a2de1d8cb464baf1bdcb7a00e6a0bddf1fa20bc5","/assets/NearbyPlaces-dd841949.js":"57f25e8b56237eb764be3169ed816648fc242f7d7cca4acbe02d502c213189e2","/assets/Landlord-8713935b.js":"6771183a34c137f7d833ef7ee1d7f1ff5d20e94785dbdf3c7cbe9087f2ec7b16","/assets/Maintenance-3226bb58.js":"430451a443681e1670a3cb322f136ad32dca3cd5ba2f30fbe5962600b007f9ff","/assets/Messages-3d44c7db.js":"2ccceac30698dd97ad470cd235a892cda399b4687c9cf406e9144e4eb4d4c678","/assets/HelpCenter-4e571cf6.js":"29b909a554cc95a079c3e106d2974c82b7660ab821c64d1d79e464ca81bcec6e","/assets/Layout-32229d7a.js":"00e934408038572f267e803031c97c7a8f5cb9d613cb83390ee179e75e441b68","/assets/Login-de25b9e0.js":"a450e2b53ff8e040883d9384ca75db0cbe93e3d48bf77301607f2e3950c423c4","/assets/FamilyHealth-2a3101a9.js":"7583d9ba2b0294bcdba092d8ce4dfb995bdad929d657e26c8ab9f1df9c0196c7","/assets/FamilySafety-b51bd04c.js":"670fc4740859c896486a4ec736aa9df7b04f521a5f9a23b9e3c0c7319873b958","/assets/FamilyCalendar-1b91097a.js":"95ec14fbb8e2f034f9316a03e0c0f2e45da1cd58b0b4d5edac5083246e31f1de","/assets/Documents-e0ab6a77.js":"7bd259ac149fd983e0d7accbc5cb9c60f82010846a151a72d6cf7bb4fb5a017e","/assets/CommunityResources-deeb5225.js":"d1e244ef8bac0ac9086114fa919cce00f39cca39a5883d6f7fa64e7ae52a1d26","/assets/Dashboard-ae53e143.js":"adf8644b5ed50e162ec33d9899fb99128cf8609a51988a2cc33e72647ffe6731","/assets/HouseSearch-097e4afd.js":"c18dc5c632164c50463288c5611cdd3659a7acde3c351f56d0371832b07e4a16","/assets/ChildrenSavings-3c02f779.js":"1fa68ada7fce6cb3257b2dd8eb43cfd711c0cbe5883e441cbbf13ee2b085f88e","/assets/AIAssistant-38b1e7eb.js":"e2909f70bf242d2c7b16dfe022910c2916a3dcbf9e47fccb470653f0a6c7974e","/assets/index-bad3090f.css":"6a1c89ac2c067ed346610e36d2e5f70ea05563c20d6cd9de75a1c5fb2c2207cd","/assets/index-2b29b803.js":"69f8e64f1993910205c994b9cf32acbe24f1912625d16f7e685c6e56c4f878cf","/assets/ShoppingMeals-3d63d115.js":"78462331bc941b83218b08b6968f1eabb3af8346e6dff91d15cabb408f16dd0e","/assets/Budget-7b9b82f7.js":"4ef3eaaf0cfd141fc7a0b19a2a093a062e1941e23a0115855b5551980ce43c7c","/assets/react-vendor-9e7b34d9.js":"1c7a1153c5a4b6044c97480cd0db13eea42aad0a4177bea3ef8d1108ba326e74","/assets/firebase-vendor-832c5ea5.js":"51e49652f80bc761f63d7e040c1c59207ca11552c54f9f4e916c2e1f882e45af"}}
+[debug] [2025-12-01T01:16:13.285Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/677200955206/sites/family-housing-hub/versions/f65ac5c9fbd73cc5:populateFiles 200
+[debug] [2025-12-01T01:16:13.285Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/677200955206/sites/family-housing-hub/versions/f65ac5c9fbd73cc5:populateFiles {"uploadRequiredHashes":["dbf3b9b7d498860ae09a66ec76ab9c9bfd5373e4b5ad571497544e8e20f2bb1b","1542e6f79045dfeb79946056dda9ea370ef2db467d59ce49a4d0aed29f1e4c0f","4ef3eaaf0cfd141fc7a0b19a2a093a062e1941e23a0115855b5551980ce43c7c","00e934408038572f267e803031c97c7a8f5cb9d613cb83390ee179e75e441b68","2ccceac30698dd97ad470cd235a892cda399b4687c9cf406e9144e4eb4d4c678","69f8e64f1993910205c994b9cf32acbe24f1912625d16f7e685c6e56c4f878cf","c18dc5c632164c50463288c5611cdd3659a7acde3c351f56d0371832b07e4a16","430451a443681e1670a3cb322f136ad32dca3cd5ba2f30fbe5962600b007f9ff","6771183a34c137f7d833ef7ee1d7f1ff5d20e94785dbdf3c7cbe9087f2ec7b16","670fc4740859c896486a4ec736aa9df7b04f521a5f9a23b9e3c0c7319873b958","e2909f70bf242d2c7b16dfe022910c2916a3dcbf9e47fccb470653f0a6c7974e","31cfa70ca46b6b27d4beaa81d88e827ab2e4fedf3d12a70c94053576a146ca35","1fa68ada7fce6cb3257b2dd8eb43cfd711c0cbe5883e441cbbf13ee2b085f88e","7bd259ac149fd983e0d7accbc5cb9c60f82010846a151a72d6cf7bb4fb5a017e","355ec9c8d108c3af6f362f70a2de1d8cb464baf1bdcb7a00e6a0bddf1fa20bc5","e66627b425a36e944200bf7f63f68ccab0592ccf5f1e69f04d7e9dd88a1749c2","57f25e8b56237eb764be3169ed816648fc242f7d7cca4acbe02d502c213189e2","78462331bc941b83218b08b6968f1eabb3af8346e6dff91d15cabb408f16dd0e","9b1076526f05781ad18eddcbbf62dd6a3964b385c466663ebf9d6488c14f2a0f","ffac5a30e759e4a3edbcdba52cdc3058bf3a8f16902a9c05cc346a640baf1364","95ec14fbb8e2f034f9316a03e0c0f2e45da1cd58b0b4d5edac5083246e31f1de","d1e244ef8bac0ac9086114fa919cce00f39cca39a5883d6f7fa64e7ae52a1d26","fc83de6fd3ce928000f1d11c2b5669ef668d2401664a129eae7454e136049a9c","adf8644b5ed50e162ec33d9899fb99128cf8609a51988a2cc33e72647ffe6731","29b909a554cc95a079c3e106d2974c82b7660ab821c64d1d79e464ca81bcec6e","a450e2b53ff8e040883d9384ca75db0cbe93e3d48bf77301607f2e3950c423c4","7583d9ba2b0294bcdba092d8ce4dfb995bdad929d657e26c8ab9f1df9c0196c7"],"uploadUrl":"https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files"}
+[debug] [2025-12-01T01:16:13.286Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.286Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.286Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.286Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.286Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.286Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.286Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.286Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.287Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.288Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.289Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.290Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.290Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.290Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.290Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.290Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.290Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:13.290Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/dbf3b9b7d498860ae09a66ec76ab9c9bfd5373e4b5ad571497544e8e20f2bb1b [none]
+[debug] [2025-12-01T01:16:13.290Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/dbf3b9b7d498860ae09a66ec76ab9c9bfd5373e4b5ad571497544e8e20f2bb1b [stream]
+[debug] [2025-12-01T01:16:13.291Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/1542e6f79045dfeb79946056dda9ea370ef2db467d59ce49a4d0aed29f1e4c0f [none]
+[debug] [2025-12-01T01:16:13.291Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/1542e6f79045dfeb79946056dda9ea370ef2db467d59ce49a4d0aed29f1e4c0f [stream]
+[debug] [2025-12-01T01:16:13.291Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/4ef3eaaf0cfd141fc7a0b19a2a093a062e1941e23a0115855b5551980ce43c7c [none]
+[debug] [2025-12-01T01:16:13.291Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/4ef3eaaf0cfd141fc7a0b19a2a093a062e1941e23a0115855b5551980ce43c7c [stream]
+[debug] [2025-12-01T01:16:13.292Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/00e934408038572f267e803031c97c7a8f5cb9d613cb83390ee179e75e441b68 [none]
+[debug] [2025-12-01T01:16:13.292Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/00e934408038572f267e803031c97c7a8f5cb9d613cb83390ee179e75e441b68 [stream]
+[debug] [2025-12-01T01:16:13.292Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/2ccceac30698dd97ad470cd235a892cda399b4687c9cf406e9144e4eb4d4c678 [none]
+[debug] [2025-12-01T01:16:13.292Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/2ccceac30698dd97ad470cd235a892cda399b4687c9cf406e9144e4eb4d4c678 [stream]
+[debug] [2025-12-01T01:16:13.293Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/69f8e64f1993910205c994b9cf32acbe24f1912625d16f7e685c6e56c4f878cf [none]
+[debug] [2025-12-01T01:16:13.293Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/69f8e64f1993910205c994b9cf32acbe24f1912625d16f7e685c6e56c4f878cf [stream]
+[debug] [2025-12-01T01:16:13.293Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/c18dc5c632164c50463288c5611cdd3659a7acde3c351f56d0371832b07e4a16 [none]
+[debug] [2025-12-01T01:16:13.293Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/c18dc5c632164c50463288c5611cdd3659a7acde3c351f56d0371832b07e4a16 [stream]
+[debug] [2025-12-01T01:16:13.294Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/430451a443681e1670a3cb322f136ad32dca3cd5ba2f30fbe5962600b007f9ff [none]
+[debug] [2025-12-01T01:16:13.294Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/430451a443681e1670a3cb322f136ad32dca3cd5ba2f30fbe5962600b007f9ff [stream]
+[debug] [2025-12-01T01:16:13.294Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/6771183a34c137f7d833ef7ee1d7f1ff5d20e94785dbdf3c7cbe9087f2ec7b16 [none]
+[debug] [2025-12-01T01:16:13.294Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/6771183a34c137f7d833ef7ee1d7f1ff5d20e94785dbdf3c7cbe9087f2ec7b16 [stream]
+[debug] [2025-12-01T01:16:13.294Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/670fc4740859c896486a4ec736aa9df7b04f521a5f9a23b9e3c0c7319873b958 [none]
+[debug] [2025-12-01T01:16:13.294Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/670fc4740859c896486a4ec736aa9df7b04f521a5f9a23b9e3c0c7319873b958 [stream]
+[debug] [2025-12-01T01:16:13.295Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/e2909f70bf242d2c7b16dfe022910c2916a3dcbf9e47fccb470653f0a6c7974e [none]
+[debug] [2025-12-01T01:16:13.295Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/e2909f70bf242d2c7b16dfe022910c2916a3dcbf9e47fccb470653f0a6c7974e [stream]
+[debug] [2025-12-01T01:16:13.295Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/31cfa70ca46b6b27d4beaa81d88e827ab2e4fedf3d12a70c94053576a146ca35 [none]
+[debug] [2025-12-01T01:16:13.295Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/31cfa70ca46b6b27d4beaa81d88e827ab2e4fedf3d12a70c94053576a146ca35 [stream]
+[debug] [2025-12-01T01:16:13.296Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/1fa68ada7fce6cb3257b2dd8eb43cfd711c0cbe5883e441cbbf13ee2b085f88e [none]
+[debug] [2025-12-01T01:16:13.296Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/1fa68ada7fce6cb3257b2dd8eb43cfd711c0cbe5883e441cbbf13ee2b085f88e [stream]
+[debug] [2025-12-01T01:16:13.296Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/7bd259ac149fd983e0d7accbc5cb9c60f82010846a151a72d6cf7bb4fb5a017e [none]
+[debug] [2025-12-01T01:16:13.296Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/7bd259ac149fd983e0d7accbc5cb9c60f82010846a151a72d6cf7bb4fb5a017e [stream]
+[debug] [2025-12-01T01:16:13.296Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/355ec9c8d108c3af6f362f70a2de1d8cb464baf1bdcb7a00e6a0bddf1fa20bc5 [none]
+[debug] [2025-12-01T01:16:13.296Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/355ec9c8d108c3af6f362f70a2de1d8cb464baf1bdcb7a00e6a0bddf1fa20bc5 [stream]
+[debug] [2025-12-01T01:16:13.297Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/e66627b425a36e944200bf7f63f68ccab0592ccf5f1e69f04d7e9dd88a1749c2 [none]
+[debug] [2025-12-01T01:16:13.297Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/e66627b425a36e944200bf7f63f68ccab0592ccf5f1e69f04d7e9dd88a1749c2 [stream]
+[debug] [2025-12-01T01:16:13.297Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/57f25e8b56237eb764be3169ed816648fc242f7d7cca4acbe02d502c213189e2 [none]
+[debug] [2025-12-01T01:16:13.297Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/57f25e8b56237eb764be3169ed816648fc242f7d7cca4acbe02d502c213189e2 [stream]
+[debug] [2025-12-01T01:16:13.297Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/78462331bc941b83218b08b6968f1eabb3af8346e6dff91d15cabb408f16dd0e [none]
+[debug] [2025-12-01T01:16:13.297Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/78462331bc941b83218b08b6968f1eabb3af8346e6dff91d15cabb408f16dd0e [stream]
+[debug] [2025-12-01T01:16:13.298Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/9b1076526f05781ad18eddcbbf62dd6a3964b385c466663ebf9d6488c14f2a0f [none]
+[debug] [2025-12-01T01:16:13.298Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/9b1076526f05781ad18eddcbbf62dd6a3964b385c466663ebf9d6488c14f2a0f [stream]
+[debug] [2025-12-01T01:16:13.298Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/ffac5a30e759e4a3edbcdba52cdc3058bf3a8f16902a9c05cc346a640baf1364 [none]
+[debug] [2025-12-01T01:16:13.298Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/ffac5a30e759e4a3edbcdba52cdc3058bf3a8f16902a9c05cc346a640baf1364 [stream]
+[debug] [2025-12-01T01:16:13.298Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/95ec14fbb8e2f034f9316a03e0c0f2e45da1cd58b0b4d5edac5083246e31f1de [none]
+[debug] [2025-12-01T01:16:13.298Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/95ec14fbb8e2f034f9316a03e0c0f2e45da1cd58b0b4d5edac5083246e31f1de [stream]
+[debug] [2025-12-01T01:16:13.299Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/d1e244ef8bac0ac9086114fa919cce00f39cca39a5883d6f7fa64e7ae52a1d26 [none]
+[debug] [2025-12-01T01:16:13.299Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/d1e244ef8bac0ac9086114fa919cce00f39cca39a5883d6f7fa64e7ae52a1d26 [stream]
+[debug] [2025-12-01T01:16:13.299Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/fc83de6fd3ce928000f1d11c2b5669ef668d2401664a129eae7454e136049a9c [none]
+[debug] [2025-12-01T01:16:13.299Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/fc83de6fd3ce928000f1d11c2b5669ef668d2401664a129eae7454e136049a9c [stream]
+[debug] [2025-12-01T01:16:13.299Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/adf8644b5ed50e162ec33d9899fb99128cf8609a51988a2cc33e72647ffe6731 [none]
+[debug] [2025-12-01T01:16:13.299Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/adf8644b5ed50e162ec33d9899fb99128cf8609a51988a2cc33e72647ffe6731 [stream]
+[debug] [2025-12-01T01:16:13.300Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/29b909a554cc95a079c3e106d2974c82b7660ab821c64d1d79e464ca81bcec6e [none]
+[debug] [2025-12-01T01:16:13.300Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/29b909a554cc95a079c3e106d2974c82b7660ab821c64d1d79e464ca81bcec6e [stream]
+[debug] [2025-12-01T01:16:13.300Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/a450e2b53ff8e040883d9384ca75db0cbe93e3d48bf77301607f2e3950c423c4 [none]
+[debug] [2025-12-01T01:16:13.300Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/a450e2b53ff8e040883d9384ca75db0cbe93e3d48bf77301607f2e3950c423c4 [stream]
+[debug] [2025-12-01T01:16:13.300Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/7583d9ba2b0294bcdba092d8ce4dfb995bdad929d657e26c8ab9f1df9c0196c7 [none]
+[debug] [2025-12-01T01:16:13.300Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/7583d9ba2b0294bcdba092d8ce4dfb995bdad929d657e26c8ab9f1df9c0196c7 [stream]
+[debug] [2025-12-01T01:16:13.301Z] [hosting][populate queue][FINAL] {"max":169,"min":169,"avg":169,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":180}
+[debug] [2025-12-01T01:16:13.301Z] [hosting] uploads queued: 27
+[debug] [2025-12-01T01:16:14.036Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/4ef3eaaf0cfd141fc7a0b19a2a093a062e1941e23a0115855b5551980ce43c7c 200
+[debug] [2025-12-01T01:16:14.037Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/4ef3eaaf0cfd141fc7a0b19a2a093a062e1941e23a0115855b5551980ce43c7c [stream]
+[debug] [2025-12-01T01:16:14.089Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/2ccceac30698dd97ad470cd235a892cda399b4687c9cf406e9144e4eb4d4c678 200
+[debug] [2025-12-01T01:16:14.089Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/2ccceac30698dd97ad470cd235a892cda399b4687c9cf406e9144e4eb4d4c678 [stream]
+[debug] [2025-12-01T01:16:14.098Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/c18dc5c632164c50463288c5611cdd3659a7acde3c351f56d0371832b07e4a16 200
+[debug] [2025-12-01T01:16:14.098Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/c18dc5c632164c50463288c5611cdd3659a7acde3c351f56d0371832b07e4a16 [stream]
+[debug] [2025-12-01T01:16:14.111Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/dbf3b9b7d498860ae09a66ec76ab9c9bfd5373e4b5ad571497544e8e20f2bb1b 200
+[debug] [2025-12-01T01:16:14.111Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/dbf3b9b7d498860ae09a66ec76ab9c9bfd5373e4b5ad571497544e8e20f2bb1b [stream]
+[debug] [2025-12-01T01:16:14.136Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/1fa68ada7fce6cb3257b2dd8eb43cfd711c0cbe5883e441cbbf13ee2b085f88e 200
+[debug] [2025-12-01T01:16:14.136Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/1fa68ada7fce6cb3257b2dd8eb43cfd711c0cbe5883e441cbbf13ee2b085f88e [stream]
+[debug] [2025-12-01T01:16:14.137Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/670fc4740859c896486a4ec736aa9df7b04f521a5f9a23b9e3c0c7319873b958 200
+[debug] [2025-12-01T01:16:14.138Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/670fc4740859c896486a4ec736aa9df7b04f521a5f9a23b9e3c0c7319873b958 [stream]
+[debug] [2025-12-01T01:16:14.159Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/00e934408038572f267e803031c97c7a8f5cb9d613cb83390ee179e75e441b68 200
+[debug] [2025-12-01T01:16:14.159Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/00e934408038572f267e803031c97c7a8f5cb9d613cb83390ee179e75e441b68 [stream]
+[debug] [2025-12-01T01:16:14.161Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/69f8e64f1993910205c994b9cf32acbe24f1912625d16f7e685c6e56c4f878cf 200
+[debug] [2025-12-01T01:16:14.161Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/69f8e64f1993910205c994b9cf32acbe24f1912625d16f7e685c6e56c4f878cf [stream]
+[debug] [2025-12-01T01:16:14.163Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/d1e244ef8bac0ac9086114fa919cce00f39cca39a5883d6f7fa64e7ae52a1d26 200
+[debug] [2025-12-01T01:16:14.163Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/d1e244ef8bac0ac9086114fa919cce00f39cca39a5883d6f7fa64e7ae52a1d26 [stream]
+[debug] [2025-12-01T01:16:14.169Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/430451a443681e1670a3cb322f136ad32dca3cd5ba2f30fbe5962600b007f9ff 200
+[debug] [2025-12-01T01:16:14.169Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/430451a443681e1670a3cb322f136ad32dca3cd5ba2f30fbe5962600b007f9ff [stream]
+[debug] [2025-12-01T01:16:14.223Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/e2909f70bf242d2c7b16dfe022910c2916a3dcbf9e47fccb470653f0a6c7974e 200
+[debug] [2025-12-01T01:16:14.223Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/e2909f70bf242d2c7b16dfe022910c2916a3dcbf9e47fccb470653f0a6c7974e [stream]
+[debug] [2025-12-01T01:16:14.236Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/355ec9c8d108c3af6f362f70a2de1d8cb464baf1bdcb7a00e6a0bddf1fa20bc5 200
+[debug] [2025-12-01T01:16:14.237Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/355ec9c8d108c3af6f362f70a2de1d8cb464baf1bdcb7a00e6a0bddf1fa20bc5 [stream]
+[debug] [2025-12-01T01:16:14.250Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/31cfa70ca46b6b27d4beaa81d88e827ab2e4fedf3d12a70c94053576a146ca35 200
+[debug] [2025-12-01T01:16:14.250Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/31cfa70ca46b6b27d4beaa81d88e827ab2e4fedf3d12a70c94053576a146ca35 [stream]
+[debug] [2025-12-01T01:16:14.290Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/57f25e8b56237eb764be3169ed816648fc242f7d7cca4acbe02d502c213189e2 200
+[debug] [2025-12-01T01:16:14.290Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/57f25e8b56237eb764be3169ed816648fc242f7d7cca4acbe02d502c213189e2 [stream]
+[debug] [2025-12-01T01:16:14.336Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/95ec14fbb8e2f034f9316a03e0c0f2e45da1cd58b0b4d5edac5083246e31f1de 200
+[debug] [2025-12-01T01:16:14.336Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/95ec14fbb8e2f034f9316a03e0c0f2e45da1cd58b0b4d5edac5083246e31f1de [stream]
+[debug] [2025-12-01T01:16:14.375Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/1542e6f79045dfeb79946056dda9ea370ef2db467d59ce49a4d0aed29f1e4c0f 200
+[debug] [2025-12-01T01:16:14.375Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/1542e6f79045dfeb79946056dda9ea370ef2db467d59ce49a4d0aed29f1e4c0f [stream]
+[debug] [2025-12-01T01:16:14.416Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/7583d9ba2b0294bcdba092d8ce4dfb995bdad929d657e26c8ab9f1df9c0196c7 200
+[debug] [2025-12-01T01:16:14.416Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/7583d9ba2b0294bcdba092d8ce4dfb995bdad929d657e26c8ab9f1df9c0196c7 [stream]
+[debug] [2025-12-01T01:16:14.420Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/a450e2b53ff8e040883d9384ca75db0cbe93e3d48bf77301607f2e3950c423c4 200
+[debug] [2025-12-01T01:16:14.420Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/a450e2b53ff8e040883d9384ca75db0cbe93e3d48bf77301607f2e3950c423c4 [stream]
+[debug] [2025-12-01T01:16:14.476Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/78462331bc941b83218b08b6968f1eabb3af8346e6dff91d15cabb408f16dd0e 200
+[debug] [2025-12-01T01:16:14.476Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/78462331bc941b83218b08b6968f1eabb3af8346e6dff91d15cabb408f16dd0e [stream]
+[debug] [2025-12-01T01:16:14.491Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/7bd259ac149fd983e0d7accbc5cb9c60f82010846a151a72d6cf7bb4fb5a017e 200
+[debug] [2025-12-01T01:16:14.491Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/7bd259ac149fd983e0d7accbc5cb9c60f82010846a151a72d6cf7bb4fb5a017e [stream]
+[debug] [2025-12-01T01:16:14.503Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/29b909a554cc95a079c3e106d2974c82b7660ab821c64d1d79e464ca81bcec6e 200
+[debug] [2025-12-01T01:16:14.504Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/29b909a554cc95a079c3e106d2974c82b7660ab821c64d1d79e464ca81bcec6e [stream]
+[debug] [2025-12-01T01:16:14.598Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/adf8644b5ed50e162ec33d9899fb99128cf8609a51988a2cc33e72647ffe6731 200
+[debug] [2025-12-01T01:16:14.598Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/adf8644b5ed50e162ec33d9899fb99128cf8609a51988a2cc33e72647ffe6731 [stream]
+[debug] [2025-12-01T01:16:14.611Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/fc83de6fd3ce928000f1d11c2b5669ef668d2401664a129eae7454e136049a9c 200
+[debug] [2025-12-01T01:16:14.611Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/fc83de6fd3ce928000f1d11c2b5669ef668d2401664a129eae7454e136049a9c [stream]
+[debug] [2025-12-01T01:16:14.716Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/6771183a34c137f7d833ef7ee1d7f1ff5d20e94785dbdf3c7cbe9087f2ec7b16 200
+[debug] [2025-12-01T01:16:14.716Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/6771183a34c137f7d833ef7ee1d7f1ff5d20e94785dbdf3c7cbe9087f2ec7b16 [stream]
+[debug] [2025-12-01T01:16:14.749Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/ffac5a30e759e4a3edbcdba52cdc3058bf3a8f16902a9c05cc346a640baf1364 200
+[debug] [2025-12-01T01:16:14.749Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/ffac5a30e759e4a3edbcdba52cdc3058bf3a8f16902a9c05cc346a640baf1364 [stream]
+[debug] [2025-12-01T01:16:14.866Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/e66627b425a36e944200bf7f63f68ccab0592ccf5f1e69f04d7e9dd88a1749c2 200
+[debug] [2025-12-01T01:16:14.867Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/e66627b425a36e944200bf7f63f68ccab0592ccf5f1e69f04d7e9dd88a1749c2 [stream]
+[info] i  hosting: uploading new files [26/27] (96%) 
+[debug] [2025-12-01T01:16:15.446Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/9b1076526f05781ad18eddcbbf62dd6a3964b385c466663ebf9d6488c14f2a0f 200
+[debug] [2025-12-01T01:16:15.447Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/f65ac5c9fbd73cc5/files/9b1076526f05781ad18eddcbbf62dd6a3964b385c466663ebf9d6488c14f2a0f [stream]
+[debug] [2025-12-01T01:16:15.447Z] [hosting][upload queue][FINAL] {"max":2158,"min":751,"avg":1092.5185185185185,"active":0,"complete":27,"success":27,"errored":0,"retried":0,"total":27,"elapsed":2162}
+[info] i  hosting: upload complete 
+[info] ✔  hosting[family-housing-hub]: file upload complete 
+[debug] [2025-12-01T01:16:15.448Z] [hosting] deploy completed after 2355ms
+[debug] [2025-12-01T01:16:15.448Z] [
+  {
+    "config": {
+      "public": "dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "site": "family-housing-hub"
+    },
+    "version": "projects/677200955206/sites/family-housing-hub/versions/f65ac5c9fbd73cc5"
+  }
+]
+[info] i  hosting[family-housing-hub]: finalizing version... 
+[debug] [2025-12-01T01:16:15.450Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:15.450Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:15.451Z] >>> [apiv2][query] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions/f65ac5c9fbd73cc5 updateMask=status%2Cconfig
+[debug] [2025-12-01T01:16:15.451Z] >>> [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions/f65ac5c9fbd73cc5 {"status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]}}
+[debug] [2025-12-01T01:16:15.611Z] <<< [apiv2][status] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions/f65ac5c9fbd73cc5 200
+[debug] [2025-12-01T01:16:15.611Z] <<< [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions/f65ac5c9fbd73cc5 {"name":"projects/677200955206/sites/family-housing-hub/versions/f65ac5c9fbd73cc5","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2025-12-01T01:16:12.895989Z","createUser":{"email":"kwibesamuel@gmail.com"},"finalizeTime":"2025-12-01T01:16:15.614172Z","finalizeUser":{"email":"kwibesamuel@gmail.com"}}
+[debug] [2025-12-01T01:16:15.612Z] [hosting] finalized version for family-housing-hub:[object Object]
+[info] ✔  hosting[family-housing-hub]: version finalized 
+[info] i  hosting[family-housing-hub]: releasing new version... 
+[debug] [2025-12-01T01:16:15.612Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:15.612Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T01:16:15.612Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/channels/live/releases versionName=projects%2F677200955206%2Fsites%2Ffamily-housing-hub%2Fversions%2Ff65ac5c9fbd73cc5
+[debug] [2025-12-01T01:16:15.612Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/channels/live/releases {}
+[debug] [2025-12-01T01:16:15.881Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/channels/live/releases 200
+[debug] [2025-12-01T01:16:15.882Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/channels/live/releases {"name":"projects/677200955206/sites/family-housing-hub/channels/live/releases/1764551775336000","version":{"name":"projects/677200955206/sites/family-housing-hub/versions/f65ac5c9fbd73cc5","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2025-12-01T01:16:12.895989Z","createUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"},"finalizeTime":"2025-12-01T01:16:15.614172Z","finalizeUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"}},"type":"DEPLOY","releaseTime":"2025-12-01T01:16:15.336Z","releaseUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"}}
+[debug] [2025-12-01T01:16:15.882Z] [hosting] release: {"name":"projects/677200955206/sites/family-housing-hub/channels/live/releases/1764551775336000","version":{"name":"projects/677200955206/sites/family-housing-hub/versions/f65ac5c9fbd73cc5","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2025-12-01T01:16:12.895989Z","createUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"},"finalizeTime":"2025-12-01T01:16:15.614172Z","finalizeUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"}},"type":"DEPLOY","releaseTime":"2025-12-01T01:16:15.336Z","releaseUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"}}
+[info] ✔  hosting[family-housing-hub]: release complete 
+[info] 
+[info] ✔  Deploy complete! 
+[info] 
+[info] Project Console: https://console.firebase.google.com/project/family-housing-hub/overview
+[info] Hosting URL: https://family-housing-hub.web.app

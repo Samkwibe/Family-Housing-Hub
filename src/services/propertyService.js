@@ -2,6 +2,7 @@
 import zillowService from './zillowService';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBfm3u4-vEnsVvHEqjqpoGdlbNgaza8JnA';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://us-central1-family-housing-hub.cloudfunctions.net/api';
 
 // Ultra-fast cache with IndexedDB for persistence - Optimized for <10ms response
 const propertyCache = new Map();
@@ -124,7 +125,7 @@ const fetchProperties = async (query, filters = {}) => {
   const location = await geocodeLocation(normalizedQuery);
   
   // Call backend API to fetch real property data
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://family-housing-hub-api.onrender.com';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://us-central1-family-housing-hub.cloudfunctions.net/api';
   
   console.log('🔍 Searching for properties:', { query: normalizedQuery, lat: location.lat, lng: location.lng });
   console.log('🌐 Backend URL:', API_BASE_URL);

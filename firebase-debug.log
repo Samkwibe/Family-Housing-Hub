@@ -59180,3 +59180,589 @@
 [info] 
 [info] Project Console: https://console.firebase.google.com/project/family-housing-hub/overview
 [info] Hosting URL: https://family-housing-hub.web.app
+[debug] [2025-12-01T00:48:52.676Z] ----------------------------------------------------------------------
+[debug] [2025-12-01T00:48:52.678Z] Command:       /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/node /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/firebase functions:config:set gemini.key=AIzaSyAnZ22_1xadxZGeUvI8fLoH5eKa4TOVrvQ rapidapi.key=4d9f4dec85msh34a2b4ff5648991p1dcfccjsn125f4440583c estated.key=ec5c7745e9236b9519809c1d4c3f9c87
+[debug] [2025-12-01T00:48:52.678Z] CLI Version:   14.26.0
+[debug] [2025-12-01T00:48:52.678Z] Platform:      darwin
+[debug] [2025-12-01T00:48:52.679Z] Node Version:  v24.11.0
+[debug] [2025-12-01T00:48:52.679Z] Time:          Sun Nov 30 2025 19:48:52 GMT-0500 (Eastern Standard Time)
+[debug] [2025-12-01T00:48:52.679Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-12-01T00:48:52.781Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-01T00:48:52.782Z] > authorizing via signed-in user (kwibesamuel@gmail.com)
+[debug] [2025-12-01T00:48:52.782Z] [iam] checking project family-housing-hub for permissions ["firebase.projects.get","runtimeconfig.configs.create","runtimeconfig.configs.delete","runtimeconfig.configs.get","runtimeconfig.configs.list","runtimeconfig.configs.update","runtimeconfig.variables.create","runtimeconfig.variables.delete","runtimeconfig.variables.get","runtimeconfig.variables.list","runtimeconfig.variables.update"]
+[debug] [2025-12-01T00:48:52.783Z] Checked if tokens are valid: false, expires at: 1764550863268
+[debug] [2025-12-01T00:48:52.783Z] Checked if tokens are valid: false, expires at: 1764550863268
+[debug] [2025-12-01T00:48:52.783Z] > refreshing access token with scopes: []
+[debug] [2025-12-01T00:48:52.784Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-12-01T00:48:52.784Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-01T00:48:53.060Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-12-01T00:48:53.060Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-01T00:48:53.074Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions [none]
+[debug] [2025-12-01T00:48:53.074Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:48:53.075Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["firebase.projects.get","runtimeconfig.configs.create","runtimeconfig.configs.delete","runtimeconfig.configs.get","runtimeconfig.configs.list","runtimeconfig.configs.update","runtimeconfig.variables.create","runtimeconfig.variables.delete","runtimeconfig.variables.get","runtimeconfig.variables.list","runtimeconfig.variables.update"]}
+[debug] [2025-12-01T00:48:53.380Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions 200
+[debug] [2025-12-01T00:48:53.380Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["firebase.projects.get","runtimeconfig.configs.create","runtimeconfig.configs.delete","runtimeconfig.configs.get","runtimeconfig.configs.list","runtimeconfig.configs.update","runtimeconfig.variables.create","runtimeconfig.variables.delete","runtimeconfig.variables.get","runtimeconfig.variables.list","runtimeconfig.variables.update"]}
+[debug] [2025-12-01T00:48:53.382Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:53.382Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:53.382Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/runtimeconfig.googleapis.com [none]
+[debug] [2025-12-01T00:48:53.382Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:48:54.186Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/runtimeconfig.googleapis.com 200
+[debug] [2025-12-01T00:48:54.186Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/runtimeconfig.googleapis.com [omitted]
+[debug] [2025-12-01T00:48:54.195Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.195Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.196Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.196Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.196Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.196Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.196Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables/key [none]
+[debug] [2025-12-01T00:48:54.197Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables/key [none]
+[debug] [2025-12-01T00:48:54.198Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables/key [none]
+[debug] [2025-12-01T00:48:54.558Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables/key 404
+[debug] [2025-12-01T00:48:54.558Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables/key {"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}
+[debug] [2025-12-01T00:48:54.559Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.559Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.559Z] >>> [apiv2][query] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables [none]
+[debug] [2025-12-01T00:48:54.559Z] >>> [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables {"name":"/projects/family-housing-hub/configs/gemini/variables/key","text":"AIzaSyAnZ22_1xadxZGeUvI8fLoH5eKa4TOVrvQ"}
+[debug] [2025-12-01T00:48:54.561Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables/key 404
+[debug] [2025-12-01T00:48:54.561Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables/key {"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}
+[debug] [2025-12-01T00:48:54.561Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.561Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.561Z] >>> [apiv2][query] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables [none]
+[debug] [2025-12-01T00:48:54.561Z] >>> [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables {"name":"/projects/family-housing-hub/configs/rapidapi/variables/key","text":"4d9f4dec85msh34a2b4ff5648991p1dcfccjsn125f4440583c"}
+[debug] [2025-12-01T00:48:54.562Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables/key 404
+[debug] [2025-12-01T00:48:54.562Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables/key {"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}
+[debug] [2025-12-01T00:48:54.562Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.562Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.562Z] >>> [apiv2][query] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables [none]
+[debug] [2025-12-01T00:48:54.562Z] >>> [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables {"name":"/projects/family-housing-hub/configs/estated/variables/key","text":"ec5c7745e9236b9519809c1d4c3f9c87"}
+[debug] [2025-12-01T00:48:54.722Z] <<< [apiv2][status] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables 404
+[debug] [2025-12-01T00:48:54.722Z] <<< [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables {"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}
+[debug] [2025-12-01T00:48:54.722Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.722Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.723Z] >>> [apiv2][query] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs [none]
+[debug] [2025-12-01T00:48:54.723Z] >>> [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs {"name":"projects/family-housing-hub/configs/rapidapi"}
+[debug] [2025-12-01T00:48:54.723Z] <<< [apiv2][status] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables 404
+[debug] [2025-12-01T00:48:54.723Z] <<< [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables {"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}
+[debug] [2025-12-01T00:48:54.723Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.723Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.723Z] >>> [apiv2][query] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs [none]
+[debug] [2025-12-01T00:48:54.724Z] >>> [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs {"name":"projects/family-housing-hub/configs/estated"}
+[debug] [2025-12-01T00:48:54.748Z] <<< [apiv2][status] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables 404
+[debug] [2025-12-01T00:48:54.749Z] <<< [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables {"error":{"code":404,"message":"Requested entity was not found.","status":"NOT_FOUND"}}
+[debug] [2025-12-01T00:48:54.749Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.749Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:54.750Z] >>> [apiv2][query] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs [none]
+[debug] [2025-12-01T00:48:54.750Z] >>> [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs {"name":"projects/family-housing-hub/configs/gemini"}
+[debug] [2025-12-01T00:48:55.103Z] <<< [apiv2][status] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs 200
+[debug] [2025-12-01T00:48:55.103Z] <<< [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs {"name":"projects/family-housing-hub/configs/estated"}
+[debug] [2025-12-01T00:48:55.104Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:55.104Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:55.104Z] >>> [apiv2][query] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables [none]
+[debug] [2025-12-01T00:48:55.104Z] >>> [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables {"name":"/projects/family-housing-hub/configs/estated/variables/key","text":"ec5c7745e9236b9519809c1d4c3f9c87"}
+[debug] [2025-12-01T00:48:55.164Z] <<< [apiv2][status] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs 200
+[debug] [2025-12-01T00:48:55.165Z] <<< [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs {"name":"projects/family-housing-hub/configs/gemini"}
+[debug] [2025-12-01T00:48:55.165Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:55.165Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:55.165Z] >>> [apiv2][query] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables [none]
+[debug] [2025-12-01T00:48:55.165Z] >>> [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables {"name":"/projects/family-housing-hub/configs/gemini/variables/key","text":"AIzaSyAnZ22_1xadxZGeUvI8fLoH5eKa4TOVrvQ"}
+[debug] [2025-12-01T00:48:55.185Z] <<< [apiv2][status] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs 200
+[debug] [2025-12-01T00:48:55.185Z] <<< [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs {"name":"projects/family-housing-hub/configs/rapidapi"}
+[debug] [2025-12-01T00:48:55.185Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:55.186Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:48:55.186Z] >>> [apiv2][query] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables [none]
+[debug] [2025-12-01T00:48:55.186Z] >>> [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables {"name":"/projects/family-housing-hub/configs/rapidapi/variables/key","text":"4d9f4dec85msh34a2b4ff5648991p1dcfccjsn125f4440583c"}
+[debug] [2025-12-01T00:48:55.496Z] <<< [apiv2][status] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables 200
+[debug] [2025-12-01T00:48:55.497Z] <<< [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables {"name":"projects/family-housing-hub/configs/estated/variables/key","updateTime":"2025-12-01T00:48:55.364776055Z","text":"ec5c7745e9236b9519809c1d4c3f9c87"}
+[debug] [2025-12-01T00:48:55.607Z] <<< [apiv2][status] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables 200
+[debug] [2025-12-01T00:48:55.607Z] <<< [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables {"name":"projects/family-housing-hub/configs/rapidapi/variables/key","updateTime":"2025-12-01T00:48:55.473809982Z","text":"4d9f4dec85msh34a2b4ff5648991p1dcfccjsn125f4440583c"}
+[debug] [2025-12-01T00:48:55.608Z] <<< [apiv2][status] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables 200
+[debug] [2025-12-01T00:48:55.608Z] <<< [apiv2][body] POST https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables {"name":"projects/family-housing-hub/configs/gemini/variables/key","updateTime":"2025-12-01T00:48:55.403963744Z","text":"AIzaSyAnZ22_1xadxZGeUvI8fLoH5eKa4TOVrvQ"}
+[info] ✔  Functions config updated. 
+[info] 
+Please deploy your functions for the change to take effect by running firebase deploy --only functions
+
+[debug] [2025-12-01T00:49:03.414Z] ----------------------------------------------------------------------
+[debug] [2025-12-01T00:49:03.416Z] Command:       /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/node /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/firebase deploy --only functions
+[debug] [2025-12-01T00:49:03.416Z] CLI Version:   14.26.0
+[debug] [2025-12-01T00:49:03.416Z] Platform:      darwin
+[debug] [2025-12-01T00:49:03.417Z] Node Version:  v24.11.0
+[debug] [2025-12-01T00:49:03.417Z] Time:          Sun Nov 30 2025 19:49:03 GMT-0500 (Eastern Standard Time)
+[debug] [2025-12-01T00:49:03.417Z] ----------------------------------------------------------------------
+[debug] 
+[error] 
+[error] Error: Cannot understand what targets to deploy/serve. No targets in firebase.json match '--only functions'.
+[debug] [2025-12-01T00:49:36.527Z] ----------------------------------------------------------------------
+[debug] [2025-12-01T00:49:36.529Z] Command:       /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/node /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/firebase deploy --only functions
+[debug] [2025-12-01T00:49:36.529Z] CLI Version:   14.26.0
+[debug] [2025-12-01T00:49:36.529Z] Platform:      darwin
+[debug] [2025-12-01T00:49:36.529Z] Node Version:  v24.11.0
+[debug] [2025-12-01T00:49:36.529Z] Time:          Sun Nov 30 2025 19:49:36 GMT-0500 (Eastern Standard Time)
+[debug] [2025-12-01T00:49:36.529Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-12-01T00:49:36.631Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-01T00:49:36.631Z] > authorizing via signed-in user (kwibesamuel@gmail.com)
+[debug] [2025-12-01T00:49:36.631Z] [iam] checking project family-housing-hub for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2025-12-01T00:49:36.632Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:36.632Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:36.633Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions [none]
+[debug] [2025-12-01T00:49:36.633Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:49:36.633Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-12-01T00:49:36.891Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions 200
+[debug] [2025-12-01T00:49:36.891Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-12-01T00:49:36.891Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:36.891Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:36.891Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/family-housing-hub/serviceAccounts/family-housing-hub@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-12-01T00:49:36.891Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/family-housing-hub/serviceAccounts/family-housing-hub@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-12-01T00:49:37.376Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/family-housing-hub/serviceAccounts/family-housing-hub@appspot.gserviceaccount.com:testIamPermissions 404
+[debug] [2025-12-01T00:49:37.376Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/family-housing-hub/serviceAccounts/family-housing-hub@appspot.gserviceaccount.com:testIamPermissions {"error":{"code":404,"message":"Unknown service account","status":"NOT_FOUND"}}
+[debug] [2025-12-01T00:49:37.376Z] [functions] service account IAM check errored, deploy may fail: Request to https://iam.googleapis.com/v1/projects/family-housing-hub/serviceAccounts/family-housing-hub@appspot.gserviceaccount.com:testIamPermissions had HTTP Error: 404, Unknown service account {"name":"FirebaseError","children":[],"context":{"body":{"error":{"code":404,"message":"Unknown service account","status":"NOT_FOUND"}},"response":{"statusCode":404}},"exit":1,"message":"Request to https://iam.googleapis.com/v1/projects/family-housing-hub/serviceAccounts/family-housing-hub@appspot.gserviceaccount.com:testIamPermissions had HTTP Error: 404, Unknown service account","status":404}
+[info] 
+[info] === Deploying to 'family-housing-hub'...
+[info] 
+[info] i  deploying functions 
+[debug] [2025-12-01T00:49:37.378Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:37.378Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:37.378Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub [none]
+[debug] [2025-12-01T00:49:37.544Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub 200
+[debug] [2025-12-01T00:49:37.544Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub {"projectNumber":"677200955206","projectId":"family-housing-hub","lifecycleState":"ACTIVE","name":"Family-Housing-Hub","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-11-24T15:33:03.344323Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[debug] [2025-12-01T00:49:37.545Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:37.545Z] Checked if tokens are valid: true, expires at: 1764553732061
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[debug] [2025-12-01T00:49:37.546Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:37.546Z] Checked if tokens are valid: true, expires at: 1764553732061
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2025-12-01T00:49:37.547Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:37.547Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:37.547Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudfunctions.googleapis.com [none]
+[debug] [2025-12-01T00:49:37.547Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:49:37.549Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudbuild.googleapis.com [none]
+[debug] [2025-12-01T00:49:37.549Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudbuild.googleapis.com x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:49:37.551Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/artifactregistry.googleapis.com [none]
+[debug] [2025-12-01T00:49:37.551Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/artifactregistry.googleapis.com x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:49:37.982Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/artifactregistry.googleapis.com 200
+[debug] [2025-12-01T00:49:37.982Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/artifactregistry.googleapis.com [omitted]
+[warn] ⚠  artifactregistry: missing required API artifactregistry.googleapis.com. Enabling now... 
+[debug] [2025-12-01T00:49:37.982Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:37.982Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:37.982Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/artifactregistry.googleapis.com:enable [none]
+[debug] [2025-12-01T00:49:37.982Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/artifactregistry.googleapis.com:enable x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:49:38.071Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudbuild.googleapis.com 200
+[debug] [2025-12-01T00:49:38.071Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudbuild.googleapis.com [omitted]
+[warn] ⚠  functions: missing required API cloudbuild.googleapis.com. Enabling now... 
+[debug] [2025-12-01T00:49:38.071Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:38.071Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:38.071Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudbuild.googleapis.com:enable [none]
+[debug] [2025-12-01T00:49:38.071Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudbuild.googleapis.com:enable x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:49:38.072Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudfunctions.googleapis.com 200
+[debug] [2025-12-01T00:49:38.072Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudfunctions.googleapis.com [omitted]
+[warn] ⚠  functions: missing required API cloudfunctions.googleapis.com. Enabling now... 
+[debug] [2025-12-01T00:49:38.072Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:38.072Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:38.072Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudfunctions.googleapis.com:enable [none]
+[debug] [2025-12-01T00:49:38.072Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudfunctions.googleapis.com:enable x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:49:38.672Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudfunctions.googleapis.com:enable 200
+[debug] [2025-12-01T00:49:38.673Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudfunctions.googleapis.com:enable [omitted]
+[debug] [2025-12-01T00:49:38.685Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudbuild.googleapis.com:enable 200
+[debug] [2025-12-01T00:49:38.685Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/cloudbuild.googleapis.com:enable [omitted]
+[debug] [2025-12-01T00:49:38.741Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/artifactregistry.googleapis.com:enable 200
+[debug] [2025-12-01T00:49:38.741Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1/projects/family-housing-hub/services/artifactregistry.googleapis.com:enable [omitted]
+[debug] [2025-12-01T00:49:48.753Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:48.754Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:48.754Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub/adminSdkConfig [none]
+[debug] [2025-12-01T00:49:49.204Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub/adminSdkConfig 200
+[debug] [2025-12-01T00:49:49.204Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub/adminSdkConfig {"projectId":"family-housing-hub","storageBucket":"family-housing-hub.firebasestorage.app"}
+[debug] [2025-12-01T00:49:49.205Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.205Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.205Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs [none]
+[debug] [2025-12-01T00:49:49.427Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs 200
+[debug] [2025-12-01T00:49:49.427Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs {"configs":[{"name":"projects/family-housing-hub/configs/rapidapi"},{"name":"projects/family-housing-hub/configs/estated"},{"name":"projects/family-housing-hub/configs/gemini"}]}
+[debug] [2025-12-01T00:49:49.428Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.428Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.428Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.428Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.428Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.429Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.429Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables [none]
+[debug] [2025-12-01T00:49:49.429Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables [none]
+[debug] [2025-12-01T00:49:49.431Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables [none]
+[debug] [2025-12-01T00:49:49.603Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables 200
+[debug] [2025-12-01T00:49:49.604Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables {"variables":[{"name":"projects/family-housing-hub/configs/rapidapi/variables/key","updateTime":"2025-12-01T00:48:55.473809982Z"}]}
+[debug] [2025-12-01T00:49:49.604Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.604Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.604Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables/key [none]
+[debug] [2025-12-01T00:49:49.606Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables 200
+[debug] [2025-12-01T00:49:49.606Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables {"variables":[{"name":"projects/family-housing-hub/configs/gemini/variables/key","updateTime":"2025-12-01T00:48:55.403963744Z"}]}
+[debug] [2025-12-01T00:49:49.606Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.606Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.606Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables/key [none]
+[debug] [2025-12-01T00:49:49.725Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables 200
+[debug] [2025-12-01T00:49:49.725Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables {"variables":[{"name":"projects/family-housing-hub/configs/estated/variables/key","updateTime":"2025-12-01T00:48:55.364776055Z"}]}
+[debug] [2025-12-01T00:49:49.726Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.726Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:49:49.726Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables/key [none]
+[debug] [2025-12-01T00:49:49.726Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables/key 200
+[debug] [2025-12-01T00:49:49.727Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables/key {"name":"projects/family-housing-hub/configs/rapidapi/variables/key","updateTime":"2025-12-01T00:48:55.473809982Z","text":"4d9f4dec85msh34a2b4ff5648991p1dcfccjsn125f4440583c"}
+[debug] [2025-12-01T00:49:49.734Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables/key 200
+[debug] [2025-12-01T00:49:49.735Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables/key {"name":"projects/family-housing-hub/configs/gemini/variables/key","updateTime":"2025-12-01T00:48:55.403963744Z","text":"AIzaSyAnZ22_1xadxZGeUvI8fLoH5eKa4TOVrvQ"}
+[debug] [2025-12-01T00:49:49.845Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables/key 200
+[debug] [2025-12-01T00:49:49.846Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables/key {"name":"projects/family-housing-hub/configs/estated/variables/key","updateTime":"2025-12-01T00:48:55.364776055Z","text":"ec5c7745e9236b9519809c1d4c3f9c87"}
+[debug] [2025-12-01T00:49:49.848Z] Validating nodejs source
+[error] 
+[error] Error: Runtime Node.js 18 was decommissioned on 2025-10-30. To deploy you must first upgrade your runtime version.
+[debug] [2025-12-01T00:51:10.804Z] ----------------------------------------------------------------------
+[debug] [2025-12-01T00:51:10.811Z] Command:       /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/node /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/firebase deploy --only functions
+[debug] [2025-12-01T00:51:10.812Z] CLI Version:   14.26.0
+[debug] [2025-12-01T00:51:10.812Z] Platform:      darwin
+[debug] [2025-12-01T00:51:10.812Z] Node Version:  v24.11.0
+[debug] [2025-12-01T00:51:10.812Z] Time:          Sun Nov 30 2025 19:51:10 GMT-0500 (Eastern Standard Time)
+[debug] [2025-12-01T00:51:10.812Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-12-01T00:51:10.978Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-01T00:51:10.980Z] > authorizing via signed-in user (kwibesamuel@gmail.com)
+[debug] [2025-12-01T00:51:10.980Z] [iam] checking project family-housing-hub for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2025-12-01T00:51:10.982Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:10.982Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:10.983Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions [none]
+[debug] [2025-12-01T00:51:10.983Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:51:10.983Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-12-01T00:51:11.398Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions 200
+[debug] [2025-12-01T00:51:11.399Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-12-01T00:51:11.399Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:11.399Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:11.399Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/family-housing-hub/serviceAccounts/family-housing-hub@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-12-01T00:51:11.399Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/family-housing-hub/serviceAccounts/family-housing-hub@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-12-01T00:51:11.649Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/family-housing-hub/serviceAccounts/family-housing-hub@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-12-01T00:51:11.649Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/family-housing-hub/serviceAccounts/family-housing-hub@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'family-housing-hub'...
+[info] 
+[info] i  deploying functions 
+[debug] [2025-12-01T00:51:11.654Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:11.654Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:11.654Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub [none]
+[debug] [2025-12-01T00:51:11.786Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub 200
+[debug] [2025-12-01T00:51:11.787Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub {"projectNumber":"677200955206","projectId":"family-housing-hub","lifecycleState":"ACTIVE","name":"Family-Housing-Hub","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-11-24T15:33:03.344323Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2025-12-01T00:51:11.790Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:11.790Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:11.790Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub/adminSdkConfig [none]
+[debug] [2025-12-01T00:51:12.249Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub/adminSdkConfig 200
+[debug] [2025-12-01T00:51:12.250Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub/adminSdkConfig {"projectId":"family-housing-hub","storageBucket":"family-housing-hub.firebasestorage.app"}
+[debug] [2025-12-01T00:51:12.250Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.251Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.251Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs [none]
+[debug] [2025-12-01T00:51:12.451Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs 200
+[debug] [2025-12-01T00:51:12.452Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs {"configs":[{"name":"projects/family-housing-hub/configs/gemini"},{"name":"projects/family-housing-hub/configs/rapidapi"},{"name":"projects/family-housing-hub/configs/estated"}]}
+[debug] [2025-12-01T00:51:12.453Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.453Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.453Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.454Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.454Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.454Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.455Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables [none]
+[debug] [2025-12-01T00:51:12.455Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables [none]
+[debug] [2025-12-01T00:51:12.457Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables [none]
+[debug] [2025-12-01T00:51:12.599Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables 200
+[debug] [2025-12-01T00:51:12.600Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables {"variables":[{"name":"projects/family-housing-hub/configs/gemini/variables/key","updateTime":"2025-12-01T00:48:55.403963744Z"}]}
+[debug] [2025-12-01T00:51:12.600Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.600Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.601Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables/key [none]
+[debug] [2025-12-01T00:51:12.673Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables 200
+[debug] [2025-12-01T00:51:12.674Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables {"variables":[{"name":"projects/family-housing-hub/configs/rapidapi/variables/key","updateTime":"2025-12-01T00:48:55.473809982Z"}]}
+[debug] [2025-12-01T00:51:12.674Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.674Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.674Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables/key [none]
+[debug] [2025-12-01T00:51:12.677Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables 200
+[debug] [2025-12-01T00:51:12.677Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables {"variables":[{"name":"projects/family-housing-hub/configs/estated/variables/key","updateTime":"2025-12-01T00:48:55.364776055Z"}]}
+[debug] [2025-12-01T00:51:12.677Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.677Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:12.677Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables/key [none]
+[debug] [2025-12-01T00:51:12.733Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables/key 200
+[debug] [2025-12-01T00:51:12.733Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/gemini/variables/key {"name":"projects/family-housing-hub/configs/gemini/variables/key","updateTime":"2025-12-01T00:48:55.403963744Z","text":"AIzaSyAnZ22_1xadxZGeUvI8fLoH5eKa4TOVrvQ"}
+[debug] [2025-12-01T00:51:12.811Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables/key 200
+[debug] [2025-12-01T00:51:12.811Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/estated/variables/key {"name":"projects/family-housing-hub/configs/estated/variables/key","updateTime":"2025-12-01T00:48:55.364776055Z","text":"ec5c7745e9236b9519809c1d4c3f9c87"}
+[debug] [2025-12-01T00:51:12.964Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables/key 200
+[debug] [2025-12-01T00:51:12.964Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/family-housing-hub/configs/rapidapi/variables/key {"name":"projects/family-housing-hub/configs/rapidapi/variables/key","updateTime":"2025-12-01T00:48:55.473809982Z","text":"4d9f4dec85msh34a2b4ff5648991p1dcfccjsn125f4440583c"}
+[debug] [2025-12-01T00:51:12.966Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-12-01T00:51:14.440Z] > [functions] package.json contents: {
+  "name": "family-housing-hub-functions",
+  "version": "1.0.0",
+  "description": "Firebase Cloud Functions for Family Housing Hub",
+  "main": "index.js",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^4.5.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "@google/generative-ai": "^0.2.1",
+    "openai": "^4.20.0"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-12-01T00:51:14.440Z] Building nodejs source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[info] i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly 
+[debug] [2025-12-01T00:51:14.441Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-12-01T00:51:14.452Z] Found firebase-functions binary at '/Users/samuelraymond/Documents/Family-Housing-Hub/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8570
+
+[debug] [2025-12-01T00:51:15.444Z] Got response from /__/functions.yaml {"endpoints":{"api":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"httpsTrigger":{},"entryPoint":"api"}},"specVersion":"v1alpha1","requiredAPIs":[]}
+[info] i  functions: preparing functions directory for uploading... 
+[info] i  functions: packaged /Users/samuelraymond/Documents/Family-Housing-Hub/functions (74.89 KB) for uploading 
+[debug] [2025-12-01T00:51:19.490Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:19.490Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:19.490Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/-/functions [none]
+[debug] [2025-12-01T00:51:20.138Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/-/functions 200
+[debug] [2025-12-01T00:51:20.139Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/-/functions {}
+[debug] [2025-12-01T00:51:20.139Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:20.139Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:20.140Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v2/projects/family-housing-hub/locations/-/functions filter=environment%3D%22GEN_2%22
+[debug] [2025-12-01T00:51:20.625Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v2/projects/family-housing-hub/locations/-/functions 200
+[debug] [2025-12-01T00:51:20.625Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v2/projects/family-housing-hub/locations/-/functions {}
+[debug] [2025-12-01T00:51:20.628Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:20.628Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:20.628Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub [none]
+[debug] [2025-12-01T00:51:20.981Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub 200
+[debug] [2025-12-01T00:51:20.982Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub {"projectNumber":"677200955206","projectId":"family-housing-hub","lifecycleState":"ACTIVE","name":"Family-Housing-Hub","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-11-24T15:33:03.344323Z"}
+[debug] [2025-12-01T00:51:20.983Z] [functions] found 1 new HTTP functions, testing setIamPolicy permission...
+[debug] [2025-12-01T00:51:20.984Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:20.984Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:20.985Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions [none]
+[debug] [2025-12-01T00:51:20.985Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:51:20.985Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["cloudfunctions.functions.setIamPolicy"]}
+[debug] [2025-12-01T00:51:21.101Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions 200
+[debug] [2025-12-01T00:51:21.102Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["cloudfunctions.functions.setIamPolicy"]}
+[debug] [2025-12-01T00:51:21.102Z] [functions] found setIamPolicy permission, proceeding with deploy
+[debug] [2025-12-01T00:51:21.103Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:21.103Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:21.103Z] >>> [apiv2][query] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions:generateUploadUrl [none]
+[debug] [2025-12-01T00:51:21.103Z] >>> [apiv2][body] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions:generateUploadUrl {}
+[debug] [2025-12-01T00:51:39.851Z] <<< [apiv2][status] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions:generateUploadUrl 200
+[debug] [2025-12-01T00:51:39.851Z] <<< [apiv2][body] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions:generateUploadUrl {"uploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D"}
+[debug] [2025-12-01T00:51:39.852Z] >>> [apiv2][query] PUT https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip GoogleAccessId=service-677200955206%40gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D
+[debug] [2025-12-01T00:51:39.852Z] >>> [apiv2][body] PUT https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip [stream]
+[debug] [2025-12-01T00:51:40.302Z] <<< [apiv2][status] PUT https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip 200
+[debug] [2025-12-01T00:51:40.303Z] <<< [apiv2][body] PUT https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip [omitted]
+[info] ✔  functions: functions source uploaded successfully 
+[info] i  functions: creating Node.js 20 (1st Gen) function api(us-central1)... 
+[debug] [2025-12-01T00:51:40.309Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:40.309Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:40.309Z] >>> [apiv2][query] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions [none]
+[debug] [2025-12-01T00:51:40.309Z] >>> [apiv2][body] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions {"name":"projects/family-housing-hub/locations/us-central1/functions/api","sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","entryPoint":"api","runtime":"nodejs20","dockerRegistry":"ARTIFACT_REGISTRY","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"minInstances":null,"maxInstances":null,"ingressSettings":null,"environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"serviceAccountEmail":null,"availableMemoryMb":null,"timeout":null,"vpcConnector":null,"vpcConnectorEgressSettings":null,"buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""}}
+[debug] [2025-12-01T00:51:42.934Z] <<< [apiv2][status] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions 200
+[debug] [2025-12-01T00:51:42.935Z] <<< [apiv2][body] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","updateTime":"2025-12-01T00:51:42.922163327Z"}}
+[debug] [2025-12-01T00:51:42.936Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:42.936Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:42.936Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:51:43.166Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:51:43.166Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","updateTime":"2025-12-01T00:51:42.922163327Z"}}
+[debug] [2025-12-01T00:51:43.669Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:51:43.670Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:43.670Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:43.670Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:51:43.896Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:51:43.897Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z"}}
+[debug] [2025-12-01T00:51:44.898Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:51:44.898Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:44.898Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:44.899Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:51:45.167Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:51:45.168Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z"}}
+[debug] [2025-12-01T00:51:47.169Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:51:47.170Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:47.170Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:47.170Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:51:47.465Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:51:47.465Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z"}}
+[debug] [2025-12-01T00:51:51.467Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:51:51.468Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:51.468Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:51.469Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:51:51.646Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:51:51.647Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z"}}
+[debug] [2025-12-01T00:51:59.647Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:51:59.648Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:59.649Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:51:59.649Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:51:59.929Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:51:59.930Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z","buildId":"26954258-e97d-4590-9074-ecaefaa2fb98","buildName":"projects/677200955206/locations/us-central1/builds/26954258-e97d-4590-9074-ecaefaa2fb98"}}
+[debug] [2025-12-01T00:52:09.931Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:52:09.932Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:52:09.932Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:52:09.933Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:52:10.327Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:52:10.328Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z","buildId":"26954258-e97d-4590-9074-ecaefaa2fb98","buildName":"projects/677200955206/locations/us-central1/builds/26954258-e97d-4590-9074-ecaefaa2fb98"}}
+[debug] [2025-12-01T00:52:20.329Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:52:20.330Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:52:20.330Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:52:20.331Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:52:20.613Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:52:20.613Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z","buildId":"26954258-e97d-4590-9074-ecaefaa2fb98","buildName":"projects/677200955206/locations/us-central1/builds/26954258-e97d-4590-9074-ecaefaa2fb98"}}
+[debug] [2025-12-01T00:52:30.615Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:52:30.615Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:52:30.615Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:52:30.615Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:52:30.896Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:52:30.896Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z","buildId":"26954258-e97d-4590-9074-ecaefaa2fb98","buildName":"projects/677200955206/locations/us-central1/builds/26954258-e97d-4590-9074-ecaefaa2fb98"}}
+[debug] [2025-12-01T00:52:40.905Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:52:40.945Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:52:40.945Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:52:40.945Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:52:41.379Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:52:41.382Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z","buildId":"26954258-e97d-4590-9074-ecaefaa2fb98","buildName":"projects/677200955206/locations/us-central1/builds/26954258-e97d-4590-9074-ecaefaa2fb98"}}
+[debug] [2025-12-01T00:52:51.386Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:52:51.388Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:52:51.388Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:52:51.389Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:52:51.707Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:52:51.708Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z","buildId":"26954258-e97d-4590-9074-ecaefaa2fb98","buildName":"projects/677200955206/locations/us-central1/builds/26954258-e97d-4590-9074-ecaefaa2fb98"}}
+[debug] [2025-12-01T00:53:01.709Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:53:01.710Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:53:01.710Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:53:01.711Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:53:02.019Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:53:02.019Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:51:42.922163327Z","buildId":"26954258-e97d-4590-9074-ecaefaa2fb98","sourceToken":"c180b96c-e296-474b-adb3-94b02865ddf4","buildName":"projects/677200955206/locations/us-central1/builds/26954258-e97d-4590-9074-ecaefaa2fb98"}}
+[debug] [2025-12-01T00:53:02.019Z] Got source token c180b96c-e296-474b-adb3-94b02865ddf4 for region us-central1
+[debug] [2025-12-01T00:53:12.021Z] [create-default-us-central1-api] Retrying task index 0
+[debug] [2025-12-01T00:53:12.021Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:53:12.021Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:53:12.021Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U [none]
+[debug] [2025-12-01T00:53:12.309Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U 200
+[debug] [2025-12-01T00:53:12.310Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U {"name":"operations/cHJvamVjdHMvZmFtaWx5LWhvdXNpbmctaHViL2xvY2F0aW9ucy91cy1jZW50cmFsMS9vcGVyYXRpb25zL29wZXJhdGlvbi0xNzY0NTUwMzAwNTQyLTY0NGQ5NjFkYTI0NWEtYjEzZjhhNTEtMWY2ZjY2M2U","metadata":{"@type":"type.googleapis.com/google.cloud.functions.v1.OperationMetadataV1","target":"projects/family-housing-hub/locations/us-central1/functions/api","type":"CREATE_FUNCTION","request":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"securityLevel":"SECURE_ALWAYS"},"entryPoint":"api","updateTime":"1970-01-01T00:00:00Z","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip?GoogleAccessId=service-677200955206@gcf-admin-robot.iam.gserviceaccount.com&Expires=1764552099&Signature=L6lnslEGTMgcXa9X%2B%2F9ZQd91cpU5fx6PN%2FJBlvwvoMB%2BtPl0O%2FnFW7ooQAqcrQ3mIvO97TXyH3vKjZ2%2BME7EzpP1eaCsiuNiA2%2FSsXvz%2BEBCavyujVUHVXV4P%2FEKRnUfr0WIiQ24ox0xCFVyREuWWljE8xH6uBUTwPOnkzsMSznnt0HHsBvTtswtdp%2FOy4D7TnD%2BF5FRhM%2F6l6IEKeVGP5naDysPMU0RZpP6Udr8adT2KPNQPknrOU3zVQRw1GTmi4MPMiK02ZyVUwXZJOs8%2BTb7rYnE9Tes3WR5UtTaa2dL%2B2APNEhyKI1BTJO0cR9f9X0CjzN24wPeV6x1p4ATPA%3D%3D","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRegistry":"ARTIFACT_REGISTRY"},"versionId":"1","updateTime":"2025-12-01T00:53:09.400465422Z","buildId":"26954258-e97d-4590-9074-ecaefaa2fb98","sourceToken":"c180b96c-e296-474b-adb3-94b02865ddf4","buildName":"projects/677200955206/locations/us-central1/builds/26954258-e97d-4590-9074-ecaefaa2fb98"},"done":true,"response":{"@type":"type.googleapis.com/google.cloud.functions.v1.CloudFunction","name":"projects/family-housing-hub/locations/us-central1/functions/api","httpsTrigger":{"url":"https://us-central1-family-housing-hub.cloudfunctions.net/api","securityLevel":"SECURE_ALWAYS"},"status":"ACTIVE","entryPoint":"api","timeout":"60s","availableMemoryMb":256,"serviceAccountEmail":"family-housing-hub@appspot.gserviceaccount.com","updateTime":"2025-12-01T00:51:42.917930418Z","versionId":"1","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"1177df7a274c9da59e234e850b3130211d71bfb6"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-416138749836.us-central1.cloudfunctions.appspot.com/f5c05135-6bd0-48c5-8d11-670aec9dc9a1.zip","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"family-housing-hub\",\"storageBucket\":\"family-housing-hub.firebasestorage.app\"}","GCLOUD_PROJECT":"family-housing-hub","EVENTARC_CLOUD_EVENT_SOURCE":"projects/family-housing-hub/locations/us-central1/functions/api"},"runtime":"nodejs20","ingressSettings":"ALLOW_ALL","buildId":"26954258-e97d-4590-9074-ecaefaa2fb98","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"buildName":"projects/677200955206/locations/us-central1/builds/26954258-e97d-4590-9074-ecaefaa2fb98","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"buildServiceAccount":"projects/family-housing-hub/serviceAccounts/677200955206-compute@developer.gserviceaccount.com","satisfiesPzi":true}}
+[debug] [2025-12-01T00:53:12.310Z] Got source token c180b96c-e296-474b-adb3-94b02865ddf4 for region us-central1
+[debug] [2025-12-01T00:53:12.311Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:53:12.311Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:53:12.311Z] >>> [apiv2][query] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions/api:setIamPolicy [none]
+[debug] [2025-12-01T00:53:12.312Z] >>> [apiv2][body] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions/api:setIamPolicy {"policy":{"bindings":[{"role":"roles/cloudfunctions.invoker","members":["allUsers"]}],"etag":"","version":3},"updateMask":"bindings,etag,version"}
+[debug] [2025-12-01T00:53:12.667Z] <<< [apiv2][status] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions/api:setIamPolicy 200
+[debug] [2025-12-01T00:53:12.667Z] <<< [apiv2][body] POST https://cloudfunctions.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/functions/api:setIamPolicy {"version":1,"etag":"BwZE2WdXw4w=","bindings":[{"role":"roles/cloudfunctions.invoker","members":["allUsers"]}]}
+[info] ✔  functions[api(us-central1)] Successful create operation. 
+[debug] [2025-12-01T00:53:12.673Z] Total Function Deployment time: 92361
+[debug] [2025-12-01T00:53:12.673Z] 1 Functions Deployed
+[debug] [2025-12-01T00:53:12.673Z] 0 Functions Errored
+[debug] [2025-12-01T00:53:12.673Z] 0 Function Deployments Aborted
+[debug] [2025-12-01T00:53:12.673Z] Average Function Deployment time: 92360
+[info] Function URL (api(us-central1)): https://us-central1-family-housing-hub.cloudfunctions.net/api
+[debug] [2025-12-01T00:53:12.842Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:53:12.842Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:53:12.843Z] >>> [apiv2][query] GET https://artifactregistry.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/repositories/gcf-artifacts [none]
+[debug] [2025-12-01T00:53:13.319Z] <<< [apiv2][status] GET https://artifactregistry.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/repositories/gcf-artifacts 200
+[debug] [2025-12-01T00:53:13.319Z] <<< [apiv2][body] GET https://artifactregistry.googleapis.com/v1/projects/family-housing-hub/locations/us-central1/repositories/gcf-artifacts {"name":"projects/family-housing-hub/locations/us-central1/repositories/gcf-artifacts","format":"DOCKER","description":"This repository is created and used by Cloud Functions for storing function docker images.","labels":{"goog-managed-by":"cloudfunctions"},"createTime":"2025-12-01T00:51:53.211051Z","updateTime":"2025-12-01T00:52:46.377554Z","mode":"STANDARD_REPOSITORY","sizeBytes":"501070714","vulnerabilityScanningConfig":{"lastEnableTime":"2025-12-01T00:51:44.859962617Z","enablementState":"SCANNING_DISABLED","enablementStateReason":"API containerscanning.googleapis.com is not enabled."},"satisfiesPzi":true,"registryUri":"us-central1-docker.pkg.dev/family-housing-hub/gcf-artifacts"}
+[warn] ⚠  functions: No cleanup policy detected for repositories in us-central1. This may result in a small monthly bill as container images accumulate over time. 
+[error] 
+[error] Error: Functions successfully deployed but could not set up cleanup policy in location us-central1. Pass the --force option to automatically set up a cleanup policy or run 'firebase functions:artifacts:setpolicy' to manually set up a cleanup policy.
+[debug] [2025-12-01T00:59:17.326Z] ----------------------------------------------------------------------
+[debug] [2025-12-01T00:59:17.332Z] Command:       /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/node /Users/samuelraymond/.nvm/versions/node/v24.11.0/bin/firebase deploy --only hosting
+[debug] [2025-12-01T00:59:17.333Z] CLI Version:   14.26.0
+[debug] [2025-12-01T00:59:17.333Z] Platform:      darwin
+[debug] [2025-12-01T00:59:17.333Z] Node Version:  v24.11.0
+[debug] [2025-12-01T00:59:17.333Z] Time:          Sun Nov 30 2025 19:59:17 GMT-0500 (Eastern Standard Time)
+[debug] [2025-12-01T00:59:17.333Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-12-01T00:59:17.438Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-01T00:59:17.439Z] > authorizing via signed-in user (kwibesamuel@gmail.com)
+[debug] [2025-12-01T00:59:17.439Z] [iam] checking project family-housing-hub for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2025-12-01T00:59:17.439Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:17.440Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:17.440Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions [none]
+[debug] [2025-12-01T00:59:17.440Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions x-goog-quota-user=projects/family-housing-hub
+[debug] [2025-12-01T00:59:17.440Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-12-01T00:59:17.711Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions 200
+[debug] [2025-12-01T00:59:17.712Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/family-housing-hub:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-12-01T00:59:17.712Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:17.712Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:17.713Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub [none]
+[debug] [2025-12-01T00:59:18.053Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub 200
+[debug] [2025-12-01T00:59:18.053Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/family-housing-hub {"projectId":"family-housing-hub","projectNumber":"677200955206","displayName":"Family-Housing-Hub","name":"projects/family-housing-hub","resources":{"hostingSite":"family-housing-hub"},"state":"ACTIVE","etag":"1_d7038f16-d0f7-4c7a-aa1e-e06c74e843f6"}
+[info] 
+[info] === Deploying to 'family-housing-hub'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2025-12-01T00:59:18.059Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:18.059Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:18.059Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions [none]
+[debug] [2025-12-01T00:59:18.059Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2025-12-01T00:59:18.709Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions 200
+[debug] [2025-12-01T00:59:18.710Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions {"name":"projects/677200955206/sites/family-housing-hub/versions/62cc9188f51adf6a","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[info] i  hosting[family-housing-hub]: beginning deploy... 
+[info] i  hosting[family-housing-hub]: found 34 files in dist 
+[debug] [2025-12-01T00:59:18.727Z] [hosting] uploading with 200 concurrency
+[debug] [2025-12-01T00:59:18.730Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:18.730Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:18.731Z] [hosting] hash cache [ZGlzdA] stored for 34 files
+[debug] [2025-12-01T00:59:18.731Z] [hosting][hash queue][FINAL] {"max":1,"min":0,"avg":0,"active":0,"complete":34,"success":34,"errored":0,"retried":0,"total":34,"elapsed":3}
+[debug] [2025-12-01T00:59:18.731Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/677200955206/sites/family-housing-hub/versions/62cc9188f51adf6a:populateFiles [none]
+[debug] [2025-12-01T00:59:18.731Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/677200955206/sites/family-housing-hub/versions/62cc9188f51adf6a:populateFiles {"files":{"/index.html":"7f358da8bcb0303a45d3b70b18aa292043a2dfa6c0c370bd5602ebc48f93ef73","/favicon.svg":"1c6e0536981add84a5f3baa06989d1976429815ed743dfebe6ff373289d605b1","/favicon.ico":"6ae536b2e0c59d0d677178282737e43b004d78ba939878b6dfc1eb193e26fef6","/assets/ui-vendor-656cfda8.js":"066bc176a3f02e4614787842309bee0f1250bc67e797f006ae1d44231080b046","/assets/react-vendor-9e7b34d9.js":"1c7a1153c5a4b6044c97480cd0db13eea42aad0a4177bea3ef8d1108ba326e74","/assets/index-bad3090f.css":"6a1c89ac2c067ed346610e36d2e5f70ea05563c20d6cd9de75a1c5fb2c2207cd","/assets/index-968b3eb0.js":"27e3291ac7c8637754979b1e7ab9ad9919e77976495fda41044d361f4ad70d26","/assets/firebase-vendor-832c5ea5.js":"51e49652f80bc761f63d7e040c1c59207ca11552c54f9f4e916c2e1f882e45af","/assets/api-28858fe5.js":"9d7af22c8bc93680900ba2c9cf4f2d98e99f0cdfdef2e8238f175fba9378d886","/assets/ShoppingMeals-d7b869a5.js":"e9633612971377506840bb781dc245ae6e130470ddb8e53e73dfca7dc2ad60f7","/assets/Settings-e4f9e9e2.js":"02b372bf905eb3ac7188c827ab27194e3ad0583ab1bd22ca54b170cd53b8213a","/assets/Security-539a9994.js":"c2d2c112eefc0205fe28910015ae5e4b77118fec66e4a8993f876a003082e7ba","/assets/Rent-6ab80f87.js":"4862b5ae3e8d44642b13e8c15d6490ec875bba01706cb0970151f54a540e8a7e","/assets/Register-6f96303f.js":"2d73d2ff4fa2bba4cd8beb174c0ca570b4c2b48c52bebe00d01cc1c29b7e8837","/assets/Profile-f96c0cff.js":"d3fd0bd1fc506a7e143e6e9c3cb55bc4d42994680bd57f394a42532ee4f9559f","/assets/Onboarding-fe97b540.js":"a487c4ec335960d8b837d8ce9ad7c1df34d582621c394ef9615ae8d60742b3b2","/assets/NotFound-377a9f3e.js":"9e9d19e087542c6071dc1e28fb46ef0fc375fbc78a915ba83202a94fc8ccbb90","/assets/NearbyPlaces-f77fa400.js":"11218512018bc6847c503a55c0605a9239d0e52b63b51d24db89e3a3ccd343b9","/assets/Messages-06589a28.js":"4f85f5310de31a982a5a7009ff53fea94d6d501b6f19d67afecba0ea8f5f16e0","/assets/Maintenance-685505de.js":"16facbdd928d4e09e30e1c35c538b4a9f7c67a8fbe7f652e5672ec43af2dd327","/assets/Login-2839c8d4.js":"31e2c7d6d76bc25171f831d83c881b8ac3135817e489f90a7de83f6bd7bafbd1","/assets/Layout-c4c9c0ba.js":"cdf374667f1f5a449227c9da6d6fd0fd0b596a9971aefaae33bbe344c1ad2064","/assets/Landlord-60ec3d78.js":"991aca2ae00d9b0dc6651160316bf82749ed9ecc9bebf464c1a31d90b373e843","/assets/HouseSearch-309b9d75.js":"711cf370ffae9e87ea2ddb448647ccad5a40148e01026db13e773c36263d5954","/assets/HelpCenter-10e6ae56.js":"ca7afbcfca57cc12c0f57c2d9fec65b60df6f4ea345e8a9fa93af387dd8fbf54","/assets/FamilySafety-8a27a2f9.js":"2cf9798c83be99365a044fbd0b26ed2fe414d06eb141a715416b37eedd544795","/assets/FamilyHealth-f8aa3c52.js":"6afc9df5b9a2b88972bacc8c11d31f352930a968074d36596b5a1d6afdbcc260","/assets/FamilyCalendar-75747dce.js":"e6fcbac9472470c010418148f5eabd073cada3b7b6663a54161d8741a086506e","/assets/Documents-0c3b9b95.js":"09a1cb4740d6f6ea1e88f93d222ce175b6db187689179121b437e8ac53e3e73a","/assets/Dashboard-c937549d.js":"b400fa65cfe3d57104c027b654d32dac646b6d9b646deaf38d98b389346156d1","/assets/CommunityResources-d58a7cb7.js":"51e113562a2ee0356a21894fafb774a679ba76e7570cd9b023e23e32a238c81e","/assets/ChildrenSavings-2d38c006.js":"b59a57e8e11799b69b4561b7641e810ef31d270f2540ecd86096db44f5ece096","/assets/Budget-c3a958ca.js":"56d56ded5cab135f2cc90d79539b076661ef168fce4148fae4328bc0379a6628","/assets/AIAssistant-13457839.js":"e032aeefc2e4c2bc9f53fef1deee581a4fe2edee09c8e46bcc4f6494ca968700"}}
+[debug] [2025-12-01T00:59:18.912Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/677200955206/sites/family-housing-hub/versions/62cc9188f51adf6a:populateFiles 200
+[debug] [2025-12-01T00:59:18.912Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/677200955206/sites/family-housing-hub/versions/62cc9188f51adf6a:populateFiles {"uploadUrl":"https://upload-firebasehosting.googleapis.com/upload/sites/family-housing-hub/versions/62cc9188f51adf6a/files"}
+[debug] [2025-12-01T00:59:18.913Z] [hosting][populate queue][FINAL] {"max":182,"min":182,"avg":182,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":183}
+[debug] [2025-12-01T00:59:18.913Z] [hosting] uploads queued: 0
+[debug] [2025-12-01T00:59:18.913Z] [hosting][upload queue][FINAL] {"max":0,"min":9999999999,"avg":0,"active":0,"complete":0,"success":0,"errored":0,"retried":0,"total":0,"elapsed":1764550758913}
+[info] i  hosting: upload complete 
+[info] ✔  hosting[family-housing-hub]: file upload complete 
+[debug] [2025-12-01T00:59:18.914Z] [hosting] deploy completed after 200ms
+[debug] [2025-12-01T00:59:18.914Z] [
+  {
+    "config": {
+      "public": "dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "site": "family-housing-hub"
+    },
+    "version": "projects/677200955206/sites/family-housing-hub/versions/62cc9188f51adf6a"
+  }
+]
+[info] i  hosting[family-housing-hub]: finalizing version... 
+[debug] [2025-12-01T00:59:18.916Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:18.917Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:18.917Z] >>> [apiv2][query] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions/62cc9188f51adf6a updateMask=status%2Cconfig
+[debug] [2025-12-01T00:59:18.917Z] >>> [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions/62cc9188f51adf6a {"status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]}}
+[debug] [2025-12-01T00:59:19.069Z] <<< [apiv2][status] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions/62cc9188f51adf6a 200
+[debug] [2025-12-01T00:59:19.070Z] <<< [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/versions/62cc9188f51adf6a {"name":"projects/677200955206/sites/family-housing-hub/versions/62cc9188f51adf6a","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2025-12-01T00:59:18.491509Z","createUser":{"email":"kwibesamuel@gmail.com"},"finalizeTime":"2025-12-01T00:59:19.070965Z","finalizeUser":{"email":"kwibesamuel@gmail.com"}}
+[debug] [2025-12-01T00:59:19.070Z] [hosting] finalized version for family-housing-hub:[object Object]
+[info] ✔  hosting[family-housing-hub]: version finalized 
+[info] i  hosting[family-housing-hub]: releasing new version... 
+[debug] [2025-12-01T00:59:19.070Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:19.070Z] Checked if tokens are valid: true, expires at: 1764553732061
+[debug] [2025-12-01T00:59:19.070Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/channels/live/releases versionName=projects%2F677200955206%2Fsites%2Ffamily-housing-hub%2Fversions%2F62cc9188f51adf6a
+[debug] [2025-12-01T00:59:19.071Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/channels/live/releases {}
+[debug] [2025-12-01T00:59:19.278Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/channels/live/releases 200
+[debug] [2025-12-01T00:59:19.278Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/family-housing-hub/channels/live/releases {"name":"projects/677200955206/sites/family-housing-hub/channels/live/releases/1764550758726000","version":{"name":"projects/677200955206/sites/family-housing-hub/versions/62cc9188f51adf6a","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2025-12-01T00:59:18.491509Z","createUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"},"finalizeTime":"2025-12-01T00:59:19.070965Z","finalizeUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"}},"type":"DEPLOY","releaseTime":"2025-12-01T00:59:18.726Z","releaseUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"}}
+[debug] [2025-12-01T00:59:19.278Z] [hosting] release: {"name":"projects/677200955206/sites/family-housing-hub/channels/live/releases/1764550758726000","version":{"name":"projects/677200955206/sites/family-housing-hub/versions/62cc9188f51adf6a","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2025-12-01T00:59:18.491509Z","createUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"},"finalizeTime":"2025-12-01T00:59:19.070965Z","finalizeUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"}},"type":"DEPLOY","releaseTime":"2025-12-01T00:59:18.726Z","releaseUser":{"email":"kwibesamuel@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLiOQVyRNFgJnaFnYGwgW1XYucBfcZOzIDATHIxRV8cLrbXGRk"}}
+[info] ✔  hosting[family-housing-hub]: release complete 
+[info] 
+[info] ✔  Deploy complete! 
+[info] 
+[info] Project Console: https://console.firebase.google.com/project/family-housing-hub/overview
+[info] Hosting URL: https://family-housing-hub.web.app

@@ -1244,7 +1244,7 @@ export default function HouseSearch() {
                             )}
                             </>
                         ) : (
-                            !isLoading && searchQuery && (
+                            !isLoading && searchQuery ? (
                             <div className="text-center py-16">
                                 <Home className="h-20 w-20 text-gray-400 mx-auto mb-6" />
                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">

@@ -367,25 +367,74 @@ const PropertyDetailsModal = ({ property, onClose, onSave, onShare, searchQuery 
                                 )}
                             </div>
 
-                            {/* Property Description */}
+                            {/* Property Description - Zillow-style */}
                             {details.description && (
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Description</h3>
-                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{details.description}</p>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">About this home</h3>
+                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{details.description}</p>
                                 </div>
                             )}
                             
-                            {/* Property Features */}
+                            {/* Property Features - Zillow-style */}
                             {details.features && details.features.length > 0 && (
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Features</h3>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Features & Amenities</h3>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                         {details.features.map((feature, idx) => (
-                                            <div key={idx} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                                <span>{feature}</span>
+                                            <div key={idx} className="flex items-center gap-2 text-gray-700 dark:text-gray-300 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                                                <span className="text-sm">{feature}</span>
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Additional Property Details */}
+                            {(details.hoa || details.parking || details.heating || details.cooling || details.propertyTax) && (
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Additional Details</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {details.hoa && (
+                                            <div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">HOA</p>
+                                                <p className="font-semibold text-gray-900 dark:text-white">
+                                                    {typeof details.hoa === 'number' ? `$${details.hoa.toLocaleString()}/mo` : details.hoa}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {details.parking && (
+                                            <div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Parking</p>
+                                                <p className="font-semibold text-gray-900 dark:text-white">{details.parking}</p>
+                                            </div>
+                                        )}
+                                        {details.heating && (
+                                            <div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Heating</p>
+                                                <p className="font-semibold text-gray-900 dark:text-white">{details.heating}</p>
+                                            </div>
+                                        )}
+                                        {details.cooling && (
+                                            <div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Cooling</p>
+                                                <p className="font-semibold text-gray-900 dark:text-white">{details.cooling}</p>
+                                            </div>
+                                        )}
+                                        {details.propertyTax && (
+                                            <div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Property Tax</p>
+                                                <p className="font-semibold text-gray-900 dark:text-white">
+                                                    {typeof details.propertyTax === 'number' ? `$${details.propertyTax.toLocaleString()}/yr` : details.propertyTax}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {details.daysOnMarket && (
+                                            <div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Days on Market</p>
+                                                <p className="font-semibold text-gray-900 dark:text-white">{details.daysOnMarket}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -1188,8 +1237,8 @@ export default function HouseSearch() {
                                                 ) : null}
                                             </div>
                                             
-                                            {/* Additional info */}
-                                            {(property.yearBuilt || property.lotSize) && (
+                                            {/* Additional info - Zillow-style */}
+                                            {(property.yearBuilt || property.lotSize || property.daysOnMarket) && (
                                                 <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-4">
                                                     {property.yearBuilt && (
                                                         <span>Built {property.yearBuilt}</span>
@@ -1197,8 +1246,25 @@ export default function HouseSearch() {
                                                     {property.lotSize && (
                                                         <span>Lot: {property.lotSize.toLocaleString()} sqft</span>
                                                     )}
+                                                    {property.daysOnMarket && (
+                                                        <span>{property.daysOnMarket} days on market</span>
+                                                    )}
                                                 </div>
                                             )}
+                                            
+                                            {/* Property type and source badge */}
+                                            <div className="flex items-center gap-2 mb-4">
+                                                {property.type && (
+                                                    <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded capitalize">
+                                                        {property.type}
+                                                    </span>
+                                                )}
+                                                {property.source && (
+                                                    <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded capitalize">
+                                                        {property.source === 'zillow' ? 'Zillow' : property.source === 'realtor' ? 'Realtor.com' : 'Estated'}
+                                                    </span>
+                                                )}
+                                            </div>
                                             
                                             {/* Action buttons */}
                                             <div className="flex gap-2">

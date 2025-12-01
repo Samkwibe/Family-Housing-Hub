@@ -257,6 +257,13 @@ async function searchRealtorAPI(query, lat, lng, filters) {
         const addressInfo = prop.address || {};
         const descriptionInfo = prop.description || {};
         
+        // Extract description and features
+        const description = prop.description?.text || prop.description || prop.remarks || '';
+        const features = prop.features || prop.amenities || [];
+        
+        // Extract all images
+        const images = (prop.photos || []).map(p => typeof p === 'string' ? p : (p.href || p.url || p)).filter(Boolean);
+        
         properties.push({
           id: prop.property_id || `realtor_${Date.now()}_${Math.random()}`,
           address: addressInfo.line || query,
@@ -272,9 +279,17 @@ async function searchRealtorAPI(query, lat, lng, filters) {
           lat: addressInfo.coordinate?.lat,
           lng: addressInfo.coordinate?.lon,
           type: descriptionInfo.type || 'house',
-          images: (prop.photos || []).map(p => p.href).filter(Boolean),
+          images: images.slice(0, 20), // Limit to 20 images
+          description: description,
+          features: Array.isArray(features) ? features : [],
           listingType: prop.listing_status === 'for_rent' ? 'rent' : 'buy',
-          source: 'realtor'
+          source: 'realtor',
+          // Additional details
+          hoa: prop.hoa,
+          parking: descriptionInfo.garage || descriptionInfo.parking,
+          heating: descriptionInfo.heating,
+          cooling: descriptionInfo.cooling,
+          daysOnMarket: prop.days_on_market || prop.dom
         });
       }
     }
@@ -322,6 +337,10 @@ async function searchEstatedAPI(query, lat, lng, filters) {
       const zipcode = addressInfo.postal_code || addressInfo.zip || '';
       const fullAddress = [street, city, state, zipcode].filter(Boolean).join(', ');
 
+      // Extract additional details
+      const assessmentInfo = prop.assessment || {};
+      const taxInfo = prop.tax || {};
+      
       properties.push({
         id: `estated_${prop.apn || prop.fips || Date.now()}`,
         address: fullAddress || query,
@@ -337,9 +356,20 @@ async function searchEstatedAPI(query, lat, lng, filters) {
         lat: locationInfo.latitude || lat,
         lng: locationInfo.longitude || lng,
         type: structureInfo.type || 'house',
-        images: [],
+        images: [], // Estated API doesn't provide images
+        description: `Property located at ${fullAddress}. ${structureInfo.sqft ? `${structureInfo.sqft.toLocaleString()} sqft` : ''} ${structureInfo.beds ? `${structureInfo.beds} bed` : ''} ${structureInfo.baths ? `${structureInfo.baths} bath` : ''} property.`,
+        features: [
+          structureInfo.beds && `${structureInfo.beds} Bedrooms`,
+          structureInfo.baths && `${structureInfo.baths} Bathrooms`,
+          structureInfo.sqft && `${structureInfo.sqft.toLocaleString()} Sqft`,
+          structureInfo.year_built && `Built ${structureInfo.year_built}`,
+          lotInfo.sqft && `Lot: ${lotInfo.sqft.toLocaleString()} sqft`
+        ].filter(Boolean),
         listingType: 'buy',
-        source: 'estated'
+        source: 'estated',
+        // Additional details
+        propertyTax: taxInfo.total || assessmentInfo.total,
+        assessmentValue: assessmentInfo.total
       });
     }
   } catch (error) {
@@ -385,6 +415,20 @@ function parseZillowData(data, originalUrl) {
     const zpidMatch = originalUrl.match(/\/(\d+)_zpid\//);
     const zpid = zpidMatch ? zpidMatch[1] : (prop.zpid || prop.id);
 
+    // Extract description and features
+    const description = prop.description || prop.summary || prop.overview || '';
+    const features = prop.features || prop.amenities || prop.highlights || [];
+    
+    // Extract all images
+    let images = [];
+    if (Array.isArray(prop.images)) {
+      images = prop.images;
+    } else if (prop.photos && Array.isArray(prop.photos)) {
+      images = prop.photos.map(p => typeof p === 'string' ? p : (p.url || p.href || p));
+    } else if (prop.photo) {
+      images = [prop.photo];
+    }
+
     return {
       id: `zillow_${zpid || Date.now()}`,
       address: fullAddress,
@@ -400,11 +444,20 @@ function parseZillowData(data, originalUrl) {
       lat: prop.location?.lat || prop.lat,
       lng: prop.location?.lng || prop.location?.longitude || prop.location?.lon || prop.lng,
       type: prop.propertyType || prop.type || 'house',
-      images: Array.isArray(prop.images) ? prop.images : (prop.photo ? [prop.photo] : []),
+      images: images.filter(Boolean).slice(0, 20), // Limit to 20 images
+      description: description,
+      features: Array.isArray(features) ? features : [],
       zpid: zpid,
       listingType: (prop.status || '').toLowerCase().includes('rent') || (prop.type || '').toLowerCase().includes('rent') ? 'rent' : 'buy',
       source: 'zillow',
-      zillowUrl: originalUrl
+      zillowUrl: originalUrl,
+      // Additional Zillow-style data
+      hoa: prop.hoa || prop.homeownersAssociation,
+      parking: prop.parking || prop.garage,
+      heating: prop.heating,
+      cooling: prop.cooling,
+      propertyTax: prop.propertyTax || prop.tax,
+      daysOnMarket: prop.daysOnMarket || prop.dom
     };
   } catch (error) {
     console.error('Error parsing Zillow data:', error);

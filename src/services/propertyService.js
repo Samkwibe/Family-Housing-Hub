@@ -3,10 +3,11 @@ import zillowService from './zillowService';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBfm3u4-vEnsVvHEqjqpoGdlbNgaza8JnA';
 
-// Ultra-fast cache with IndexedDB for persistence
+// Ultra-fast cache with IndexedDB for persistence - Optimized for <10ms response
 const propertyCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const MAX_CACHE_SIZE = 1000;
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes (longer cache for speed)
+const MAX_CACHE_SIZE = 5000; // Increased cache size
+const MEMORY_CACHE_SIZE = 200; // Fast memory cache for instant results
 
 // IndexedDB for persistent caching
 let db = null;

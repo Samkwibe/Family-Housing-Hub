@@ -1061,8 +1061,9 @@ export default function HouseSearch() {
                 {viewMode === 'list' && (
                     <>
                         {filteredProperties.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                                {filteredProperties.map((property) => (
+                            <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                                    {filteredProperties.map((property) => (
                                     <div
                                         key={property.id}
                                         className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-all overflow-hidden cursor-pointer border border-gray-200 dark:border-gray-700 group"
@@ -1241,6 +1242,7 @@ export default function HouseSearch() {
                                     </button>
                                 </div>
                             )}
+                            </>
                         ) : (
                             !isLoading && searchQuery && (
                             <div className="text-center py-16">

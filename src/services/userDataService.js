@@ -23,6 +23,23 @@ class UserDataService {
       const existingData = userDoc.exists() ? userDoc.data() : {};
       
       // ORGANIZE OWNER DATA - Keep separate from renter data
+      // Merge properties array if it exists
+      const existingProperties = existingData.ownerData?.properties || [];
+      const newProperties = ownerData.properties || [];
+      
+      // Combine properties, avoiding duplicates based on address
+      const combinedProperties = [...existingProperties];
+      newProperties.forEach(newProp => {
+        const exists = combinedProperties.some(existing => 
+          existing.address?.street === newProp.address?.street &&
+          existing.address?.city === newProp.address?.city &&
+          existing.address?.zipCode === newProp.address?.zipCode
+        );
+        if (!exists) {
+          combinedProperties.push(newProp);
+        }
+      });
+      
       const organizedData = {
         // User type - CRITICAL
         userType: 'owner',
@@ -30,38 +47,57 @@ class UserDataService {
         
         // Owner-specific data structure
         ownerData: {
-          // Business information
-          business: ownerData.business || existingData.ownerData?.business || null,
+          // Business information - use new data if provided, otherwise keep existing
+          business: ownerData.business ? {
+            ...(existingData.ownerData?.business || {}),
+            ...ownerData.business
+          } : existingData.ownerData?.business || null,
           
-          // Property portfolio
-          properties: ownerData.properties || existingData.ownerData?.properties || [],
+          // Property portfolio - combine arrays
+          properties: combinedProperties.length > 0 ? combinedProperties : (newProperties.length > 0 ? newProperties : []),
           
-          // Payment preferences
-          paymentPreferences: ownerData.paymentPreferences || existingData.ownerData?.paymentPreferences || null,
+          // Payment preferences - merge
+          paymentPreferences: ownerData.paymentPreferences ? {
+            ...(existingData.ownerData?.paymentPreferences || {}),
+            ...ownerData.paymentPreferences
+          } : existingData.ownerData?.paymentPreferences || null,
           
-          // Notification preferences (owner-specific)
-          notifications: ownerData.notifications || existingData.ownerData?.notifications || {},
+          // Notification preferences (owner-specific) - merge
+          notifications: {
+            ...(existingData.ownerData?.notifications || {}),
+            ...(ownerData.notifications || {})
+          },
           
-          // Owner-specific settings
-          settings: ownerData.settings || existingData.ownerData?.settings || {}
+          // Owner-specific settings - merge
+          settings: {
+            ...(existingData.ownerData?.settings || {}),
+            ...(ownerData.settings || {})
+          }
         },
         
         // Clear any renter data if user is switching to owner
         renterData: null,
         lease: null,
         
+        // Preserve other user fields
+        ...(existingData.firstName ? { firstName: existingData.firstName } : {}),
+        ...(existingData.lastName ? { lastName: existingData.lastName } : {}),
+        ...(existingData.email ? { email: existingData.email } : {}),
+        ...(existingData.photoURL ? { photoURL: existingData.photoURL } : {}),
+        
         // Update timestamps
         updatedAt: serverTimestamp(),
         lastUpdated: new Date().toISOString()
       };
       
-      // Merge with existing data but preserve owner structure
+      // Use setDoc with merge to preserve other fields
       await setDoc(userRef, organizedData, { merge: true });
       
+      console.log('Owner data saved successfully:', organizedData);
       return organizedData;
     } catch (error) {
       console.error('Error saving owner data:', error);
-      throw new Error('Failed to save owner data');
+      throw new Error(`Failed to save owner data: ${error.message}`);
     }
   }
   
@@ -84,26 +120,44 @@ class UserDataService {
         userType: 'renter',
         role: 'renter',
         
-        // Renter-specific data structure
+        // Renter-specific data structure - merge with existing
         renterData: {
-          // Personal information
-          personal: renterData.personal || existingData.renterData?.personal || null,
+          // Personal information - merge
+          personal: renterData.personal ? {
+            ...(existingData.renterData?.personal || {}),
+            ...renterData.personal
+          } : existingData.renterData?.personal || null,
           
-          // Family information
-          family: renterData.family || existingData.renterData?.family || null,
+          // Family information - merge
+          family: renterData.family ? {
+            ...(existingData.renterData?.family || {}),
+            ...renterData.family
+          } : existingData.renterData?.family || null,
           
-          // Housing information
-          housing: renterData.housing || existingData.renterData?.housing || null,
+          // Housing information - merge
+          housing: renterData.housing ? {
+            ...(existingData.renterData?.housing || {}),
+            ...renterData.housing
+          } : existingData.renterData?.housing || null,
           
-          // Financial information
-          financial: renterData.financial || existingData.renterData?.financial || null,
+          // Financial information - merge
+          financial: renterData.financial ? {
+            ...(existingData.renterData?.financial || {}),
+            ...renterData.financial
+          } : existingData.renterData?.financial || null,
           
-          // Preferences (renter-specific)
-          preferences: renterData.preferences || existingData.renterData?.preferences || {}
+          // Preferences (renter-specific) - merge
+          preferences: {
+            ...(existingData.renterData?.preferences || {}),
+            ...(renterData.preferences || {})
+          }
         },
         
-        // Lease information (renter-specific)
-        lease: renterData.lease || existingData.lease || {
+        // Lease information (renter-specific) - merge
+        lease: renterData.lease ? {
+          ...(existingData.lease || {}),
+          ...renterData.lease
+        } : existingData.lease || {
           startDate: null,
           endDate: null,
           monthlyRent: 0,
@@ -115,18 +169,25 @@ class UserDataService {
         ownerData: null,
         property: null,
         
+        // Preserve other user fields
+        ...(existingData.firstName ? { firstName: existingData.firstName } : {}),
+        ...(existingData.lastName ? { lastName: existingData.lastName } : {}),
+        ...(existingData.email ? { email: existingData.email } : {}),
+        ...(existingData.photoURL ? { photoURL: existingData.photoURL } : {}),
+        
         // Update timestamps
         updatedAt: serverTimestamp(),
         lastUpdated: new Date().toISOString()
       };
       
-      // Merge with existing data but preserve renter structure
+      // Use setDoc with merge to preserve other fields
       await setDoc(userRef, organizedData, { merge: true });
       
+      console.log('Renter data saved successfully:', organizedData);
       return organizedData;
     } catch (error) {
       console.error('Error saving renter data:', error);
-      throw new Error('Failed to save renter data');
+      throw new Error(`Failed to save renter data: ${error.message}`);
     }
   }
   

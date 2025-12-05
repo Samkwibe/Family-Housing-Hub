@@ -26,25 +26,48 @@ import {
   Lock,
   Star,
   Zap,
-  ChevronRight
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { userDataService } from '../services/userDataService';
+import { userService } from '../services/firebaseService';
 
 export default function OwnerOnboarding() {
-  const { currentUser, userProfile, completeProfile, updateUserProfile } = useAuth();
+  const { currentUser, userProfile, completeProfile, updateUserProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const [error, setError] = useState(null);
+  const [initializing, setInitializing] = useState(true);
   
-  // Check if user is logged in
+  // Check if user is logged in and handle redirects
   useEffect(() => {
+    if (authLoading) {
+      return; // Still loading auth
+    }
+
     if (!currentUser) {
       toast.error('Please log in first');
-      navigate('/login');
+      navigate('/login', { replace: true });
+      return;
     }
-  }, [currentUser, navigate]);
+
+    // If user already completed onboarding, redirect to dashboard
+    if (userProfile?.onboardingComplete || userProfile?.profileComplete) {
+      if (userProfile?.userType === 'owner' || userProfile?.role === 'owner') {
+        navigate('/owner-dashboard', { replace: true });
+        return;
+      }
+    }
+
+    // If user skipped onboarding, allow them to stay on this page if they want to complete it
+    // But don't force redirect - let them use the skip button
+
+    // Initialize complete
+    setInitializing(false);
+  }, [currentUser, userProfile, navigate, authLoading]);
 
   const [formData, setFormData] = useState({
     // Step 1: Business Info
@@ -143,7 +166,28 @@ export default function OwnerOnboarding() {
   const handleSubmit = async () => {
     try {
       setLoading(true);
+      setError(null);
       
+      if (!currentUser || !currentUser.uid) {
+        toast.error('User not authenticated. Please log in again.');
+        navigate('/login', { replace: true });
+        setLoading(false);
+        return;
+      }
+
+      // Validate required fields
+      if (!formData.businessName || !formData.propertyAddress || !formData.propertyCity) {
+        const missingFields = [];
+        if (!formData.businessName) missingFields.push('Business Name');
+        if (!formData.propertyAddress) missingFields.push('Property Address');
+        if (!formData.propertyCity) missingFields.push('Property City');
+        
+        toast.error(`Please fill in: ${missingFields.join(', ')}`);
+        setError(`Please complete: ${missingFields.join(', ')}`);
+        setLoading(false);
+        return;
+      }
+
       // ORGANIZE OWNER DATA SEPARATELY - Don't mix with renter data
       const ownerData = {
         // Business Information (Owner-specific)
@@ -170,7 +214,7 @@ export default function OwnerOnboarding() {
           bathrooms: parseFloat(formData.bathrooms) || 0,
           monthlyRent: parseFloat(formData.monthlyRent) || 0,
           status: 'active',
-          addedAt: new Date()
+          addedAt: new Date().toISOString()
         }],
         
         // Payment Preferences (Owner-specific)
@@ -184,35 +228,95 @@ export default function OwnerOnboarding() {
         notifications: formData.notifications
       };
 
-      // Save owner data using the data organization service
-      await userDataService.saveOwnerData(currentUser.uid, ownerData);
+      console.log('Saving owner data...', { userId: currentUser.uid, ownerData });
+
+      // Step 1: Save owner data using the data organization service
+      try {
+        const savedData = await userDataService.saveOwnerData(currentUser.uid, ownerData);
+        console.log('Owner data saved successfully:', savedData);
+        toast.success('Owner data saved!');
+      } catch (saveError) {
+        console.error('Error saving owner data:', saveError);
+        throw new Error(`Failed to save owner data: ${saveError.message}`);
+      }
       
-      // Also update profile completion status
-      await updateUserProfile(currentUser.uid, {
-        profileComplete: true,
-        onboardingComplete: true,
-        onboardingCompletedAt: new Date().toISOString(),
-        userType: 'owner' // Ensure userType is set
-      });
+      // Step 2: Update profile completion status
+      try {
+        const updatedProfile = await updateUserProfile(currentUser.uid, {
+          profileComplete: true,
+          onboardingComplete: true,
+          onboardingCompletedAt: new Date().toISOString(),
+          userType: 'owner', // Ensure userType is set
+          role: 'owner'
+        });
+        console.log('Profile updated successfully:', updatedProfile);
+        toast.success('Profile updated!');
+        
+        // Step 3: Reload profile from Firestore to ensure we have latest data
+        try {
+          const freshProfile = await userService.getUserProfile(currentUser.uid);
+          console.log('Profile reloaded from Firestore:', freshProfile);
+          // Force a small delay to ensure state updates propagate
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (reloadError) {
+          console.warn('Could not reload profile, but continuing:', reloadError);
+        }
+      } catch (profileError) {
+        console.error('Error updating profile:', profileError);
+        // Don't throw - data might still be saved
+        toast.error('Profile update had issues, but data was saved');
+      }
+
+      // Step 4: Verify data was saved (optional check)
+      try {
+        const verifyData = await userDataService.getOwnerData(currentUser.uid);
+        if (!verifyData || !verifyData.properties || verifyData.properties.length === 0) {
+          console.warn('Data verification: Properties not found, but continuing...');
+        } else {
+          console.log('Data verified successfully:', verifyData);
+        }
+      } catch (verifyError) {
+        console.warn('Could not verify data, but continuing:', verifyError);
+      }
       
       toast.success('🎉 Welcome to FamilyHub! Your owner account is ready!');
       
-      // Navigate to owner dashboard based on user type
-      // Small delay to ensure profile update is saved
+      // Step 5: Navigate to owner dashboard
+      // Use a longer delay and force navigation with replace to prevent back button issues
       setTimeout(() => {
+        console.log('Navigating to owner dashboard...');
         navigate('/owner-dashboard', { replace: true });
-      }, 500);
+      }, 1500);
     } catch (error) {
       console.error('Error completing onboarding:', error);
-      toast.error('Failed to complete setup. Please try again.');
-    } finally {
+      setError(error.message || 'Failed to complete setup. Please try again.');
+      toast.error(error.message || 'Failed to complete setup. Please try again.');
       setLoading(false);
     }
   };
 
-  const handleSkip = () => {
-    toast.success('You can complete this later in Settings');
-    navigate('/owner-dashboard', { replace: true });
+  const handleSkip = async () => {
+    try {
+      if (currentUser && currentUser.uid) {
+        // Mark onboarding as skipped (optional) so user can complete later
+        try {
+          await updateUserProfile(currentUser.uid, {
+            onboardingSkipped: true,
+            onboardingSkippedAt: new Date().toISOString(),
+            // Don't set profileComplete to true, so they can still complete it later
+          });
+        } catch (error) {
+          console.warn('Could not update skip status:', error);
+          // Continue anyway
+        }
+      }
+      toast.success('You can complete onboarding later in Settings');
+      navigate('/owner-dashboard', { replace: true });
+    } catch (error) {
+      console.error('Error skipping onboarding:', error);
+      // Navigate anyway
+      navigate('/owner-dashboard', { replace: true });
+    }
   };
 
   // Progress bar calculation
@@ -231,6 +335,18 @@ export default function OwnerOnboarding() {
     { title: 'First Property', desc: 'Add your first rental property', icon: Home },
     { title: 'Payment Setup', desc: 'Configure your payment preferences', icon: CreditCard }
   ];
+
+  // Show loading while initializing
+  if (initializing || authLoading || !currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-900 via-teal-900 to-blue-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4"></div>
+          <p className="text-white text-lg font-medium">Loading onboarding...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex relative overflow-hidden">
@@ -342,6 +458,26 @@ export default function OwnerOnboarding() {
             animating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
           }`}>
             <form onSubmit={(e) => { e.preventDefault(); currentStep === totalSteps ? handleSubmit() : nextStep(); }}>
+              
+              {/* Error Display */}
+              {error && (
+                <div className="mb-6 p-4 bg-red-500/20 border-2 border-red-500/50 rounded-2xl backdrop-blur-sm">
+                  <div className="flex items-start space-x-3">
+                    <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="text-red-200 font-bold mb-1">Error Saving Data</h3>
+                      <p className="text-red-100 text-sm">{error}</p>
+                      <button
+                        type="button"
+                        onClick={() => setError(null)}
+                        className="mt-2 text-red-200 hover:text-white text-sm underline"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* STEP 1: Business Information */}
               {currentStep === 1 && (

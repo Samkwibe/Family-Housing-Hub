@@ -1,10 +1,11 @@
 // src/pages/Rent.jsx - Enhanced Rent Management with Payment Processing
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { useFamily } from '../contexts/FamilyContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { userDataService } from '../services/userDataService';
 import PaymentForm from '../components/PaymentForm';
 import {
   DollarSign,
@@ -42,15 +43,23 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 
 
 export default function Rent() {
   const { rentPayments = [], addRentPayment, loading } = useFamily();
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, updateLeaseInfo } = useAuth();
   const { isDark } = useTheme();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showRecordModal, setShowRecordModal] = useState(false);
   const [showUtilitiesModal, setShowUtilitiesModal] = useState(false);
+  const [showRentSettingsModal, setShowRentSettingsModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [submitting, setSubmitting] = useState(false);
   const [utilities, setUtilities] = useState([]);
   const [editingUtility, setEditingUtility] = useState(null);
+  const [renterData, setRenterData] = useState(null);
+  const [monthlyRent, setMonthlyRent] = useState(0);
+  const [rentSettings, setRentSettings] = useState({
+    monthlyRent: '',
+    dueDay: '1',
+    autoGenerate: false
+  });
 
   // Utility form state
   const [utilityForm, setUtilityForm] = useState({
@@ -63,14 +72,50 @@ export default function Rent() {
     notes: ''
   });
 
+  // Load renter data to get rent amount
+  useEffect(() => {
+    const loadRenterData = async () => {
+      if (!currentUser) return;
+      
+      try {
+        const data = await userDataService.getRenterData(currentUser.uid);
+        if (data) {
+          setRenterData(data);
+          // Get rent amount from multiple sources (priority order)
+          const rentFromBudget = data.financial?.rentBudget || 0;
+          const rentFromLease = userProfile?.lease?.monthlyRent || 0;
+          const rentAmount = rentFromLease || rentFromBudget || 0;
+          setMonthlyRent(rentAmount);
+          
+          // Initialize rent settings
+          setRentSettings(prev => ({
+            ...prev,
+            monthlyRent: rentAmount.toString()
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading renter data:', error);
+      }
+    };
+
+    loadRenterData();
+  }, [currentUser, userProfile]);
+
   // Payment form state
   const [paymentForm, setPaymentForm] = useState({
-    amount: userProfile?.lease?.monthlyRent || '',
+    amount: monthlyRent || '',
     paymentMethod: 'bank_transfer',
     confirmationNumber: '',
     notes: '',
     paidDate: new Date().toISOString().split('T')[0]
   });
+
+  // Update payment form when monthly rent changes
+  useEffect(() => {
+    if (monthlyRent > 0 && !paymentForm.amount) {
+      setPaymentForm(prev => ({ ...prev, amount: monthlyRent }));
+    }
+  }, [monthlyRent]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -92,15 +137,20 @@ export default function Rent() {
     const nextDue = pendingPayments
       .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0];
 
+    // Get monthly rent from multiple sources
+    const rentFromLease = userProfile?.lease?.monthlyRent || 0;
+    const rentFromBudget = renterData?.financial?.rentBudget || 0;
+    const finalMonthlyRent = rentFromLease || rentFromBudget || monthlyRent || 0;
+
     return {
       totalPaid: paidPayments.length,
       totalPending: pendingPayments.length,
       totalOverdue: overduePayments.length,
       totalPaidThisYear,
       nextDue,
-      monthlyRent: userProfile?.lease?.monthlyRent || 0
+      monthlyRent: finalMonthlyRent
     };
-  }, [rentPayments, userProfile]);
+  }, [rentPayments, userProfile, renterData, monthlyRent]);
 
   // Filter payments
   const filteredPayments = useMemo(() => {
@@ -204,6 +254,14 @@ export default function Rent() {
           <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your rent payments and view payment history</p>
         </div>
         <div className="flex space-x-3">
+          <button
+            onClick={() => setShowRentSettingsModal(true)}
+            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-5 py-3 rounded-xl font-semibold flex items-center space-x-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            title="Set your monthly rent amount"
+          >
+            <Edit className="h-5 w-5" />
+            <span>Set Rent</span>
+          </button>
           <button
             onClick={() => setShowRecordModal(true)}
             className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-5 py-3 rounded-xl font-semibold flex items-center space-x-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -765,6 +823,147 @@ export default function Rent() {
                     <>
                       <CheckCircle className="h-4 w-4" />
                       <span>Record Payment</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Rent Settings Modal */}
+      {showRentSettingsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl transition-colors duration-200">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Set Monthly Rent</h2>
+                <button
+                  onClick={() => setShowRentSettingsModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  setSubmitting(true);
+                  
+                  const rentAmount = parseFloat(rentSettings.monthlyRent);
+                  if (!rentAmount || rentAmount <= 0) {
+                    toast.error('Please enter a valid rent amount');
+                    setSubmitting(false);
+                    return;
+                  }
+
+                  // Save to lease info
+                  await updateLeaseInfo({
+                    monthlyRent: rentAmount,
+                    startDate: userProfile?.lease?.startDate || null,
+                    endDate: userProfile?.lease?.endDate || null
+                  });
+
+                  // Also update renter data
+                  if (renterData) {
+                    await userDataService.saveRenterData(currentUser.uid, {
+                      financial: {
+                        ...renterData.financial,
+                        rentBudget: rentAmount
+                      }
+                    });
+                  }
+
+                  setMonthlyRent(rentAmount);
+                  setShowRentSettingsModal(false);
+                  toast.success('Monthly rent amount saved successfully!');
+                } catch (error) {
+                  console.error('Error saving rent amount:', error);
+                  toast.error('Failed to save rent amount');
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              className="p-6 space-y-5"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Monthly Rent Amount *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-lg">$</span>
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    min="0"
+                    value={rentSettings.monthlyRent}
+                    onChange={(e) => setRentSettings(prev => ({ ...prev, monthlyRent: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-lg"
+                    placeholder="0.00"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  This will be used for payment tracking and reminders
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Rent Due Day (Each Month)
+                </label>
+                <select
+                  value={rentSettings.dueDay}
+                  onChange={(e) => setRentSettings(prev => ({ ...prev, dueDay: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                >
+                  {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
+                    <option key={day} value={day.toString()}>
+                      {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of each month
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <input
+                  type="checkbox"
+                  id="autoGenerate"
+                  checked={rentSettings.autoGenerate}
+                  onChange={(e) => setRentSettings(prev => ({ ...prev, autoGenerate: e.target.checked }))}
+                  className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="autoGenerate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Automatically generate rent due reminders
+                </label>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowRentSettingsModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Save Rent Amount</span>
                     </>
                   )}
                 </button>

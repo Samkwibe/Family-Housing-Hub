@@ -30,25 +30,45 @@ import {
     Zap,
     ChevronRight,
     Smile,
-    TrendingUp
+    TrendingUp,
+    AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { userDataService } from '../services/userDataService';
+import { userService } from '../services/firebaseService';
 
 export default function RenterOnboarding() {
-    const { currentUser, userProfile, completeProfile, updateUserProfile } = useAuth();
+    const { currentUser, userProfile, completeProfile, updateUserProfile, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [animating, setAnimating] = useState(false);
+    const [error, setError] = useState(null);
+    const [initializing, setInitializing] = useState(true);
 
-    // Check if user is logged in
+    // Check if user is logged in and handle redirects
     useEffect(() => {
+        if (authLoading) {
+            return; // Still loading auth
+        }
+
         if (!currentUser) {
             toast.error('Please log in first');
-            navigate('/login');
+            navigate('/login', { replace: true });
+            return;
         }
-    }, [currentUser, navigate]);
+
+        // If user already completed onboarding, redirect to dashboard
+        if (userProfile?.onboardingComplete || userProfile?.profileComplete) {
+            if (userProfile?.userType === 'renter' || userProfile?.role === 'renter') {
+                navigate('/dashboard', { replace: true });
+                return;
+            }
+        }
+
+        // Initialize complete
+        setInitializing(false);
+    }, [currentUser, userProfile, navigate, authLoading]);
 
     const [formData, setFormData] = useState({
         // Step 1: Personal Info
@@ -151,18 +171,39 @@ export default function RenterOnboarding() {
     const handleSubmit = async () => {
         try {
             setLoading(true);
+            setError(null);
+
+            if (!currentUser || !currentUser.uid) {
+                toast.error('User not authenticated. Please log in again.');
+                navigate('/login', { replace: true });
+                setLoading(false);
+                return;
+            }
+
+            // Validate required fields
+            if (!formData.occupation || !formData.currentAddress || !formData.city) {
+                const missingFields = [];
+                if (!formData.occupation) missingFields.push('Occupation');
+                if (!formData.currentAddress) missingFields.push('Current Address');
+                if (!formData.city) missingFields.push('City');
+                
+                toast.error(`Please fill in: ${missingFields.join(', ')}`);
+                setError(`Please complete: ${missingFields.join(', ')}`);
+                setLoading(false);
+                return;
+            }
 
             // ORGANIZE RENTER DATA SEPARATELY - Don't mix with owner data
             const renterData = {
                 // Personal Information (Renter-specific)
                 personal: {
                     dateOfBirth: formData.dateOfBirth || null,
-                    occupation: formData.occupation,
-                    phone: formData.phoneNumber,
-                    emergencyContact: formData.emergencyContact.name ? {
+                    occupation: formData.occupation || 'Not specified',
+                    phone: formData.phoneNumber || null,
+                    emergencyContact: (formData.emergencyContact?.name) ? {
                         name: formData.emergencyContact.name,
-                        relationship: formData.emergencyContact.relationship,
-                        phone: formData.emergencyContact.phone
+                        relationship: formData.emergencyContact.relationship || 'Other',
+                        phone: formData.emergencyContact.phone || null
                     } : null
                 },
                 
@@ -178,10 +219,10 @@ export default function RenterOnboarding() {
                 // Housing Information (Renter-specific)
                 housing: {
                     address: {
-                        street: formData.currentAddress,
-                        city: formData.city,
-                        state: formData.state,
-                        zipCode: formData.zipCode,
+                        street: formData.currentAddress || '',
+                        city: formData.city || '',
+                        state: formData.state || '',
+                        zipCode: formData.zipCode || '',
                         country: 'USA'
                     },
                     moveInDate: formData.moveInDate || null,
@@ -192,39 +233,86 @@ export default function RenterOnboarding() {
                 financial: {
                     monthlyIncome: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : null,
                     rentBudget: formData.rentBudget ? parseFloat(formData.rentBudget) : null,
-                    employmentStatus: formData.employmentStatus,
+                    employmentStatus: formData.employmentStatus || 'employed',
                     employer: formData.employer || null
                 },
                 
                 // Preferences (Renter-specific)
                 preferences: {
-                    contactMethod: formData.preferredContactMethod,
-                    notifications: formData.notifications
+                    contactMethod: formData.preferredContactMethod || 'email',
+                    notifications: formData.notifications || {
+                        rentReminders: true,
+                        maintenanceUpdates: true,
+                        familyMessages: true
+                    }
                 }
             };
 
-            // Save renter data using the data organization service
-            await userDataService.saveRenterData(currentUser.uid, renterData);
+            console.log('Saving renter data...', { userId: currentUser.uid, renterData });
+
+            // Step 1: Save renter data using the data organization service
+            try {
+                const savedData = await userDataService.saveRenterData(currentUser.uid, renterData);
+                console.log('Renter data saved successfully:', savedData);
+                toast.success('Renter data saved!');
+            } catch (saveError) {
+                console.error('Error saving renter data:', saveError);
+                throw new Error(`Failed to save renter data: ${saveError.message}`);
+            }
             
-            // Also update profile completion status
-            await updateUserProfile(currentUser.uid, {
-                profileComplete: true,
-                onboardingComplete: true,
-                onboardingCompletedAt: new Date().toISOString(),
-                userType: 'renter' // Ensure userType is set
-            });
+            // Step 2: Update profile completion status
+            try {
+                const updatedProfile = await updateUserProfile(currentUser.uid, {
+                    profileComplete: true,
+                    onboardingComplete: true,
+                    onboardingCompletedAt: new Date().toISOString(),
+                    userType: 'renter', // Ensure userType is set
+                    role: 'renter'
+                });
+                console.log('Profile updated successfully:', updatedProfile);
+                toast.success('Profile updated!');
+                
+                // Step 3: Reload profile from Firestore to ensure we have latest data
+                try {
+                    const freshProfile = await userService.getUserProfile(currentUser.uid);
+                    console.log('Profile reloaded from Firestore:', freshProfile);
+                    
+                    // Force a small delay to ensure state updates propagate
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } catch (reloadError) {
+                    console.warn('Could not reload profile, but continuing:', reloadError);
+                }
+            } catch (profileError) {
+                console.error('Error updating profile:', profileError);
+                // Don't throw - data might still be saved
+                toast.error('Profile update had issues, but data was saved');
+            }
+
+            // Step 4: Verify data was saved (optional check)
+            try {
+                const verifyData = await userDataService.getRenterData(currentUser.uid);
+                if (!verifyData) {
+                    console.warn('Data verification: Renter data not found, but continuing...');
+                } else {
+                    console.log('Data verified successfully:', verifyData);
+                }
+            } catch (verifyError) {
+                console.warn('Could not verify data, but continuing:', verifyError);
+            }
             
             toast.success('🎉 Welcome to FamilyHub! Your family account is ready!');
             
-            // Navigate to renter dashboard based on user type
-            // Small delay to ensure profile update is saved
+            // Step 5: Navigate to renter dashboard
+            // Use a longer delay and force navigation with replace to prevent back button issues
             setTimeout(() => {
+                console.log('Navigating to renter dashboard...');
+                // Use navigate with replace for better React Router integration
                 navigate('/dashboard', { replace: true });
-            }, 500);
+            }, 1500);
         } catch (error) {
             console.error('Error completing onboarding:', error);
-            toast.error('Failed to complete setup. Please try again.');
-        } finally {
+            setError(error.message || 'Failed to complete setup. Please try again.');
+            toast.error(error.message || 'Failed to complete setup. Please try again.');
             setLoading(false);
         }
     };
@@ -235,6 +323,18 @@ export default function RenterOnboarding() {
     };
 
     const progress = (currentStep / totalSteps) * 100;
+
+    // Show loading while initializing
+    if (initializing || authLoading || !currentUser) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-pink-900 to-blue-900">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4"></div>
+                    <p className="text-white text-lg font-medium">Loading onboarding...</p>
+                </div>
+            </div>
+        );
+    }
 
     // Background images for each step - Different from owner
     const stepBackgrounds = [
@@ -362,6 +462,26 @@ export default function RenterOnboarding() {
                         animating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
                     }`}>
                         <form onSubmit={(e) => { e.preventDefault(); currentStep === totalSteps ? handleSubmit() : nextStep(); }}>
+
+                            {/* Error Display */}
+                            {error && (
+                                <div className="mb-6 p-4 bg-red-500/20 border-2 border-red-500/50 rounded-2xl backdrop-blur-sm">
+                                    <div className="flex items-start space-x-3">
+                                        <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                            <h3 className="text-red-200 font-bold mb-1">Error Saving Data</h3>
+                                            <p className="text-red-100 text-sm">{error}</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setError(null)}
+                                                className="mt-2 text-red-200 hover:text-white text-sm underline"
+                                            >
+                                                Dismiss
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* STEP 1: Personal Information */}
                             {currentStep === 1 && (

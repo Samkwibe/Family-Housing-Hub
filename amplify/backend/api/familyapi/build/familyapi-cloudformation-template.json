@@ -378,7 +378,7 @@
         "Name": "familyapi"
       }
     },
-    "familyapiDefault4XXResponsedebff3d3": {
+    "familyapiDefault4XXResponse36fef01d": {
       "Type": "AWS::ApiGateway::GatewayResponse",
       "Properties": {
         "ResponseParameters": {
@@ -393,7 +393,7 @@
         }
       }
     },
-    "familyapiDefault5XXResponsedebff3d3": {
+    "familyapiDefault5XXResponse36fef01d": {
       "Type": "AWS::ApiGateway::GatewayResponse",
       "Properties": {
         "ResponseParameters": {
@@ -408,7 +408,7 @@
         }
       }
     },
-    "DeploymentAPIGWfamilyapi5e7848bc": {
+    "DeploymentAPIGWfamilyapid9286287": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "Description": "The Development stage deployment of your API.",
@@ -426,8 +426,8 @@
         }
       },
       "DependsOn": [
-        "familyapiDefault4XXResponsedebff3d3",
-        "familyapiDefault5XXResponsedebff3d3"
+        "familyapiDefault4XXResponse36fef01d",
+        "familyapiDefault5XXResponse36fef01d"
       ]
     }
   }

@@ -32,7 +32,27 @@ export default function DashboardRouter() {
       setLoading(true);
       setError(null);
 
-      const userType = userProfile?.userType || userProfile?.role;
+      // Try to get userType from profile, or check data directly
+      let userType = userProfile?.userType || userProfile?.role;
+      
+      // If userType not in profile, try to determine from data
+      if (!userType) {
+        try {
+          // Try owner data first
+          const ownerData = await userDataService.getOwnerData(currentUser.uid);
+          if (ownerData) {
+            userType = 'owner';
+          } else {
+            // Try renter data
+            const renterData = await userDataService.getRenterData(currentUser.uid);
+            if (renterData) {
+              userType = 'renter';
+            }
+          }
+        } catch (checkError) {
+          console.log('Could not determine user type from data:', checkError);
+        }
+      }
 
       // CHILDREN: Always go to child dashboard
       if (userType === 'child') {
@@ -103,16 +123,18 @@ export default function DashboardRouter() {
         return;
       }
 
-      // Default: Try to determine from profile
-      if (userProfile?.profileComplete) {
-        // User completed onboarding but userType not set - use default
+      // Default: Check if onboarding is complete
+      if (userProfile?.profileComplete || userProfile?.onboardingComplete) {
+        // User completed onboarding but userType not set - try to infer from data
+        // If we can't determine, default to renter
         setDashboardData({ type: 'renter' });
-      } else {
-        // Not completed onboarding - redirect to onboarding
-        navigate('/onboarding', { replace: true });
+        setLoading(false);
         return;
       }
 
+      // Not completed onboarding - redirect to onboarding
+      console.log('User not onboarded, redirecting to onboarding...');
+      navigate('/onboarding', { replace: true });
       setLoading(false);
     } catch (err) {
       console.error('Error in dashboard router:', err);
@@ -162,8 +184,12 @@ export default function DashboardRouter() {
 
   if (dashboardData?.type === 'owner') {
     // Pass dashboard data as props so OwnerDashboard can adapt
-    // OwnerDashboard has its own full layout
-    return <OwnerDashboard dashboardData={dashboardData} />;
+    // Wrap with Layout to show navigation sidebar
+    return (
+      <Layout>
+        <OwnerDashboard dashboardData={dashboardData} />
+      </Layout>
+    );
   }
 
   if (dashboardData?.type === 'renter') {

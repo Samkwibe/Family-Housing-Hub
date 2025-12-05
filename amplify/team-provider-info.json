@@ -22,7 +22,7 @@
       "function": {
         "familyfunction": {
           "deploymentBucketName": "amplify-familyhousinghub-dev-49c08-deployment",
-          "s3Key": "amplify-builds/familyfunction-4245676e496e66693261-build.zip"
+          "s3Key": "amplify-builds/familyfunction-495839553950364f3735-build.zip"
         }
       },
       "hosting": {

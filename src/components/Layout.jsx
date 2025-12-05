@@ -36,9 +36,10 @@ import { useTheme } from '../contexts/ThemeContext';
 import LangSwitch from './LangSwitch';
 import NotificationCenter from './NotificationCenter';
 
-const navigation = [
+// Base navigation items - all family features
+const allNavigationItems = [
   { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Rent', href: '/rent', icon: DollarSign },
+  { name: 'Rent', href: '/rent', icon: DollarSign, showFor: ['renter'] }, // Only for renters
   { name: 'Budget', href: '/budget', icon: Wallet },
   { name: 'Maintenance', href: '/maintenance', icon: Wrench },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
@@ -51,8 +52,8 @@ const navigation = [
   { name: 'AI Assistant', href: '/assistant', icon: Zap },
   { name: 'Resources', href: '/resources', icon: Users },
   { name: 'Nearby Places', href: '/map', icon: MapPin },
-  { name: 'House Search', href: '/house-search', icon: Building2 },
-  { name: 'Landlord', href: '/landlord', icon: Building },
+  { name: 'House Search', href: '/house-search', icon: Building2, showFor: ['renter'] }, // Only for renters
+  { name: 'Landlord', href: '/landlord', icon: Building, showFor: ['renter'] }, // Only for renters
   { name: 'Profile', href: '/profile', icon: User },
 ];
 
@@ -67,6 +68,34 @@ export default function Layout({ children }) {
 
   // FIX: Add null check for messages to prevent the filter error
   const unreadMessages = messages?.filter(m => !m.read).length || 0;
+
+  // Filter navigation based on user type
+  // For owners who live in their home (residence), show all family features except rent-related
+  // For renters, show everything including rent features
+  const userType = userProfile?.userType || userProfile?.role;
+  const isOwner = userType === 'owner';
+  const isRenter = userType === 'renter';
+  
+  // Filter navigation items based on user type
+  const navigation = allNavigationItems.filter(item => {
+    // If item has showFor restriction, check if user type matches
+    if (item.showFor) {
+      return item.showFor.includes(userType);
+    }
+    // For owners (residence - family needs), hide rent-related items
+    // Show all family features like renters, but NOT rent-related stuff
+    if (isOwner) {
+      // Hide: Rent, Landlord, House Search (owners already own their home)
+      // Show: All other family features (Budget, Maintenance, Calendar, Shopping, Documents, Messages, Children, Health, Safety, AI Assistant, Resources, Nearby Places, Profile)
+      return !['Rent', 'Landlord', 'House Search'].includes(item.name);
+    }
+    // For renters, show everything including rent features
+    if (isRenter) {
+      return true;
+    }
+    // Default: show all items
+    return true;
+  });
 
   const handleLogout = async () => {
     try {
@@ -341,7 +370,9 @@ export default function Layout({ children }) {
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {userProfile?.firstName} {userProfile?.lastName}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Family</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {isOwner ? 'Home Owner' : isRenter ? 'Renter' : 'Family'}
+                    </p>
                   </div>
                   {userProfile?.photoURL ? (
                     <img

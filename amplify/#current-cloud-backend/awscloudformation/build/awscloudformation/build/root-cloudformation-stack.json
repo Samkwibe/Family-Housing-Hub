@@ -314,7 +314,7 @@
         "TemplateURL": "https://s3.amazonaws.com/amplify-familyhousinghub-dev-49c08-deployment/amplify-cfn-templates/function/familyfunction-cloudformation-template.json",
         "Parameters": {
           "deploymentBucketName": "amplify-familyhousinghub-dev-49c08-deployment",
-          "s3Key": "amplify-builds/familyfunction-4245676e496e66693261-build.zip",
+          "s3Key": "amplify-builds/familyfunction-495839553950364f3735-build.zip",
           "env": "dev"
         }
       }

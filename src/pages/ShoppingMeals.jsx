@@ -585,9 +585,13 @@ const AIChatAssistant = ({ onClose, onAddMeal, pantryItems = [] }) => {
       // Auto-send after image is loaded
       setTimeout(() => {
         // Use a ref to access the latest handleSendMessage
-        const sendButton = document.querySelector('[data-send-button]');
-        if (sendButton && !sendButton.disabled) {
-          sendButton.click();
+        try {
+          const sendButton = document.querySelector('[data-send-button]');
+          if (sendButton && sendButton.nodeName && !sendButton.disabled) {
+            sendButton.click();
+          }
+        } catch (error) {
+          console.warn('Could not auto-send message:', error);
         }
       }, 800);
     };

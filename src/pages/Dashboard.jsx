@@ -1,9 +1,10 @@
 // src/pages/Dashboard.jsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFamily } from '../contexts/FamilyContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { userDataService } from '../services/userDataService';
 import {
   DollarSign,
   Wrench,
@@ -28,23 +29,53 @@ import {
   Wallet,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  User
 } from 'lucide-react';
 
 // Safe data processing with useMemo for performance
 export default function Dashboard({ dashboardData: onboardingData }) {
   const { maintenanceRequests = [], rentPayments = [], documents = [], messages = [], loading } = useFamily();
-  const { userProfile } = useAuth();
+  const { userProfile, currentUser } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
   
-  // Use onboarding data if available
-  const renterData = onboardingData || {};
+  const [renterData, setRenterData] = useState(onboardingData || {});
+  const [loadingRenterData, setLoadingRenterData] = useState(false);
 
   // Determine user type (owner or renter)
   const userType = userProfile?.userType || 'renter';
   const isOwner = userType === 'owner';
   const isRenter = userType === 'renter';
+
+  // Load renter data from Firestore if not provided via props
+  useEffect(() => {
+    const loadRenterData = async () => {
+      if (!currentUser || !isRenter) return;
+      
+      // If we already have data from props, use it
+      if (onboardingData && Object.keys(onboardingData).length > 0) {
+        setRenterData(onboardingData);
+        return;
+      }
+
+      // Otherwise, load from Firestore
+      try {
+        setLoadingRenterData(true);
+        const data = await userDataService.getRenterData(currentUser.uid);
+        if (data) {
+          setRenterData(data);
+          console.log('Renter data loaded:', data);
+        }
+      } catch (error) {
+        console.error('Error loading renter data:', error);
+      } finally {
+        setLoadingRenterData(false);
+      }
+    };
+
+    loadRenterData();
+  }, [currentUser, isRenter, onboardingData]);
 
   // Memoized calculations for better performance
   const dashboardData = useMemo(() => {
@@ -436,6 +467,162 @@ export default function Dashboard({ dashboardData: onboardingData }) {
               })}
             </div>
           </div>
+
+          {/* Renter Information Card - Shows onboarding data */}
+          {isRenter && renterData && Object.keys(renterData).length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                <Users className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                Your Family Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Family Info */}
+                {renterData.family && (
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                      <Users className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                      Family
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Family Size:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{renterData.family.size || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Adults:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{renterData.family.adults || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Children:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{renterData.family.children || 0}</span>
+                      </div>
+                      {renterData.family.hasPets && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Pets:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">Yes</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Housing Info */}
+                {renterData.housing && (
+                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                      <Home className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
+                      Housing
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      {renterData.housing.address && (
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Address:</span>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {renterData.housing.address.street || ''}
+                            {renterData.housing.address.city && `, ${renterData.housing.address.city}`}
+                            {renterData.housing.address.state && `, ${renterData.housing.address.state}`}
+                            {renterData.housing.address.zipCode && ` ${renterData.housing.address.zipCode}`}
+                          </p>
+                        </div>
+                      )}
+                      {renterData.housing.moveInDate && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Move-in Date:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {new Date(renterData.housing.moveInDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                      {renterData.housing.leaseDuration && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Lease Duration:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{renterData.housing.leaseDuration} months</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Financial Info */}
+                {renterData.financial && (
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                      <DollarSign className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" />
+                      Financial
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      {renterData.financial.monthlyIncome && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Monthly Income:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            ${renterData.financial.monthlyIncome.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {renterData.financial.rentBudget && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Rent Budget:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            ${renterData.financial.rentBudget.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {renterData.financial.employmentStatus && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Employment:</span>
+                          <span className="font-medium text-gray-900 dark:text-white capitalize">
+                            {renterData.financial.employmentStatus}
+                          </span>
+                        </div>
+                      )}
+                      {renterData.financial.employer && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Employer:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{renterData.financial.employer}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Personal Info */}
+                {renterData.personal && (
+                  <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                      <User className="h-4 w-4 mr-2 text-orange-600 dark:text-orange-400" />
+                      Personal
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      {renterData.personal.occupation && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Occupation:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{renterData.personal.occupation}</span>
+                        </div>
+                      )}
+                      {renterData.personal.phone && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Phone:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{renterData.personal.phone}</span>
+                        </div>
+                      )}
+                      {renterData.personal.emergencyContact && (
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Emergency Contact:</span>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {renterData.personal.emergencyContact.name}
+                            {renterData.personal.emergencyContact.relationship && ` (${renterData.personal.emergencyContact.relationship})`}
+                          </p>
+                          {renterData.personal.emergencyContact.phone && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{renterData.personal.emergencyContact.phone}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Rent Overview - Only for Renters */}
           {isRenter && (

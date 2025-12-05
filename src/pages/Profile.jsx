@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { familyInvitationService } from '../services/firebaseService';
+import { userDataService } from '../services/userDataService';
 
 export default function Profile() {
   const {
@@ -43,6 +44,10 @@ export default function Profile() {
     removeFamilyMember,
     updateLeaseInfo
   } = useAuth();
+  
+  const [renterData, setRenterData] = useState(null);
+  const [ownerData, setOwnerData] = useState(null);
+  const [loadingUserData, setLoadingUserData] = useState(false);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [editMode, setEditMode] = useState({});
@@ -69,12 +74,34 @@ export default function Profile() {
     relationship: 'Family Member'
   });
 
-  // Load sent invitations
+  // Load sent invitations and user-specific data
   useEffect(() => {
     if (currentUser) {
       loadSentInvitations();
+      loadUserSpecificData();
     }
   }, [currentUser]);
+
+  const loadUserSpecificData = async () => {
+    if (!currentUser) return;
+    
+    try {
+      setLoadingUserData(true);
+      const userType = userProfile?.userType || userProfile?.role;
+      
+      if (userType === 'renter') {
+        const data = await userDataService.getRenterData(currentUser.uid);
+        setRenterData(data);
+      } else if (userType === 'owner') {
+        const data = await userDataService.getOwnerData(currentUser.uid);
+        setOwnerData(data);
+      }
+    } catch (error) {
+      console.error('Error loading user-specific data:', error);
+    } finally {
+      setLoadingUserData(false);
+    }
+  };
 
   const loadSentInvitations = async () => {
     setLoadingInvitations(true);
@@ -212,10 +239,47 @@ export default function Profile() {
       setLoading(true);
 
       try {
-        await updateUserProfile(localData);
+        if (!currentUser || !currentUser.uid) {
+          toast.error('User not authenticated');
+          setLoading(false);
+          return;
+        }
+
+        // Update user profile
+        await updateUserProfile(currentUser.uid, {
+          firstName: localData.firstName,
+          lastName: localData.lastName,
+          phone: localData.phone,
+          dateOfBirth: localData.dateOfBirth,
+          address: localData.address
+        });
+
+        // If user is a renter, also update renter data
+        if (userProfile?.userType === 'renter' && renterData) {
+          await userDataService.saveRenterData(currentUser.uid, {
+            personal: {
+              ...renterData.personal,
+              dateOfBirth: localData.dateOfBirth,
+              phone: localData.phone
+            },
+            housing: {
+              ...renterData.housing,
+              address: localData.address
+            }
+          });
+        }
+
+        toast.success('Personal information updated successfully!');
         setEditMode(prev => ({ ...prev, personal: false }));
+        
+        // Refresh profile data
+        if (userProfile?.userType === 'renter') {
+          const updatedData = await userDataService.getRenterData(currentUser.uid);
+          setRenterData(updatedData);
+        }
       } catch (error) {
         console.error('Error updating personal info:', error);
+        toast.error('Failed to update personal information. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -765,34 +829,57 @@ export default function Profile() {
       e.preventDefault();
       setLoading(true);
       try {
-        const updateData = {
-          housingStatus,
-          lease: {
-            startDate: leaseData.startDate,
-            endDate: leaseData.endDate,
-            monthlyRent: leaseData.monthlyRent,
-            securityDeposit: leaseData.securityDeposit
-          },
-          landlord: {
-            name: leaseData.landlordName,
-            phone: leaseData.landlordPhone,
-            email: leaseData.landlordEmail
-          }
-        };
-
-        if (housingStatus === 'own') {
-          updateData.mortgage = { monthlyPayment: leaseData.mortgageAmount };
-          updateData.property = {
-            value: leaseData.propertyValue,
-            purchaseDate: leaseData.purchaseDate
-          };
+        if (!currentUser || !currentUser.uid) {
+          toast.error('User not authenticated');
+          setLoading(false);
+          return;
         }
 
-        await updateUserProfile(updateData);
+        const monthlyRentValue = parseFloat(leaseData.monthlyRent) || 0;
+        const securityDepositValue = parseFloat(leaseData.securityDeposit) || 0;
+
+        // Update lease info using the proper function
+        await updateLeaseInfo({
+          monthlyRent: monthlyRentValue,
+          securityDeposit: securityDepositValue,
+          startDate: leaseData.startDate || null,
+          endDate: leaseData.endDate || null,
+          landlordName: leaseData.landlordName || null,
+          landlordPhone: leaseData.landlordPhone || null,
+          landlordEmail: leaseData.landlordEmail || null
+        });
+
+        // Also update user profile with landlord info
+        await updateUserProfile(currentUser.uid, {
+          landlord: {
+            name: leaseData.landlordName || null,
+            phone: leaseData.landlordPhone || null,
+            email: leaseData.landlordEmail || null
+          },
+          housingStatus: housingStatus
+        });
+
+        // If user is a renter, also update renter data
+        if (userProfile?.userType === 'renter' && renterData) {
+          await userDataService.saveRenterData(currentUser.uid, {
+            financial: {
+              ...renterData.financial,
+              rentBudget: monthlyRentValue
+            }
+          });
+        }
+
         setEditLease(false);
-        toast.success('Housing information updated!');
+        toast.success('Housing information updated successfully!');
+        
+        // Refresh renter data if applicable
+        if (userProfile?.userType === 'renter') {
+          const updatedData = await userDataService.getRenterData(currentUser.uid);
+          setRenterData(updatedData);
+        }
       } catch (error) {
         console.error('Error updating housing info:', error);
+        toast.error('Failed to update housing information. Please try again.');
       } finally {
         setLoading(false);
       }

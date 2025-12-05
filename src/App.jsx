@@ -22,6 +22,10 @@ const OwnerDashboard = lazy(() => import('./pages/OwnerDashboard'));
 const OwnerOnboarding = lazy(() => import('./pages/OwnerOnboarding'));
 const RenterOnboarding = lazy(() => import('./pages/RenterOnboarding'));
 const DashboardRouter = lazy(() => import('./components/DashboardRouter'));
+const OwnerTenants = lazy(() => import('./pages/OwnerTenants'));
+const OwnerProperties = lazy(() => import('./pages/OwnerProperties'));
+const OwnerLeases = lazy(() => import('./pages/OwnerLeases'));
+const OwnerPayments = lazy(() => import('./pages/OwnerPayments'));
 const Rent = lazy(() => import('./pages/Rent'));
 const Maintenance = lazy(() => import('./pages/Maintenance'));
 const Documents = lazy(() => import('./pages/Documents'));
@@ -65,14 +69,14 @@ const ProtectedRoute = ({ children }) => {
     return children;
   }
 
-  // OWNER: Check for onboarding
+  // OWNER: Allow access to dashboard even without onboarding (skip for now)
   if (userProfile?.userType === 'owner') {
-    if (!profileComplete && location.pathname !== '/owner-onboarding') {
-      return <Navigate to="/owner-onboarding" replace />;
-    }
+    // If on onboarding page and already complete, redirect to dashboard
     if (profileComplete && location.pathname === '/owner-onboarding') {
       return <Navigate to="/owner-dashboard" replace />;
     }
+    // Allow access to dashboard even if onboarding not complete (skip enabled)
+    // Only redirect to onboarding if explicitly trying to access it
     return children;
   }
 
@@ -188,6 +192,39 @@ const AppRouter = () => {
         <Route path="/owner-dashboard" element={
           <ProtectedRoute>
             <DashboardRouter />
+          </ProtectedRoute>
+        } />
+
+        {/* Owner-Specific Routes */}
+        <Route path="/owner/tenants" element={
+          <ProtectedRoute>
+            <Layout>
+              <OwnerTenants />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/owner/properties" element={
+          <ProtectedRoute>
+            <Layout>
+              <OwnerProperties />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/owner/leases" element={
+          <ProtectedRoute>
+            <Layout>
+              <OwnerLeases />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/owner/payments" element={
+          <ProtectedRoute>
+            <Layout>
+              <OwnerPayments />
+            </Layout>
           </ProtectedRoute>
         } />
 

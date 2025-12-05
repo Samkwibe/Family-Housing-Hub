@@ -1218,9 +1218,9 @@ I'll keep trying to help - please ask again!`,
   const categories = ['all', 'housing', 'health', 'financial', 'education', 'legal', 'employment', 'family', 'property'];
 
   return (
-    <div className={`h-[calc(100vh-120px)] flex flex-col max-w-7xl mx-auto p-4 lg:p-6 min-h-screen bg-gradient-to-br ${designTheme.bgGradient}`}>
+    <div className={`h-screen w-full flex flex-col p-4 lg:p-6 bg-gradient-to-br ${designTheme.bgGradient} overflow-hidden`}>
       {/* Enhanced Header */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className={`p-3 bg-gradient-to-br ${designTheme.gradientFrom} ${designTheme.gradientTo} rounded-2xl shadow-lg`}>
             <Brain className="h-8 w-8 text-white" />
@@ -1285,7 +1285,7 @@ I'll keep trying to help - please ask again!`,
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className={`mb-4 p-4 bg-${designTheme.primaryColor}-50 rounded-xl border border-${designTheme.primaryColor}-200`}>
+        <div className={`mb-3 p-3 bg-${designTheme.primaryColor}-50 rounded-xl border border-${designTheme.primaryColor}-200 flex-shrink-0`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className={`font-semibold text-${designTheme.primaryColor}-900`}>🤖 AI Assistant Settings</h3>
             <button onClick={() => setShowSettings(false)}>
@@ -1367,7 +1367,7 @@ I'll keep trying to help - please ask again!`,
 
       {/* Saved Chats Panel */}
       {showSavedChats && savedChats.length > 0 && (
-        <div className="mb-4 p-4 bg-green-50 rounded-xl border border-green-200 max-h-48 overflow-y-auto">
+        <div className="mb-3 p-3 bg-green-50 rounded-xl border border-green-200 max-h-40 overflow-y-auto flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-green-900">Saved Conversations</h3>
             <button onClick={() => setShowSavedChats(false)}>
@@ -1397,7 +1397,7 @@ I'll keep trying to help - please ask again!`,
 
       {/* Thinking Process */}
       {showThinkingProcess && thinkingSteps.length > 0 && (
-        <div className="mb-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="mb-3 p-3 bg-white rounded-xl border border-gray-200 shadow-sm flex-shrink-0">
           <h4 className="font-semibold mb-2">🤔 AI Thinking Process</h4>
           <div className="space-y-2">
             {thinkingSteps.map((step, idx) => (
@@ -1413,7 +1413,7 @@ I'll keep trying to help - please ask again!`,
       )}
 
       {/* Category Filter */}
-      <div className="mb-4">
+      <div className="mb-3 flex-shrink-0">
         <div className="flex items-center gap-2 overflow-x-auto pb-2">
           {categories.map((cat) => (
             <button
@@ -1432,7 +1432,7 @@ I'll keep trying to help - please ask again!`,
       </div>
 
       {/* Search Bar */}
-      <div className="mb-4">
+      <div className="mb-3 flex-shrink-0">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
@@ -1458,7 +1458,7 @@ I'll keep trying to help - please ask again!`,
       </div>
 
       {/* Quick Actions */}
-      <div className="mb-6">
+      <div className="mb-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-gray-700">Quick Help Topics</h3>
           <span className="text-xs text-gray-500">{userLocation} resources</span>

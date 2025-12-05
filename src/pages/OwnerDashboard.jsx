@@ -19,7 +19,7 @@ import toast from 'react-hot-toast';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function OwnerDashboard({ dashboardData }) {
-    const { currentUser, userProfile } = useAuth();
+    const { currentUser, userProfile, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const { theme, toggleTheme, isDark } = useTheme();
     const [loading, setLoading] = useState(true);
@@ -31,6 +31,7 @@ export default function OwnerDashboard({ dashboardData }) {
     const [children, setChildren] = useState([]);
     const [showAddProperty, setShowAddProperty] = useState(false);
     const [error, setError] = useState(null);
+    const [ownerData, setOwnerData] = useState(null);
 
     // Determine property usage from dashboard data or first property
     const propertyUsage = dashboardData?.propertyUsage || properties[0]?.usage || 'business';
@@ -39,16 +40,49 @@ export default function OwnerDashboard({ dashboardData }) {
 
     // Load all owner data
     useEffect(() => {
-        if (currentUser) {
-            // If we have onboarding data, use it immediately
-            if (dashboardData?.properties && dashboardData.properties.length > 0) {
-                setProperties(dashboardData.properties);
-                setLoading(false);
-            }
-            loadDashboardData();
-            setupRealtimeListeners();
+        if (authLoading) {
+            return; // Still loading auth
         }
-    }, [currentUser, dashboardData]);
+
+        if (!currentUser) {
+            navigate('/login', { replace: true });
+            return;
+        }
+
+        // Check if user is actually an owner
+        if (userProfile?.userType !== 'owner' && userProfile?.role !== 'owner') {
+            console.warn('User is not an owner, redirecting...');
+            navigate('/dashboard', { replace: true });
+            return;
+        }
+
+        // If owner hasn't completed onboarding, show a banner but allow access
+        // (onboarding is now optional)
+
+        // Load owner data first
+        const loadOwnerData = async () => {
+            try {
+                const data = await userDataService.getOwnerData(currentUser.uid);
+                if (data) {
+                    setOwnerData(data);
+                    if (data.properties && data.properties.length > 0) {
+                        setProperties(data.properties);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading owner data:', error);
+            }
+        };
+
+        // If we have onboarding data, use it immediately
+        if (dashboardData?.properties && dashboardData.properties.length > 0) {
+            setProperties(dashboardData.properties);
+        }
+
+        loadOwnerData();
+        loadDashboardData();
+        setupRealtimeListeners();
+    }, [currentUser, userProfile, dashboardData, authLoading, navigate]);
 
     const loadDashboardData = async () => {
         try {
@@ -269,12 +303,13 @@ export default function OwnerDashboard({ dashboardData }) {
         };
     }, [properties, tenants, maintenanceRequests, rentPayments, messages, children]);
 
-    if (loading) {
+    // Show loading while auth is loading or dashboard is initializing
+    if (authLoading || (loading && !properties.length && !dashboardData)) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:bg-gray-900">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Loading your dashboard...</p>
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 dark:border-purple-400 mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-300 font-medium">Loading your dashboard...</p>
                 </div>
             </div>
         );
@@ -286,11 +321,36 @@ export default function OwnerDashboard({ dashboardData }) {
     }
 
     return (
-        <div className={`p-6 max-w-7xl mx-auto space-y-6 min-h-screen transition-colors duration-200 ${!isDark
-                ? 'bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50'
-                : 'bg-gray-900'
-            }`}>
-            {/* Header */}
+        <div className="relative min-h-full">
+            {/* Beautiful Background with Image Overlay */}
+            <div 
+                className="fixed inset-0 z-0 transition-opacity duration-1000"
+                style={{
+                    backgroundImage: `url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=2073&q=80')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundAttachment: 'fixed'
+                }}
+            >
+                {/* Gradient Overlay */}
+                <div className={`absolute inset-0 transition-opacity duration-1000 ${
+                    !isDark 
+                        ? 'bg-gradient-to-br from-purple-900/40 via-blue-900/30 to-pink-900/40' 
+                        : 'bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95'
+                }`}></div>
+                
+                {/* Animated Background Elements */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-1/4 -left-20 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-soft-light filter blur-3xl animate-blob"></div>
+                    <div className="absolute top-1/2 -right-20 w-96 h-96 bg-blue-500/10 rounded-full mix-blend-soft-light filter blur-3xl animate-blob animation-delay-2000"></div>
+                    <div className="absolute -bottom-20 left-1/3 w-96 h-96 bg-pink-500/10 rounded-full mix-blend-soft-light filter blur-3xl animate-blob animation-delay-4000"></div>
+                </div>
+            </div>
+
+            {/* Content Container */}
+            <div className="relative z-10 p-6 max-w-7xl mx-auto space-y-6">
+                {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -318,34 +378,97 @@ export default function OwnerDashboard({ dashboardData }) {
                 </button>
             </div>
 
-            {/* Error Banner */}
+            {/* Error Banner with Glass Effect and Background */}
             {error && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                        <p className="text-yellow-800 dark:text-yellow-200 text-sm">{error}</p>
-                    </div>
-                    <button
-                        onClick={() => setError(null)}
-                        className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200"
+                <div className="relative rounded-xl border border-yellow-200/50 dark:border-yellow-800/50 overflow-hidden shadow-lg">
+                    {/* Background Image */}
+                    <div 
+                        className="absolute inset-0 z-0"
+                        style={{
+                            backgroundImage: `url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80')`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                        }}
                     >
-                        <X className="w-5 h-5" />
-                    </button>
+                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-50/90 via-orange-50/90 to-yellow-50/90 dark:from-yellow-900/40 dark:via-orange-900/40 dark:to-yellow-900/40 backdrop-blur-md"></div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="relative z-10 p-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                            <p className="text-yellow-800 dark:text-yellow-200 text-sm font-medium">{error}</p>
+                        </div>
+                        <button
+                            onClick={() => setError(null)}
+                            className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             )}
 
-            {/* Welcome Message for New Users */}
+            {/* Onboarding Reminder Banner with Glass Effect and Background */}
+            {userProfile && !userProfile.onboardingComplete && !userProfile.profileComplete && (
+                <div className="relative rounded-xl border border-blue-200/50 dark:border-blue-800/50 overflow-hidden mb-6 shadow-lg">
+                    {/* Background Image */}
+                    <div 
+                        className="absolute inset-0 z-0"
+                        style={{
+                            backgroundImage: `url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80')`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                        }}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/90 via-purple-50/90 to-blue-50/90 dark:from-blue-900/40 dark:via-purple-900/40 dark:to-blue-900/40 backdrop-blur-md"></div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="relative z-10 p-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <Building className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <div>
+                                <p className="text-blue-900 dark:text-blue-200 font-semibold">Complete Your Setup</p>
+                                <p className="text-blue-700 dark:text-blue-300 text-sm">Finish onboarding to unlock all features</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => navigate('/owner-onboarding')}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all transform hover:scale-105 active:scale-95 shadow-md"
+                        >
+                            Complete Setup
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Welcome Message for New Users with Glass Effect and Background */}
             {properties.length === 0 && !loading && (
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-800">
+                <div className="relative rounded-2xl p-6 border border-purple-200/50 dark:border-purple-800/50 shadow-2xl overflow-hidden">
+                    {/* Background Image */}
+                    <div 
+                        className="absolute inset-0 z-0"
+                        style={{
+                            backgroundImage: `url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80')`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                        }}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-50/90 via-pink-50/90 to-purple-50/90 dark:from-purple-900/40 dark:via-pink-900/40 dark:to-purple-900/40 backdrop-blur-xl"></div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="relative z-10">
                     <div className="flex items-start space-x-4">
-                        <div className="bg-purple-100 dark:bg-purple-900/50 p-3 rounded-xl">
-                            <Home className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                        <div className="bg-purple-100/80 dark:bg-purple-900/50 p-4 rounded-xl shadow-lg">
+                            <Home className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                                Welcome to your {propertyUsage === 'business' ? 'Property Business' : propertyUsage === 'residence' ? 'Home Owner' : 'Property Management'} Dashboard!
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                Welcome to your {propertyUsage === 'business' ? 'Property Business' : propertyUsage === 'residence' ? 'Home Owner' : 'Property Management'} Dashboard! 🎉
                             </h3>
-                            <p className="text-gray-600 dark:text-gray-400 mb-4">
+                            <p className="text-gray-700 dark:text-gray-300 mb-4 text-lg">
                                 {propertyUsage === 'business' 
                                     ? 'Start by adding your first rental property to track tenants, rent payments, and maintenance requests.'
                                     : propertyUsage === 'residence'
@@ -354,11 +477,12 @@ export default function OwnerDashboard({ dashboardData }) {
                             </p>
                             <button
                                 onClick={() => setShowAddProperty(true)}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all"
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg"
                             >
                                 <Plus className="w-5 h-5 inline mr-2" />
                                 Add Your First Property
                             </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -415,18 +539,30 @@ export default function OwnerDashboard({ dashboardData }) {
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 <QuickAction
                     icon={Building}
                     label="Properties"
-                    onClick={() => navigate('/owner-dashboard')}
+                    onClick={() => navigate('/owner/properties')}
                     color="purple"
                 />
                 <QuickAction
                     icon={Users}
                     label="Tenants"
-                    onClick={() => navigate('/owner-dashboard')}
+                    onClick={() => navigate('/owner/tenants')}
                     color="blue"
+                />
+                <QuickAction
+                    icon={FileText}
+                    label="Leases"
+                    onClick={() => navigate('/owner/leases')}
+                    color="indigo"
+                />
+                <QuickAction
+                    icon={DollarSign}
+                    label="Payments"
+                    onClick={() => navigate('/owner/payments')}
+                    color="green"
                 />
                 <QuickAction
                     icon={Wrench}
@@ -437,7 +573,7 @@ export default function OwnerDashboard({ dashboardData }) {
                 />
                 <QuickAction
                     icon={PiggyBank}
-                    label="Family & Children"
+                    label="Family"
                     onClick={() => navigate('/children')}
                     color="pink"
                     badge={stats.totalChildren}
@@ -446,44 +582,73 @@ export default function OwnerDashboard({ dashboardData }) {
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Properties List */}
-                <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                            <Building className="h-6 w-6 text-purple-600" />
-                            My Properties
-                        </h2>
-                        <button
-                            onClick={() => setShowAddProperty(true)}
-                            className="text-sm text-purple-600 hover:text-purple-700 font-semibold"
-                        >
-                            + Add New
-                        </button>
+                {/* Properties List with Glass Effect and Background */}
+                <div className="lg:col-span-2 relative rounded-2xl shadow-2xl border border-white/30 dark:border-gray-700/50 overflow-hidden">
+                    {/* Background Image */}
+                    <div 
+                        className="absolute inset-0 z-0"
+                        style={{
+                            backgroundImage: `url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80')`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                        }}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-white/85 to-white/90 dark:from-gray-900/95 dark:via-gray-800/95 dark:to-gray-900/95 backdrop-blur-md"></div>
                     </div>
-
-                    {properties.length === 0 ? (
-                        <EmptyState
-                            icon={Building}
-                            title="No Properties Yet"
-                            description="Add your first property to start managing tenants and collecting rent"
-                            actionLabel="Add Property"
-                            onAction={() => setShowAddProperty(true)}
-                        />
-                    ) : (
-                        <div className="space-y-4">
-                            {properties.slice(0, 5).map((property) => (
-                                <PropertyCard key={property.id} property={property} />
-                            ))}
+                    
+                    {/* Content */}
+                    <div className="relative z-10 p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                                <Building className="h-6 w-6 text-purple-600" />
+                                My Properties
+                            </h2>
+                            <button
+                                onClick={() => setShowAddProperty(true)}
+                                className="text-sm text-purple-600 hover:text-purple-700 font-semibold"
+                            >
+                                + Add New
+                            </button>
                         </div>
-                    )}
+
+                        {properties.length === 0 ? (
+                            <EmptyState
+                                icon={Building}
+                                title="No Properties Yet"
+                                description="Add your first property to start managing tenants and collecting rent"
+                                actionLabel="Add Property"
+                                onAction={() => setShowAddProperty(true)}
+                            />
+                        ) : (
+                            <div className="space-y-4">
+                                {properties.slice(0, 5).map((property) => (
+                                    <PropertyCard key={property.id} property={property} />
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Activity & Alerts */}
                 <div className="space-y-6">
-                    {/* Urgent Alerts */}
+                    {/* Urgent Alerts with Glass Effect and Background */}
                     {stats.urgentMaintenance > 0 && (
-                        <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl border-2 border-red-200 p-6">
-                            <div className="flex items-start gap-3">
+                        <div className="relative rounded-2xl border-2 border-red-200/50 dark:border-red-800/50 overflow-hidden shadow-2xl">
+                            {/* Background Image */}
+                            <div 
+                                className="absolute inset-0 z-0"
+                                style={{
+                                    backgroundImage: `url('https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                }}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-red-50/90 via-orange-50/90 to-red-50/90 dark:from-red-900/40 dark:via-orange-900/40 dark:to-red-900/40 backdrop-blur-md"></div>
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="relative z-10 p-6">
+                                <div className="flex items-start gap-3">
                                 <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
                                 <div>
                                     <h3 className="font-bold text-red-900 mb-1">Urgent Maintenance!</h3>
@@ -497,13 +662,28 @@ export default function OwnerDashboard({ dashboardData }) {
                                         View Now <ArrowUpRight className="h-4 w-4" />
                                     </button>
                                 </div>
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Recent Messages */}
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    {/* Recent Messages with Glass Effect and Background */}
+                    <div className="relative rounded-2xl shadow-2xl border border-white/30 dark:border-gray-700/50 overflow-hidden">
+                        {/* Background Image */}
+                        <div 
+                            className="absolute inset-0 z-0"
+                            style={{
+                                backgroundImage: `url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                            }}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-white/85 to-white/90 dark:from-gray-900/95 dark:via-gray-800/95 dark:to-gray-900/95 backdrop-blur-md"></div>
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="relative z-10 p-6">
+                            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <MessageSquare className="h-5 w-5 text-blue-600" />
                             Messages
                             {stats.unreadMessages > 0 && (
@@ -539,120 +719,295 @@ export default function OwnerDashboard({ dashboardData }) {
                         </div>
                     </div>
 
-                    {/* Family Quick Stats */}
+                    {/* Family Quick Stats with Glass Effect and Background */}
                     {stats.totalChildren > 0 && (
-                        <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl border border-pink-200 p-6">
-                            <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                <Heart className="h-5 w-5 text-pink-600" />
-                                Family
-                            </h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Children:</span>
-                                    <span className="font-semibold text-gray-900">{stats.totalChildren}</span>
+                        <div className="relative rounded-2xl border border-pink-200/50 dark:border-pink-800/50 overflow-hidden shadow-2xl">
+                            {/* Background Image */}
+                            <div 
+                                className="absolute inset-0 z-0"
+                                style={{
+                                    backgroundImage: `url('https://images.unsplash.com/photo-1511895426328-dc8714191300?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                }}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-pink-50/90 via-purple-50/90 to-pink-50/90 dark:from-pink-900/40 dark:via-purple-900/40 dark:to-pink-900/40 backdrop-blur-md"></div>
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="relative z-10 p-6">
+                                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <Heart className="h-5 w-5 text-pink-600" />
+                                    Family
+                                </h3>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Children:</span>
+                                        <span className="font-semibold text-gray-900">{stats.totalChildren}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => navigate('/children')}
+                                        className="w-full mt-3 bg-white border border-pink-200 text-pink-600 py-2 rounded-lg font-medium hover:bg-pink-50 transition-colors"
+                                    >
+                                        Manage Children
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => navigate('/children')}
-                                    className="w-full mt-3 bg-white border border-pink-200 text-pink-600 py-2 rounded-lg font-medium hover:bg-pink-50 transition-colors"
-                                >
-                                    Manage Children
-                                </button>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Maintenance Requests */}
+            {/* Maintenance Requests with Glass Effect and Background */}
             {maintenanceRequests.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                            <Wrench className="h-6 w-6 text-orange-600" />
-                            Maintenance Requests
-                        </h2>
-                        <button
-                            onClick={() => navigate('/maintenance')}
-                            className="text-sm text-orange-600 hover:text-orange-700 font-semibold"
-                        >
-                            View All
-                        </button>
+                <div className="relative rounded-2xl shadow-2xl border border-white/30 dark:border-gray-700/50 overflow-hidden">
+                    {/* Background Image */}
+                    <div 
+                        className="absolute inset-0 z-0"
+                        style={{
+                            backgroundImage: `url('https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80')`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                        }}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-white/85 to-white/90 dark:from-gray-900/95 dark:via-gray-800/95 dark:to-gray-900/95 backdrop-blur-md"></div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {maintenanceRequests.slice(0, 6).map((request) => (
-                            <MaintenanceCard key={request.id} request={request} />
-                        ))}
+                    
+                    {/* Content */}
+                    <div className="relative z-10 p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                                <Wrench className="h-6 w-6 text-orange-600" />
+                                Maintenance Requests
+                            </h2>
+                            <button
+                                onClick={() => navigate('/maintenance')}
+                                className="text-sm text-orange-600 hover:text-orange-700 font-semibold"
+                            >
+                                View All
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {maintenanceRequests.slice(0, 6).map((request) => (
+                                <MaintenanceCard key={request.id} request={request} />
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
-        </div>
-    );
-}
-
-// Stat Card Component
-function StatCard({ title, value, subtitle, icon: Icon, gradient, trend }) {
-    return (
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-start justify-between">
-                <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-                    <h3 className="text-3xl font-bold text-gray-900 mb-2">{value}</h3>
-                    <p className="text-xs text-gray-500">{subtitle}</p>
-                </div>
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient}`}>
-                    <Icon className="h-6 w-6 text-white" />
-                </div>
             </div>
-            {trend && (
-                <div className="mt-4 flex items-center gap-1">
-                    {trend === 'up' && <TrendingUp className="h-4 w-4 text-green-600" />}
-                    {trend === 'down' && <TrendingDown className="h-4 w-4 text-red-600" />}
-                    {trend === 'neutral' && <Minus className="h-4 w-4 text-gray-400" />}
-                    <span className={`text-xs font-medium ${trend === 'up' ? 'text-green-600' :
-                        trend === 'down' ? 'text-red-600' :
-                            'text-gray-500'
-                        }`}>
-                        {trend === 'up' ? 'Good' : trend === 'down' ? 'Needs Attention' : 'Stable'}
-                    </span>
-                </div>
-            )}
+            </div>
+
+            {/* Add CSS for blob animation */}
+            <style>{`
+                @keyframes blob {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    33% { transform: translate(50px, -30px) scale(1.1); }
+                    66% { transform: translate(-30px, 30px) scale(0.9); }
+                }
+                .animate-blob {
+                    animation: blob 10s infinite;
+                }
+                .animation-delay-2000 {
+                    animation-delay: 2s;
+                }
+                .animation-delay-4000 {
+                    animation-delay: 4s;
+                }
+            `}</style>
         </div>
     );
 }
 
-// Quick Action Component
+// Stat Card Component with Glass Effect and Background Image
+function StatCard(props) {
+    const { title, value, subtitle, icon: Icon, gradient, trend, bgImage } = props;
+    // Get background image based on title if not provided
+    const getBackgroundImage = () => {
+        if (bgImage) return bgImage;
+        const titleLower = title.toLowerCase();
+        if (titleLower.includes('property') || titleLower.includes('home')) {
+            return 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+        }
+        if (titleLower.includes('rent') || titleLower.includes('collected')) {
+            return 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+        }
+        if (titleLower.includes('tenant')) {
+            return 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+        }
+        if (titleLower.includes('maintenance')) {
+            return 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+        }
+        if (titleLower.includes('family')) {
+            return 'https://images.unsplash.com/photo-1511895426328-dc8714191300?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+        }
+        return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+    };
+
+    return (
+        <div className="relative rounded-2xl shadow-2xl border border-white/30 dark:border-gray-700/50 overflow-hidden hover:shadow-3xl hover:scale-105 transition-all duration-300 group">
+            {/* Background Image */}
+            <div 
+                className="absolute inset-0 z-0 transition-transform duration-500 group-hover:scale-110"
+                style={{
+                    backgroundImage: `url(${getBackgroundImage()})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            >
+                <div className="absolute inset-0 bg-gradient-to-br from-white/85 via-white/80 to-white/85 dark:from-gray-900/90 dark:via-gray-800/90 dark:to-gray-900/90 backdrop-blur-sm"></div>
+            </div>
+            
+            {/* Content */}
+            <div className="relative z-10 p-6">
+                <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{title}</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{value}</h3>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{subtitle}</p>
+                    </div>
+                    <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}>
+                        <Icon className="h-6 w-6 text-white" />
+                    </div>
+                </div>
+                {trend && (
+                    <div className="mt-4 flex items-center gap-1">
+                        {trend === 'up' && <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />}
+                        {trend === 'down' && <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />}
+                        {trend === 'neutral' && <Minus className="h-4 w-4 text-gray-400" />}
+                        <span className={`text-xs font-medium ${trend === 'up' ? 'text-green-600 dark:text-green-400' :
+                            trend === 'down' ? 'text-red-600 dark:text-red-400' :
+                                'text-gray-500 dark:text-gray-400'
+                            }`}>
+                            {trend === 'up' ? 'Good' : trend === 'down' ? 'Needs Attention' : 'Stable'}
+                        </span>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// Quick Action Component with Glass Effect and Contextual Background
 function QuickAction({ icon: Icon, label, onClick, color, badge }) {
     const colorClasses = {
-        purple: 'bg-purple-50 text-purple-600 hover:bg-purple-100 border-purple-200',
-        blue: 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200',
-        orange: 'bg-orange-50 text-orange-600 hover:bg-orange-100 border-orange-200',
-        pink: 'bg-pink-50 text-pink-600 hover:bg-pink-100 border-pink-200'
+        purple: 'bg-purple-50/80 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100/90 dark:hover:bg-purple-900/50 border-purple-200/50 dark:border-purple-800/50',
+        blue: 'bg-blue-50/80 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100/90 dark:hover:bg-blue-900/50 border-blue-200/50 dark:border-blue-800/50',
+        orange: 'bg-orange-50/80 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100/90 dark:hover:bg-orange-900/50 border-orange-200/50 dark:border-orange-800/50',
+        pink: 'bg-pink-50/80 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-100/90 dark:hover:bg-pink-900/50 border-pink-200/50 dark:border-pink-800/50',
+        green: 'bg-green-50/80 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100/90 dark:hover:bg-green-900/50 border-green-200/50 dark:border-green-800/50',
+        indigo: 'bg-indigo-50/80 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100/90 dark:hover:bg-indigo-900/50 border-indigo-200/50 dark:border-indigo-800/50'
+    };
+
+    const overlayClasses = {
+        purple: 'bg-purple-50/80 dark:bg-purple-900/30',
+        blue: 'bg-blue-50/80 dark:bg-blue-900/30',
+        orange: 'bg-orange-50/80 dark:bg-orange-900/30',
+        pink: 'bg-pink-50/80 dark:bg-pink-900/30',
+        green: 'bg-green-50/80 dark:bg-green-900/30',
+        indigo: 'bg-indigo-50/80 dark:bg-indigo-900/30'
+    };
+
+    // Get contextual background image based on label
+    const getBackgroundImage = () => {
+        const labelLower = label.toLowerCase();
+        if (labelLower.includes('property') || labelLower.includes('properties')) {
+            return 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
+        }
+        if (labelLower.includes('tenant')) {
+            return 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
+        }
+        if (labelLower.includes('lease')) {
+            return 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
+        }
+        if (labelLower.includes('payment') || labelLower.includes('payments')) {
+            return 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
+        }
+        if (labelLower.includes('maintenance')) {
+            return 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
+        }
+        if (labelLower.includes('family')) {
+            return 'https://images.unsplash.com/photo-1511895426328-dc8714191300?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
+        }
+        return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
     };
 
     return (
         <button
             onClick={onClick}
-            className={`relative p-4 rounded-xl border-2 ${colorClasses[color]} transition-all hover:scale-105`}
+            className={`relative p-4 rounded-xl border-2 backdrop-blur-xl shadow-lg ${colorClasses[color]} transition-all hover:scale-110 active:scale-95 overflow-hidden group`}
         >
-            <Icon className="h-6 w-6 mx-auto mb-2" />
-            <p className="text-sm font-semibold">{label}</p>
-            {badge > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full font-bold">
-                    {badge}
-                </span>
-            )}
+            {/* Background Image */}
+            <div 
+                className="absolute inset-0 z-0 transition-transform duration-500 group-hover:scale-110"
+                style={{
+                    backgroundImage: `url(${getBackgroundImage()})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            >
+                <div className={`absolute inset-0 backdrop-blur-sm ${overlayClasses[color] || overlayClasses.purple}`}></div>
+            </div>
+            
+            {/* Content */}
+            <div className="relative z-10">
+                <Icon className="h-6 w-6 mx-auto mb-2" />
+                <p className="text-sm font-semibold">{label}</p>
+                {badge > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg z-20">
+                        {badge}
+                    </span>
+                )}
+            </div>
         </button>
     );
 }
 
-// Property Card Component
+// Property Card Component with Glass Effect and Contextual Background
 function PropertyCard({ property }) {
+    // Get contextual background image based on property type or usage
+    const getBackgroundImage = () => {
+        const propertyType = property.type?.toLowerCase() || '';
+        const propertyUsage = property.usage?.toLowerCase() || '';
+        
+        if (propertyUsage === 'business' || propertyType.includes('apartment') || propertyType.includes('rental')) {
+            return 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+        }
+        if (propertyUsage === 'residence' || propertyType.includes('house') || propertyType.includes('home')) {
+            return 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+        }
+        if (propertyType.includes('condo') || propertyType.includes('townhouse')) {
+            return 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+        }
+        if (propertyType.includes('commercial') || propertyType.includes('office')) {
+            return 'https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+        }
+        // Default property image
+        return 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+    };
+
     return (
-        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all">
+        <div className="relative rounded-xl border border-white/30 dark:border-gray-700/50 overflow-hidden hover:shadow-xl hover:scale-105 transition-all duration-300 group">
+            {/* Background Image */}
+            <div 
+                className="absolute inset-0 z-0 transition-transform duration-500 group-hover:scale-110"
+                style={{
+                    backgroundImage: `url(${getBackgroundImage()})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            >
+                <div className="absolute inset-0 bg-gradient-to-br from-white/85 via-white/80 to-white/85 dark:from-gray-900/90 dark:via-gray-800/90 dark:to-gray-900/90 backdrop-blur-sm"></div>
+            </div>
+            
+            {/* Content */}
+            <div className="relative z-10 p-4">
             <div className="flex items-start justify-between">
                 <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 mb-1">{property.address || property.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{property.city}, {property.state}</p>
+                    <h3 className="font-bold text-gray-900 mb-1">{property.address?.street || property.address || property.name}</h3>
+                    <p className="text-sm text-gray-600 mb-2">
+                        {property.address?.city || property.city}, {property.address?.state || property.state}
+                    </p>
                     <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span className="flex items-center gap-1">
                             <Key className="h-3 w-3" />
@@ -669,17 +1024,43 @@ function PropertyCard({ property }) {
                     {property.status || 'Available'}
                 </div>
             </div>
+            </div>
         </div>
     );
 }
 
-// Maintenance Card Component
+// Maintenance Card Component with Glass Effect and Background
 function MaintenanceCard({ request }) {
+    const getBackgroundImage = () => {
+        if (request.priority === 'urgent') {
+            return 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+        }
+        return 'https://images.unsplash.com/photo-1504148455328-c376907d081c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+    };
+
     return (
-        <div className={`p-4 rounded-xl border-2 ${request.priority === 'urgent' ? 'bg-red-50 border-red-200' :
-            request.priority === 'high' ? 'bg-orange-50 border-orange-200' :
-                'bg-gray-50 border-gray-200'
+        <div className={`relative rounded-xl border-2 overflow-hidden shadow-lg group ${request.priority === 'urgent' ? 'border-red-200/50 dark:border-red-800/50' :
+            request.priority === 'high' ? 'border-orange-200/50 dark:border-orange-800/50' :
+                'border-gray-200/50 dark:border-gray-700/50'
             }`}>
+            {/* Background Image */}
+            <div 
+                className="absolute inset-0 z-0 transition-transform duration-500 group-hover:scale-110"
+                style={{
+                    backgroundImage: `url(${getBackgroundImage()})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            >
+                <div className={`absolute inset-0 backdrop-blur-sm ${
+                    request.priority === 'urgent' ? 'bg-red-50/85 dark:bg-red-900/35' :
+                    request.priority === 'high' ? 'bg-orange-50/85 dark:bg-orange-900/35' :
+                        'bg-gray-50/85 dark:bg-gray-800/55'
+                }`}></div>
+            </div>
+            
+            {/* Content */}
+            <div className="relative z-10 p-4">
             <div className="flex items-start justify-between mb-2">
                 <h4 className="font-semibold text-gray-900 text-sm">{request.title}</h4>
                 <Wrench className={`h-4 w-4 ${request.priority === 'urgent' ? 'text-red-600' :
@@ -698,6 +1079,7 @@ function MaintenanceCard({ request }) {
                 <span className="text-gray-500">
                     {request.createdAt?.toDate?.().toLocaleDateString() || 'Recently'}
                 </span>
+            </div>
             </div>
         </div>
     );

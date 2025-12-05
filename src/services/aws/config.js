@@ -9,7 +9,7 @@
 // Never commit actual AWS credentials to version control
 
 export const AWS_CONFIG = {
-  region: process.env.REACT_APP_AWS_REGION || 'us-east-1',
+  region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
   
   // AWS Services Configuration
   services: {
@@ -46,7 +46,7 @@ export const AWS_CONFIG = {
     // Amazon S3 (Storage)
     s3: {
       enabled: true,
-      bucketName: process.env.REACT_APP_AWS_S3_BUCKET || 'family-hub-storage',
+      bucketName: import.meta.env.VITE_AWS_S3_BUCKET || 'family-hub-storage',
       freeTierStorage: 5 * 1024 * 1024 * 1024, // 5GB
       freeTierRequests: 20000, // 20K GET requests
     },
@@ -54,21 +54,21 @@ export const AWS_CONFIG = {
     // AWS Lambda (Serverless Functions)
     lambda: {
       enabled: true,
-      region: process.env.REACT_APP_AWS_REGION || 'us-east-1',
+      region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
       freeTierRequests: 1000000, // 1M requests/month
     },
     
     // Amazon DynamoDB (NoSQL Database)
     dynamoDB: {
       enabled: true,
-      region: process.env.REACT_APP_AWS_REGION || 'us-east-1',
+      region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
       freeTierStorage: 25 * 1024 * 1024 * 1024, // 25GB
     },
   },
   
   // API Gateway Configuration
   apiGateway: {
-    baseUrl: process.env.REACT_APP_AWS_API_URL || '',
+    baseUrl: import.meta.env.VITE_AWS_API_URL || '',
     freeTierLimit: 1000000, // 1M API calls/month
   },
 };

@@ -4,7 +4,7 @@
  * Free tier: Pay per token (very affordable)
  */
 
-const API_URL = process.env.VITE_AWS_API_URL || 'https://qlgvcy36yh.execute-api.us-west-2.amazonaws.com/dev';
+const API_URL = import.meta.env.VITE_AWS_API_URL || 'https://qlgvcy36yh.execute-api.us-west-2.amazonaws.com/dev';
 
 class BedrockService {
   /**

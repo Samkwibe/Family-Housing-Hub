@@ -249,27 +249,41 @@ I'll provide detailed, step-by-step guidance based on your needs.`,
   }
 
   /**
-   * Fallback image analysis using Rekognition
+   * Fallback image analysis using Rekognition via API Gateway
    * @param {File} imageFile - Image file
    * @returns {Promise} Analysis result
    */
   async fallbackImageAnalysis(imageFile) {
     try {
-      // Import Rekognition service
-      const rekognitionService = (await import('./rekognitionService.js')).default;
-      const labels = await rekognitionService.detectLabels(imageFile);
+      // Use API Gateway endpoint for Rekognition (same as aiService)
+      const base64 = await this.fileToBase64(imageFile);
       
-      return {
-        description: `I can see this image contains: ${labels.Labels?.slice(0, 5).map(l => l.Name).join(', ') || 'various items'}. Could you tell me more about what you need help with regarding this image?`,
-        labels: labels.Labels || [],
-        model: 'rekognition-fallback',
-      };
+      const response = await fetch(`${API_URL}/api`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'detectLabels',
+          data: { image: base64 }
+        })
+      });
+
+      if (response.ok) {
+        const labels = await response.json();
+        return {
+          description: `I can see this image contains: ${labels.Labels?.slice(0, 5).map(l => l.Name).join(', ') || 'various items'}. Could you tell me more about what you need help with regarding this image?`,
+          labels: labels.Labels || [],
+          model: 'rekognition-fallback',
+        };
+      }
     } catch (error) {
-      return {
-        description: "I can see you've shared an image. To provide the most helpful response, please tell me what you see in the image or what specific help you need related to it.",
-        model: 'basic-fallback',
-      };
+      console.warn('Rekognition fallback error:', error);
     }
+    
+    // Final fallback
+    return {
+      description: "I can see you've shared an image. To provide the most helpful response, please tell me what you see in the image or what specific help you need related to it.",
+      model: 'basic-fallback',
+    };
   }
 
   /**

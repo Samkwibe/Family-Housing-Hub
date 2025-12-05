@@ -60,6 +60,7 @@ export default function OwnerOnboarding() {
     propertyCity: '',
     propertyState: '',
     propertyZip: '',
+    propertyUsage: 'business', // 'business', 'residence', or 'both'
     propertyType: 'single-family',
     bedrooms: '',
     bathrooms: '',
@@ -108,8 +109,13 @@ export default function OwnerOnboarding() {
       }
     }
     if (currentStep === 2) {
-      if (!formData.propertyAddress || !formData.propertyCity || !formData.monthlyRent) {
+      if (!formData.propertyAddress || !formData.propertyCity || !formData.propertyUsage) {
         toast.error('Please fill in all required property details');
+        return;
+      }
+      // Monthly rent is only required for business/both properties
+      if ((formData.propertyUsage === 'business' || formData.propertyUsage === 'both') && !formData.monthlyRent) {
+        toast.error('Please enter monthly rent for business/rental properties');
         return;
       }
     }
@@ -158,6 +164,7 @@ export default function OwnerOnboarding() {
             zipCode: formData.propertyZip,
             country: 'USA'
           },
+          usage: formData.propertyUsage, // 'business', 'residence', or 'both'
           type: formData.propertyType,
           bedrooms: parseInt(formData.bedrooms) || 0,
           bathrooms: parseFloat(formData.bathrooms) || 0,
@@ -442,7 +449,7 @@ export default function OwnerOnboarding() {
                       <Home className="w-12 h-12 text-white" />
                     </div>
                     <h2 className="text-4xl font-black text-white mb-3 drop-shadow-lg">First Property</h2>
-                    <p className="text-lg text-blue-200 font-medium">Add your first rental property</p>
+                    <p className="text-lg text-blue-200 font-medium">Add your first property</p>
                   </div>
 
                   {/* Property Address */}
@@ -515,6 +522,75 @@ export default function OwnerOnboarding() {
                     </div>
                   </div>
 
+                  {/* Property Usage - Business, Residence, or Both */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-white mb-4 flex items-center">
+                      <Star className="w-4 h-4 text-yellow-400 mr-2" />
+                      Property Usage *
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, propertyUsage: 'business' }))}
+                        className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center space-y-3 ${
+                          formData.propertyUsage === 'business'
+                            ? 'border-purple-500 dark:border-purple-400 bg-purple-500/20 dark:bg-purple-900/30 shadow-lg scale-105'
+                            : 'border-white/30 dark:border-gray-700 hover:border-white/50 dark:hover:border-gray-600 bg-white/10 dark:bg-gray-800/30'
+                        }`}
+                      >
+                        <Building2 className={`h-8 w-8 ${formData.propertyUsage === 'business' ? 'text-purple-300 dark:text-purple-400' : 'text-white/70 dark:text-gray-400'}`} />
+                        <div className="text-center">
+                          <p className={`font-bold text-lg ${formData.propertyUsage === 'business' ? 'text-white' : 'text-white/80 dark:text-gray-300'}`}>
+                            Business/Rental
+                          </p>
+                          <p className={`text-sm mt-1 ${formData.propertyUsage === 'business' ? 'text-purple-200' : 'text-white/60 dark:text-gray-400'}`}>
+                            Investment property
+                          </p>
+                        </div>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, propertyUsage: 'residence' }))}
+                        className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center space-y-3 ${
+                          formData.propertyUsage === 'residence'
+                            ? 'border-purple-500 dark:border-purple-400 bg-purple-500/20 dark:bg-purple-900/30 shadow-lg scale-105'
+                            : 'border-white/30 dark:border-gray-700 hover:border-white/50 dark:hover:border-gray-600 bg-white/10 dark:bg-gray-800/30'
+                        }`}
+                      >
+                        <Home className={`h-8 w-8 ${formData.propertyUsage === 'residence' ? 'text-purple-300 dark:text-purple-400' : 'text-white/70 dark:text-gray-400'}`} />
+                        <div className="text-center">
+                          <p className={`font-bold text-lg ${formData.propertyUsage === 'residence' ? 'text-white' : 'text-white/80 dark:text-gray-300'}`}>
+                            Primary Residence
+                          </p>
+                          <p className={`text-sm mt-1 ${formData.propertyUsage === 'residence' ? 'text-purple-200' : 'text-white/60 dark:text-gray-400'}`}>
+                            Where you live
+                          </p>
+                        </div>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, propertyUsage: 'both' }))}
+                        className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center space-y-3 ${
+                          formData.propertyUsage === 'both'
+                            ? 'border-purple-500 dark:border-purple-400 bg-purple-500/20 dark:bg-purple-900/30 shadow-lg scale-105'
+                            : 'border-white/30 dark:border-gray-700 hover:border-white/50 dark:hover:border-gray-600 bg-white/10 dark:bg-gray-800/30'
+                        }`}
+                      >
+                        <Building2 className={`h-8 w-8 ${formData.propertyUsage === 'both' ? 'text-purple-300 dark:text-purple-400' : 'text-white/70 dark:text-gray-400'}`} />
+                        <div className="text-center">
+                          <p className={`font-bold text-lg ${formData.propertyUsage === 'both' ? 'text-white' : 'text-white/80 dark:text-gray-300'}`}>
+                            Both
+                          </p>
+                          <p className={`text-sm mt-1 ${formData.propertyUsage === 'both' ? 'text-purple-200' : 'text-white/60 dark:text-gray-400'}`}>
+                            Live & rent out
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Property Type */}
                   <div className="space-y-2">
                     <label className="block text-sm font-bold text-white mb-2 flex items-center">
@@ -566,25 +642,32 @@ export default function OwnerOnboarding() {
                         min="0"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-bold text-white mb-2 flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400 mr-2" />
-                        Monthly Rent *
-                      </label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="number"
-                          name="monthlyRent"
-                          required
-                          value={formData.monthlyRent}
-                          onChange={handleChange}
-                          className="w-full pl-14 pr-5 py-4 bg-white/95 border-2 border-white/30 rounded-2xl text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/30 transition-all shadow-lg text-lg font-medium"
-                          placeholder="2500"
-                          min="0"
-                        />
+                    {(formData.propertyUsage === 'business' || formData.propertyUsage === 'both') && (
+                      <div className="space-y-2">
+                        <label className="block text-sm font-bold text-white mb-2 flex items-center">
+                          <Star className="w-4 h-4 text-yellow-400 mr-2" />
+                          Monthly Rent *
+                        </label>
+                        <div className="relative">
+                          <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <input
+                            type="number"
+                            name="monthlyRent"
+                            required={formData.propertyUsage === 'business' || formData.propertyUsage === 'both'}
+                            value={formData.monthlyRent}
+                            onChange={handleChange}
+                            className="w-full pl-14 pr-5 py-4 bg-white/95 border-2 border-white/30 rounded-2xl text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/30 transition-all shadow-lg text-lg font-medium"
+                            placeholder="2500"
+                            min="0"
+                          />
+                        </div>
+                        <p className="text-xs text-purple-200 mt-1">
+                          {formData.propertyUsage === 'both' 
+                            ? 'Rent amount for the portion you rent out' 
+                            : 'Expected monthly rental income'}
+                        </p>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}

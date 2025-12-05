@@ -1495,7 +1495,11 @@ I'm here to help with any question you have!`,
   }, [isOwner]);
 
   return (
-    <div className={`h-[calc(100vh-120px)] flex flex-col max-w-7xl mx-auto p-4 lg:p-6 bg-gradient-to-br ${isOwner ? 'from-emerald-50 via-teal-50 to-cyan-50' : 'from-blue-50 via-indigo-50 to-purple-50'} min-h-screen`}>
+    <div className={`h-[calc(100vh-120px)] flex flex-col max-w-7xl mx-auto p-4 lg:p-6 min-h-screen ${
+      isOwner 
+        ? 'bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50' 
+        : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
+    }`}>
       {/* Enhanced Header with User-Type Specific Design */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div className="flex items-center gap-3">
@@ -1538,7 +1542,7 @@ I'm here to help with any question you have!`,
           </button>
           <button
             onClick={exportConversation}
-            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            className={`p-2 text-gray-600 ${isOwner ? 'hover:text-emerald-600 hover:bg-emerald-50' : 'hover:text-blue-600 hover:bg-blue-50'} rounded-lg transition-colors`}
             title="Export conversation"
           >
             <Download className="h-5 w-5" />
@@ -1731,7 +1735,7 @@ I'm here to help with any question you have!`,
               <div className={`max-w-[85%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
               {message.type === 'assistant' && (
                   <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-6 h-6 bg-gradient-to-br ${isOwner ? 'from-emerald-500 to-teal-600' : 'from-blue-500 to-purple-600'} rounded-full flex items-center justify-center`}>
+                    <div className={`w-6 h-6 bg-gradient-to-br ${isOwner ? 'from-emerald-500 to-teal-600' : 'from-blue-500 to-indigo-600'} rounded-full flex items-center justify-center`}>
                       <Zap className="h-3 w-3 text-white" />
                   </div>
                     <span className="text-xs text-gray-500 font-medium">{isOwner ? 'Property Owner Assistant' : 'Family Assistant'}</span>
@@ -1756,7 +1760,7 @@ I'm here to help with any question you have!`,
               }`}>
                 {message.title && (
                     <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-purple-500" />
+                    <Sparkles className={`h-4 w-4 ${isOwner ? 'text-emerald-500' : 'text-blue-500'}`} />
                     {message.title}
                   </h3>
                 )}
@@ -1779,9 +1783,9 @@ I'm here to help with any question you have!`,
 
                   {/* Display Audio */}
                   {message.audio && (
-                    <div className={`mb-3 flex items-center gap-3 p-3 rounded-lg ${message.type === 'user' ? 'bg-white/10' : 'bg-purple-50 border border-purple-200'}`}>
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Mic className="h-5 w-5 text-purple-600" />
+                    <div className={`mb-3 flex items-center gap-3 p-3 rounded-lg ${message.type === 'user' ? 'bg-white/10' : isOwner ? 'bg-emerald-50 border border-emerald-200' : 'bg-blue-50 border border-blue-200'}`}>
+                      <div className={`w-10 h-10 ${isOwner ? 'bg-emerald-100' : 'bg-blue-100'} rounded-full flex items-center justify-center`}>
+                        <Mic className={`h-5 w-5 ${isOwner ? 'text-emerald-600' : 'text-blue-600'}`} />
                       </div>
                       <audio src={message.audio.url} controls className="flex-1" />
                     </div>
@@ -1941,10 +1945,10 @@ I'm here to help with any question you have!`,
           {/* Enhanced Typing Indicator */}
         {isTyping && (
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <Zap className="h-4 w-4 text-white" />
-            </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
+                      <div className={`w-8 h-8 bg-gradient-to-br ${isOwner ? 'from-emerald-500 to-teal-600' : 'from-blue-500 to-indigo-600'} rounded-full flex items-center justify-center`}>
+                        <Zap className="h-4 w-4 text-white" />
+                    </div>
+                      <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
               <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1983,9 +1987,9 @@ I'm here to help with any question you have!`,
 
           {/* Show audio preview */}
           {uploadedAudio && (
-            <div className="mb-3 flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <Mic className="h-5 w-5 text-purple-600" />
+            <div className={`mb-3 flex items-center gap-3 p-3 ${isOwner ? 'bg-emerald-50' : 'bg-blue-50'} rounded-lg border ${isOwner ? 'border-emerald-200' : 'border-blue-200'}`}>
+              <div className={`w-10 h-10 ${isOwner ? 'bg-emerald-100' : 'bg-blue-100'} rounded-full flex items-center justify-center`}>
+                <Mic className={`h-5 w-5 ${isOwner ? 'text-emerald-600' : 'text-blue-600'}`} />
               </div>
               <audio src={uploadedAudio.url} controls className="flex-1" />
               <button
@@ -2012,7 +2016,7 @@ I'm here to help with any question you have!`,
             
             <button
               onClick={() => imageInputRef.current?.click()}
-              className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+              className={`p-2 text-gray-600 ${isOwner ? 'hover:text-emerald-600 hover:bg-emerald-50' : 'hover:text-green-600 hover:bg-green-50'} rounded-lg transition-colors`}
               title="Upload image"
             >
               <ImageIcon className="h-5 w-5" />
@@ -2033,7 +2037,7 @@ I'm here to help with any question you have!`,
                   fileInput.click();
                 }
               }}
-              className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+              className={`p-2 text-gray-600 ${isOwner ? 'hover:text-teal-600 hover:bg-teal-50' : 'hover:text-indigo-600 hover:bg-indigo-50'} rounded-lg transition-colors`}
               title="Upload documents"
             >
               <Upload className="h-5 w-5" />

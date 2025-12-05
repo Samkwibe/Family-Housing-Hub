@@ -191,11 +191,17 @@ export default function OwnerOnboarding() {
       await updateUserProfile(currentUser.uid, {
         profileComplete: true,
         onboardingComplete: true,
-        onboardingCompletedAt: new Date().toISOString()
+        onboardingCompletedAt: new Date().toISOString(),
+        userType: 'owner' // Ensure userType is set
       });
       
       toast.success('🎉 Welcome to FamilyHub! Your owner account is ready!');
-      navigate('/owner-dashboard');
+      
+      // Navigate to owner dashboard based on user type
+      // Small delay to ensure profile update is saved
+      setTimeout(() => {
+        navigate('/owner-dashboard', { replace: true });
+      }, 500);
     } catch (error) {
       console.error('Error completing onboarding:', error);
       toast.error('Failed to complete setup. Please try again.');
@@ -206,7 +212,7 @@ export default function OwnerOnboarding() {
 
   const handleSkip = () => {
     toast.success('You can complete this later in Settings');
-    navigate('/owner-dashboard');
+    navigate('/owner-dashboard', { replace: true });
   };
 
   // Progress bar calculation

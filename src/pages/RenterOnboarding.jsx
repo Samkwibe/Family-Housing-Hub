@@ -210,11 +210,17 @@ export default function RenterOnboarding() {
             await updateUserProfile(currentUser.uid, {
                 profileComplete: true,
                 onboardingComplete: true,
-                onboardingCompletedAt: new Date().toISOString()
+                onboardingCompletedAt: new Date().toISOString(),
+                userType: 'renter' // Ensure userType is set
             });
             
             toast.success('🎉 Welcome to FamilyHub! Your family account is ready!');
-            navigate('/dashboard');
+            
+            // Navigate to renter dashboard based on user type
+            // Small delay to ensure profile update is saved
+            setTimeout(() => {
+                navigate('/dashboard', { replace: true });
+            }, 500);
         } catch (error) {
             console.error('Error completing onboarding:', error);
             toast.error('Failed to complete setup. Please try again.');
@@ -225,7 +231,7 @@ export default function RenterOnboarding() {
 
     const handleSkip = () => {
         toast.success('You can complete this later in Settings');
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
     };
 
     const progress = (currentStep / totalSteps) * 100;

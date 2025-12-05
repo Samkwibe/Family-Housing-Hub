@@ -26,7 +26,8 @@ import {
   MapPin,
   Moon,
   Sun,
-  Building2
+  Building2,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFamily } from '../contexts/FamilyContext';
@@ -84,7 +85,7 @@ export default function Layout({ children }) {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-transparent">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
@@ -96,7 +97,7 @@ export default function Layout({ children }) {
       )}
 
       {/* Mobile sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-xl transform transition-transform lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      <div className={`fixed inset-y-0 left-0 z-[100] w-64 bg-white dark:bg-gray-800 shadow-xl transform transition-transform lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
@@ -111,7 +112,7 @@ export default function Layout({ children }) {
           </button>
         </div>
 
-        <nav className="mt-8 px-4 space-y-2">
+        <nav className="mt-8 px-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
@@ -172,8 +173,8 @@ export default function Layout({ children }) {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex lg:flex-shrink-0">
-        <div className="flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+      <div className="hidden lg:flex lg:flex-shrink-0 relative z-50">
+        <div className="flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-xl">
           {/* Logo */}
           <div className="flex items-center flex-shrink-0 px-6 py-5">
             <Home className="h-8 w-8 text-blue-600 dark:text-blue-400 mr-2" />
@@ -282,9 +283,9 @@ export default function Layout({ children }) {
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative z-40">
         {/* Top bar */}
-        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 relative z-50">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center">
               <button

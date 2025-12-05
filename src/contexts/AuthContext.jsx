@@ -360,26 +360,86 @@ export function AuthProvider({ children }) {
   }
 
   // Update user profile
-  async function updateUserProfile(updates) {
+  async function updateUserProfile(userId, updates) {
     try {
-      if (!currentUser) throw new Error('No user logged in');
+      // Allow updating other users' profiles (e.g., children)
+      const targetUserId = userId || currentUser?.uid;
+      if (!targetUserId) throw new Error('No user ID provided');
 
-      const updatedProfile = await userService.updateUserProfile(currentUser.uid, {
+      const updatedProfile = await userService.updateUserProfile(targetUserId, {
         ...updates,
         updatedAt: new Date()
       });
 
-      setUserProfile(updatedProfile);
+      // Only update current user's profile in state if it's their own
+      if (targetUserId === currentUser?.uid) {
+        setUserProfile(updatedProfile);
+        const isComplete = checkProfileComplete(updatedProfile);
+        setProfileComplete(isComplete);
+        toast.success('Profile updated successfully!');
+      }
 
-      // Recheck profile completion
-      const isComplete = checkProfileComplete(updatedProfile);
-      setProfileComplete(isComplete);
-
-      toast.success('Profile updated successfully!');
       return updatedProfile;
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
+      throw error;
+    }
+  }
+
+  // Create child account (for parents)
+  async function createChildAccount(email, password, childData) {
+    try {
+      if (!currentUser) throw new Error('Parent must be logged in');
+
+      // Create Firebase Auth account for child
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const childUser = userCredential.user;
+
+      // Create child profile
+      const childProfile = {
+        uid: childUser.uid,
+        email: email,
+        firstName: childData.firstName || '',
+        lastName: childData.lastName || '',
+        phone: childData.phone || '',
+        dateOfBirth: childData.dateOfBirth || null,
+        grade: childData.grade || '',
+        photoURL: childData.photoURL || null,
+        role: 'child',
+        userType: 'child',
+        parentId: currentUser.uid, // Link to parent
+        parentEmail: currentUser.email,
+        profileComplete: true, // Children don't need onboarding
+        onboardingComplete: true,
+        enabled: childData.enabled !== false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      await userService.createUserProfile(childUser.uid, childProfile);
+
+      toast.success(`Child account created for ${childData.firstName}!`);
+      return userCredential;
+    } catch (error) {
+      console.error('Error creating child account:', error);
+      let errorMessage = 'Failed to create child account. ';
+      
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage += 'This email is already registered. The child may already have an account.';
+          break;
+        case 'auth/weak-password':
+          errorMessage += 'Password should be at least 6 characters.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage += 'Email address is invalid.';
+          break;
+        default:
+          errorMessage += error.message;
+      }
+
+      toast.error(errorMessage);
       throw error;
     }
   }
@@ -684,6 +744,7 @@ export function AuthProvider({ children }) {
     logout,
     completeProfile,
     updateUserProfile,
+    createChildAccount,
     addFamilyMember,
     removeFamilyMember,
     updateLeaseInfo,

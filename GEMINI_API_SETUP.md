@@ -61,3 +61,4 @@ The receipt scanner will automatically fall back to manual entry mode, so you ca
 **Need Help?** Check the browser console for detailed error messages.
 
 
+

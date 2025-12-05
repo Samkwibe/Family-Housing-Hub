@@ -2169,7 +2169,16 @@ export default function ShoppingMeals() {
       const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
       if (!geminiApiKey) {
-        throw new Error('Gemini API key not configured. Please set VITE_GEMINI_API_KEY in your environment variables.');
+        // API key not configured - show helpful message and allow manual entry
+        toast.success('Opening manual entry mode...', {
+          duration: 2000,
+          icon: '📝'
+        });
+        setManualEntryMode(true);
+        setExtractedItems([]);
+        setShowReceiptPreview(true);
+        setProcessingReceipt(false);
+        return;
       }
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
@@ -2262,7 +2271,10 @@ CRITICAL INSTRUCTIONS:
       toast.success(`Extracted ${processedItems.length} items from receipt!`);
     } catch (error) {
       console.error('Error processing receipt:', error);
-      toast.error('Failed to process receipt. You can enter items manually.');
+      toast.success('Opening manual entry mode...', {
+        duration: 2000,
+        icon: '✏️'
+      });
       setManualEntryMode(true);
       setExtractedItems([]);
       setExtractedTotal('');
@@ -3199,7 +3211,7 @@ CRITICAL INSTRUCTIONS:
                       <div className="flex-1">
                         <p className="text-sm text-blue-800 dark:text-blue-300">
                           {manualEntryMode
-                            ? "Couldn't read the receipt clearly. Please review and edit the items below, or enter them manually."
+                            ? "📝 Manual Entry Mode: Add your receipt items below. Click 'Add Item' to get started!"
                             : 'Review the extracted items below. You can edit, delete, or add new items before saving.'}
                         </p>
                       </div>

@@ -1,20 +1,27 @@
-// src/pages/Register.jsx - Role Selection First, Then Registration Form
+// SIGNUP PAGE - FROSTED GLASS OVERLAY DESIGN - MATCHING LOGIN
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Eye, EyeOff, Mail, Lock, User, Phone, CheckCircle, Users, Baby, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Home, Eye, EyeOff, Mail, Lock, User, Phone, Building2, Users, Baby, ArrowRight, Sparkles, CheckCircle } from 'lucide-react';
 import { familyInvitationService } from '../services/firebaseService';
 import toast from 'react-hot-toast';
 
 export default function Register() {
   const [searchParams] = useSearchParams();
   const invitationId = searchParams.get('invitation');
-  const roleParam = searchParams.get('role'); // Get role from URL if coming from login page
+  const roleParam = searchParams.get('role');
 
-  // Step 1: Role selection (Parent or Child)
-  // If role is in URL, skip role selection and go straight to form
-  const [selectedRole, setSelectedRole] = useState(roleParam === 'family' ? 'family' : roleParam === 'child' ? 'child' : null);
-  const [showForm, setShowForm] = useState(!!roleParam); // Show form immediately if role is in URL
+  // Map URL roles to actual roles
+  const mapRole = (role) => {
+    if (role === 'family' || role === 'renter') return 'renter';
+    if (role === 'owner') return 'owner';
+    if (role === 'child') return 'child';
+    return null;
+  };
+
+  const [selectedRole, setSelectedRole] = useState(mapRole(roleParam));
+  const [showForm, setShowForm] = useState(!!roleParam);
+  const [language, setLanguage] = useState('en');
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -23,22 +30,23 @@ export default function Register() {
     phone: '',
     password: '',
     confirmPassword: '',
-    parentEmail: '' // For child accounts to link to parent
+    parentEmail: '',
+    termsAccepted: false
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
-  const { signup } = useAuth();
+  const { signup, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-  // If role is selected, show the form
   const handleRoleSelect = (role) => {
     setSelectedRole(role);
     setShowForm(true);
+    toast.success(`Great choice! Let's set up your ${role === 'owner' ? 'property owner' : role === 'renter' ? 'renter' : 'child'} account! 🎉`);
   };
 
-  // Go back to role selection
   const handleBackToRoleSelection = () => {
     setSelectedRole(null);
     setShowForm(false);
@@ -50,6 +58,19 @@ export default function Register() {
       [e.target.name]: e.target.value
     }));
   }
+
+  const handleGoogleSignUp = async () => {
+    try {
+      setGoogleLoading(true);
+      await signInWithGoogle();
+      toast.success('Signed up with Google! 🎉');
+      navigate('/');
+    } catch (error) {
+      console.error('Google Sign-Up failed:', error);
+      toast.error(error.message || 'Failed to sign up with Google');
+      setGoogleLoading(false);
+    }
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -64,34 +85,35 @@ export default function Register() {
       return;
     }
 
+    if (!formData.termsAccepted) {
+      toast.error('Please accept the terms and conditions');
+      return;
+    }
+
     try {
       setLoading(true);
       toast.loading(selectedRole === 'child' ? 'Creating your account...' : 'Creating account...', { id: 'signup' });
 
-      // For child accounts, skip invitation check to speed up signup
       let invitations = [];
       let parentId = null;
-      
+
       if (selectedRole !== 'child') {
-        // Only check invitations for parent accounts
         invitations = await familyInvitationService.getInvitationsByEmail(formData.email);
-      } else if (selectedRole === 'child' && formData.parentEmail) {
-        // For children, just store parent email - linking can happen later
-        // This speeds up the signup process
       }
 
-      // Create account with optimized data
       const userCredential = await signup(formData.email, formData.password, {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        phone: formData.phone || '', // Make phone optional for children
+        phone: formData.phone || '',
         role: selectedRole,
+        userType: selectedRole,
         parentId: parentId,
         parentEmail: selectedRole === 'child' ? formData.parentEmail : null,
-        familyMembers: selectedRole === 'child' ? undefined : [] // Don't store for children
+        familyMembers: selectedRole === 'child' ? undefined : [],
+        // Children profiles are auto-complete - no onboarding needed
+        profileComplete: selectedRole === 'child' ? true : false
       });
 
-      // If there's a pending invitation, accept it automatically (only for parents)
       if (invitations.length > 0 && selectedRole !== 'child') {
         try {
           await familyInvitationService.acceptInvitation(invitations[0].id, userCredential.user.uid);
@@ -103,13 +125,16 @@ export default function Register() {
         toast.success(selectedRole === 'child' ? 'Account created! Welcome!' : 'Account created successfully!', { id: 'signup' });
       }
 
-      // Redirect based on role
+      // Navigate based on role
       if (selectedRole === 'child') {
-        // Children go straight to child dashboard (no onboarding)
+        toast.success('🎉 Welcome! Your child account is ready!', { id: 'signup' });
         navigate('/child-dashboard');
+      } else if (selectedRole === 'owner') {
+        toast.success('Account created! Let\'s set up your property business.', { id: 'signup' });
+        navigate('/owner-onboarding');
       } else {
-        // Parents go to onboarding or dashboard
-        navigate('/');
+        toast.success('Account created! Let\'s set up your family profile.', { id: 'signup' });
+        navigate('/renter-onboarding');
       }
     } catch (error) {
       console.error('Signup error:', error);
@@ -119,96 +144,144 @@ export default function Register() {
     }
   }
 
-  // If form is not shown, show role selection
+  // Role Selection Screen
   if (!showForm) {
     return (
-      <div className="min-h-screen flex bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-        {/* Animated Background */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-          <div className="absolute top-40 right-10 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+        {/* Background Image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1920&h=1080&fit=crop')`,
+          }}
+        >
+          <div className="absolute inset-0 bg-black/20"></div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center px-4 py-12 relative z-10">
-          <div className="max-w-4xl w-full">
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center mb-6">
-                <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-4 rounded-3xl shadow-2xl">
-                  <Home className="h-12 w-12 text-white" />
-                </div>
+        {/* Sparkle Icon */}
+        <div className="absolute bottom-8 right-8 z-10">
+          <Sparkles className="w-8 h-8 text-white/80 animate-pulse" />
+        </div>
+
+        {/* Main Card */}
+        <div className="relative z-20 w-full max-w-6xl mx-4 my-8">
+          <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/40 p-12 lg:p-16">
+            {/* Logo */}
+            <div className="flex items-center justify-center space-x-3 mb-12">
+              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-full shadow-lg">
+                <Home className="h-10 w-10 text-white" />
               </div>
-              <h1 className="text-5xl font-black text-gray-900 mb-4">
-                Welcome to FamilyHub
+              <span className="text-4xl font-black text-gray-900">FamilyHub</span>
+            </div>
+
+            {/* Header */}
+            <div className="text-center mb-12">
+              <h1 className="text-5xl md:text-6xl font-black text-gray-900 mb-4">
+                Choose Your Role
               </h1>
-              <p className="text-xl text-gray-600">
-                Choose your account type to get started
+              <p className="text-xl text-gray-600 font-medium">
+                Select the account type that best describes you
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Parent Option */}
+            {/* Role Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              {/* Owner Card */}
               <button
-                onClick={() => handleRoleSelect('family')}
-                className="group relative bg-white rounded-3xl p-8 border-4 border-transparent hover:border-purple-500 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105"
+                onClick={() => handleRoleSelect('owner')}
+                className="group bg-gradient-to-br from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 rounded-3xl p-8 border-2 border-indigo-200 hover:border-indigo-400 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105"
               >
                 <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                    <Users className="h-10 w-10 text-white" />
+                  <div className="bg-gradient-to-br from-indigo-500 to-purple-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg">
+                    <Building2 className="h-10 w-10 text-white" />
                   </div>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-3">Parent</h2>
-                  <p className="text-gray-600 mb-6">
-                    Full access to all features. Manage your family, rent, maintenance, and more.
+                  <h3 className="text-2xl font-black text-gray-900 mb-3">Property Owner</h3>
+                  <p className="text-gray-600 mb-6 leading-relaxed">
+                    Manage properties, tenants, and rent collection professionally
                   </p>
-                  <div className="space-y-2 text-left mb-6">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Complete dashboard access</span>
+                  <div className="space-y-2 mb-6">
+                    <div className="flex items-center text-sm text-gray-700">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Property management tools</span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Manage children accounts</span>
+                    <div className="flex items-center text-sm text-gray-700">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Tenant tracking & payments</span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>All housing features</span>
+                    <div className="flex items-center text-sm text-gray-700">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Business analytics</span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-center text-purple-600 font-semibold group-hover:translate-x-2 transition-transform">
+                  <div className="flex items-center justify-center text-indigo-600 font-bold group-hover:translate-x-2 transition-transform">
                     <span>Get Started</span>
                     <ArrowRight className="h-5 w-5 ml-2" />
                   </div>
                 </div>
               </button>
 
-              {/* Child Option */}
+              {/* Renter Card */}
               <button
-                onClick={() => handleRoleSelect('child')}
-                className="group relative bg-white rounded-3xl p-8 border-4 border-transparent hover:border-blue-500 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105"
+                onClick={() => handleRoleSelect('renter')}
+                className="group bg-gradient-to-br from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 rounded-3xl p-8 border-2 border-purple-200 hover:border-purple-400 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105"
               >
                 <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                  <div className="bg-gradient-to-br from-purple-500 to-pink-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg">
+                    <Users className="h-10 w-10 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-black text-gray-900 mb-3">Renter/Family</h3>
+                  <p className="text-gray-600 mb-6 leading-relaxed">
+                    Organize family life, manage budget, and track housing needs
+                  </p>
+                  <div className="space-y-2 mb-6">
+                    <div className="flex items-center text-sm text-gray-700">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Family dashboard</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-700">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Budget & expense tracking</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-700">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Children management</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center text-purple-600 font-bold group-hover:translate-x-2 transition-transform">
+                    <span>Get Started</span>
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </div>
+                </div>
+              </button>
+
+              {/* Child Card */}
+              <button
+                onClick={() => handleRoleSelect('child')}
+                className="group bg-gradient-to-br from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 rounded-3xl p-8 border-2 border-blue-200 hover:border-blue-400 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105"
+              >
+                <div className="text-center">
+                  <div className="bg-gradient-to-br from-blue-500 to-cyan-500 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg">
                     <Baby className="h-10 w-10 text-white" />
                   </div>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-3">Child</h2>
-                  <p className="text-gray-600 mb-6">
-                    Child-friendly dashboard. Tasks, chores, rewards, and fun activities!
+                  <h3 className="text-2xl font-black text-gray-900 mb-3">Child Account</h3>
+                  <p className="text-gray-600 mb-6 leading-relaxed">
+                    Fun kid-friendly dashboard with tasks, rewards, and games
                   </p>
-                  <div className="space-y-2 text-left mb-6">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Simple, kid-friendly interface</span>
+                  <div className="space-y-2 mb-6">
+                    <div className="flex items-center text-sm text-gray-700">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Simple, colorful interface</span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Tasks & rewards</span>
+                    <div className="flex items-center text-sm text-gray-700">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Tasks & rewards system</span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Parent-controlled features</span>
+                    <div className="flex items-center text-sm text-gray-700">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Parent-controlled safety</span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-center text-blue-600 font-semibold group-hover:translate-x-2 transition-transform">
+                  <div className="flex items-center justify-center text-blue-600 font-bold group-hover:translate-x-2 transition-transform">
                     <span>Get Started</span>
                     <ArrowRight className="h-5 w-5 ml-2" />
                   </div>
@@ -216,355 +289,280 @@ export default function Register() {
               </button>
             </div>
 
-            <div className="text-center mt-8">
+            {/* Sign In Link */}
+            <div className="text-center">
               <p className="text-gray-600">
                 Already have an account?{' '}
-                <Link to="/login" className="font-bold text-purple-600 hover:text-purple-700 transition-colors underline decoration-2 underline-offset-2">
-                  Sign in here
+                <Link to="/login" className="font-bold text-blue-600 hover:text-blue-700 transition-colors underline">
+                  Sign In
                 </Link>
               </p>
             </div>
           </div>
         </div>
-
-        <style jsx>{`
-          @keyframes blob {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-          }
-          .animate-blob {
-            animation: blob 7s infinite;
-          }
-          .animation-delay-2000 {
-            animation-delay: 2s;
-          }
-          .animation-delay-4000 {
-            animation-delay: 4s;
-          }
-        `}</style>
       </div>
     );
   }
 
-  // Show registration form after role selection
+  // Registration Form
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100">
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-teal-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-cyan-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden py-8">
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1920&h=1080&fit=crop')`,
+        }}
+      >
+        <div className="absolute inset-0 bg-black/10"></div>
       </div>
 
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800"></div>
-        <div className="relative z-10 flex flex-col justify-center px-12 text-white">
-          <div className="max-w-md">
-            <div className="flex items-center mb-8">
-              <div className="bg-white/20 backdrop-blur-sm p-3 rounded-2xl mr-4">
-                <Home className="h-10 w-10 text-white" />
-              </div>
-              <span className="text-5xl font-bold">FamilyHub</span>
-            </div>
-            <h1 className="text-6xl font-extrabold mb-6">
-              {selectedRole === 'child' ? 'Welcome, Kid!' : 'Join Our Community'}
-            </h1>
-            <p className="text-xl text-emerald-100 mb-10">
-              {selectedRole === 'child' 
-                ? 'Create your account and start earning rewards!'
-                : 'Create your account and start managing your housing needs in one convenient place.'}
-            </p>
-          </div>
-        </div>
+      {/* Sparkle Icon */}
+      <div className="absolute bottom-8 right-8 z-10">
+        <Sparkles className="w-8 h-8 text-white/80 animate-pulse" />
       </div>
 
-      {/* Right Side - Register Form */}
-      <div className="flex-1 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 relative z-10">
-        <div className="max-w-md w-full space-y-8">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex justify-center mb-8">
-            <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-br from-emerald-600 to-cyan-600 p-3 rounded-2xl shadow-lg">
-                <Home className="h-8 w-8 text-white" />
+      {/* Main Card */}
+      <div className="relative z-20 w-full max-w-5xl mx-4">
+        <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/40 overflow-hidden">
+          <div className="p-12 lg:p-16">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-full shadow-lg">
+                  <Home className="h-7 w-7 text-white" />
+                </div>
+                <span className="text-3xl font-black text-gray-900">FamilyHub</span>
               </div>
-              <span className="text-3xl font-bold">FamilyHub</span>
+              <button
+                onClick={handleBackToRoleSelection}
+                className="text-gray-600 hover:text-gray-900 font-semibold transition-colors"
+              >
+                ← Back
+              </button>
             </div>
-          </div>
 
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
-            {/* Back Button */}
-            <button
-              onClick={handleBackToRoleSelection}
-              className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              <span>Back to role selection</span>
-            </button>
-
-            <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold text-gray-900 mb-2">
-                {selectedRole === 'child' ? 'Create Child Account' : 'Create Parent Account'}
+            <div className="max-w-2xl mx-auto">
+              <h2 className="text-4xl font-black text-gray-900 mb-2 text-center">
+                Create Your Account
               </h2>
-              <p className="text-gray-600 text-lg">Fill in your information</p>
-            </div>
+              <p className="text-gray-600 mb-8 text-center font-medium">
+                {selectedRole === 'owner' ? 'Property Owner' : selectedRole === 'child' ? 'Child Account' : 'Renter/Family Account'}
+              </p>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Name Fields */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    First Name *
-                  </label>
-                  <div className="relative">
-                    <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${focusedField === 'firstName' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <User className="h-5 w-5" />
-                    </div>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Name Fields */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">First Name *</label>
                     <input
                       type="text"
                       name="firstName"
                       required
                       value={formData.firstName}
                       onChange={handleChange}
-                      onFocus={() => setFocusedField('firstName')}
-                      onBlur={() => setFocusedField(null)}
-                      className="block w-full pl-10 pr-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all bg-white/50"
+                      className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
                       placeholder="John"
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Last Name *
-                  </label>
-                  <div className="relative">
-                    <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${focusedField === 'lastName' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <User className="h-5 w-5" />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Last Name *</label>
                     <input
                       type="text"
                       name="lastName"
                       required
                       value={formData.lastName}
                       onChange={handleChange}
-                      onFocus={() => setFocusedField('lastName')}
-                      onBlur={() => setFocusedField(null)}
-                      className="block w-full pl-10 pr-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all bg-white/50"
+                      className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
                       placeholder="Doe"
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email Address *
-                </label>
-                <div className="relative">
-                  <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${focusedField === 'email' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    <Mail className="h-5 w-5" />
-                  </div>
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Email Address *</label>
                   <input
                     type="email"
                     name="email"
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                    className="block w-full pl-10 pr-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all bg-white/50"
-                    placeholder="Enter your email"
+                    className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
+                    placeholder="john@example.com"
                   />
                 </div>
-              </div>
 
-              {/* Parent Email (for children only) */}
-              {selectedRole === 'child' && (
+                {/* Phone */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Parent Email (Optional)
-                  </label>
-                  <div className="relative">
-                    <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${focusedField === 'parentEmail' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      <Users className="h-5 w-5" />
-                    </div>
-                    <input
-                      type="email"
-                      name="parentEmail"
-                      value={formData.parentEmail}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('parentEmail')}
-                      onBlur={() => setFocusedField(null)}
-                      className="block w-full pl-10 pr-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all bg-white/50"
-                      placeholder="Parent's email to link accounts"
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    If you have a parent account, enter their email to link your account
-                  </p>
-                </div>
-              )}
-
-              {/* Phone */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Phone Number <span className="text-gray-400 font-normal">(Optional)</span>
-                </label>
-                <div className="relative">
-                  <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${focusedField === 'phone' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    <Phone className="h-5 w-5" />
-                  </div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Phone Number (Optional)</label>
                   <input
                     type="tel"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    onFocus={() => setFocusedField('phone')}
-                    onBlur={() => setFocusedField(null)}
-                    className="block w-full pl-10 pr-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all bg-white/50"
+                    className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
                     placeholder="+1 (555) 123-4567"
                   />
                 </div>
-              </div>
 
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Password *
-                </label>
-                <div className="relative">
-                  <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${focusedField === 'password' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    <Lock className="h-5 w-5" />
+                {/* Parent Email for Children */}
+                {selectedRole === 'child' && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Parent Email (Optional)</label>
+                    <input
+                      type="email"
+                      name="parentEmail"
+                      value={formData.parentEmail}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
+                      placeholder="parent@example.com"
+                    />
                   </div>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    required
-                    value={formData.password}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
-                    className="block w-full pl-10 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all bg-white/50"
-                    placeholder="Create a password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </button>
-                </div>
-                <p className="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Confirm Password *
-                </label>
-                <div className="relative">
-                  <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none ${focusedField === 'confirmPassword' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    <Lock className="h-5 w-5" />
-                  </div>
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    name="confirmPassword"
-                    required
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('confirmPassword')}
-                    onBlur={() => setFocusedField(null)}
-                    className="block w-full pl-10 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all bg-white/50"
-                    placeholder="Confirm your password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Terms Agreement */}
-              <div className="flex items-start pt-2">
-                <input
-                  id="terms"
-                  name="terms"
-                  type="checkbox"
-                  required
-                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded mt-1 cursor-pointer"
-                />
-                <label htmlFor="terms" className="ml-3 block text-sm text-gray-700 cursor-pointer">
-                  I agree to the{' '}
-                  <a href="#" className="text-emerald-600 hover:text-emerald-700 font-semibold">
-                    Terms and Conditions
-                  </a>
-                </label>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white py-4 px-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                    <span>Creating Account...</span>
-                  </div>
-                ) : (
-                  <span className="flex items-center justify-center">
-                    <span>Create Account</span>
-                    <CheckCircle className="ml-2 w-5 h-5" />
-                  </span>
                 )}
-              </button>
-            </form>
 
-            {/* Sign In Link */}
-            <div className="mt-8 text-center">
-              <p className="text-gray-600">
-                Already have an account?{' '}
-                <Link to="/login" className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors underline decoration-2 underline-offset-2">
-                  Sign in here
-                </Link>
-              </p>
+                {/* Password */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Password *</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      required
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 pr-12 bg-white/70 backdrop-blur-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
+                      placeholder="Create a password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Confirm Password *</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      required
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 pr-12 bg-white/70 backdrop-blur-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900"
+                      placeholder="Confirm your password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Terms Agreement */}
+                <div className="flex items-start">
+                  <input
+                    id="terms"
+                    name="termsAccepted"
+                    type="checkbox"
+                    checked={formData.termsAccepted}
+                    onChange={(e) => setFormData({ ...formData, termsAccepted: e.target.checked })}
+                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5 cursor-pointer"
+                    required
+                  />
+                  <label htmlFor="terms" className="ml-3 block text-sm text-gray-700 cursor-pointer">
+                    I agree to the{' '}
+                    <a href="#" className="text-blue-600 hover:text-blue-700 font-semibold underline">
+                      Terms and Conditions
+                    </a>
+                  </label>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 hover:from-blue-500 hover:via-blue-600 hover:to-purple-600 text-white py-4 px-4 rounded-xl font-black text-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-6 h-6 border-[3px] border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                      <span>Creating Account...</span>
+                    </div>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <span>Create Account</span>
+                      <CheckCircle className="ml-2 w-5 h-5" />
+                    </span>
+                  )}
+                </button>
+
+                {/* Divider */}
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-white/60 backdrop-blur-sm text-gray-600 font-medium">Or sign up with</span>
+                  </div>
+                </div>
+
+                {/* Google Sign Up */}
+                <button
+                  type="button"
+                  onClick={handleGoogleSignUp}
+                  disabled={googleLoading}
+                  className="w-full bg-white/70 backdrop-blur-sm hover:bg-white/90 border-2 border-gray-300 rounded-xl py-4 px-4 font-bold text-gray-900 transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-3 disabled:opacity-50"
+                >
+                  {googleLoading ? (
+                    <>
+                      <div className="w-6 h-6 border-[3px] border-gray-900 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Connecting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-6 h-6" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                      </svg>
+                      <span>Continue with Google</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Sign In Link */}
+              <div className="mt-8 text-center">
+                <p className="text-sm text-gray-600">
+                  Already have an account?{' '}
+                  <Link to="/login" className="font-bold text-blue-600 hover:text-blue-700 transition-colors underline">
+                    Sign In
+                  </Link>
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Custom CSS for animations */}
-      <style jsx>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </div>
   );
 }

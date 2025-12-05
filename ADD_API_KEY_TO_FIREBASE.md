@@ -53,3 +53,4 @@ Since Vite embeds `VITE_` variables at build time, the key should already be in 
 **Current Status:** The key is in `.env.local` but may need to be in Firebase Hosting environment variables for production.
 
 
+

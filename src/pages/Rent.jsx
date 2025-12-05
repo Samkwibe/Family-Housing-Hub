@@ -1,8 +1,11 @@
-// src/pages/Rent.jsx - Enhanced Rent Management
+// src/pages/Rent.jsx - Enhanced Rent Management with Payment Processing
 import React, { useState, useMemo } from 'react';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { useFamily } from '../contexts/FamilyContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import PaymentForm from '../components/PaymentForm';
 import {
   DollarSign,
   Calendar,
@@ -34,9 +37,12 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+// Initialize Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+
 export default function Rent() {
   const { rentPayments = [], addRentPayment, loading } = useFamily();
-  const { userProfile } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const { isDark } = useTheme();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showRecordModal, setShowRecordModal] = useState(false);
@@ -569,16 +575,16 @@ export default function Rent() {
         </div>
       </div>
 
-      {/* Pay Rent Modal */}
+      {/* Pay Rent Modal with Stripe Integration */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl transition-colors duration-200">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl transition-colors duration-200">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pay Rent</h2>
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
@@ -586,28 +592,58 @@ export default function Rent() {
             </div>
 
             <div className="p-6">
-              <div className="bg-gradient-to-br from-green-50 dark:from-green-900/20 to-emerald-50 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6 text-center mb-6">
-                <p className="text-green-700 dark:text-green-300 font-medium mb-2">Amount Due</p>
-                <p className="text-4xl font-bold text-green-800 dark:text-green-300">{formatCurrency(stats.monthlyRent)}</p>
-                {stats.nextDue && (
-                  <p className="text-green-600 dark:text-green-400 text-sm mt-2">Due {formatDate(stats.nextDue.dueDate)}</p>
-                )}
-              </div>
+              {import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? (
+                <Elements stripe={stripePromise}>
+                  <PaymentForm
+                    amount={stats.monthlyRent}
+                    userId={currentUser?.uid}
+                    description={`Rent payment for ${stats.nextDue ? formatDate(stats.nextDue.dueDate) : new Date().toLocaleDateString()}`}
+                    metadata={{
+                      name: `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim(),
+                      email: currentUser?.email,
+                      dueDate: stats.nextDue?.dueDate || new Date(),
+                      type: 'rent'
+                    }}
+                    onSuccess={(paymentIntent) => {
+                      setShowPaymentModal(false);
+                      // Refresh payment list
+                      window.location.reload();
+                    }}
+                    onCancel={() => setShowPaymentModal(false)}
+                  />
+                </Elements>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-green-50 dark:from-green-900/20 to-emerald-50 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6 text-center mb-6">
+                    <p className="text-green-700 dark:text-green-300 font-medium mb-2">Amount Due</p>
+                    <p className="text-4xl font-bold text-green-800 dark:text-green-300">{formatCurrency(stats.monthlyRent)}</p>
+                    {stats.nextDue && (
+                      <p className="text-green-600 dark:text-green-400 text-sm mt-2">Due {formatDate(stats.nextDue.dueDate)}</p>
+                    )}
+                  </div>
 
-              <div className="space-y-4 text-center">
-                <p className="text-gray-600 dark:text-gray-400">
-                  Online payment integration coming soon. For now, please record your payment after making it through your preferred method.
-                </p>
-                <button
-                  onClick={() => {
-                    setShowPaymentModal(false);
-                    setShowRecordModal(true);
-                  }}
-                  className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Record a Payment Instead
-                </button>
-              </div>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-4">
+                    <p className="text-yellow-800 dark:text-yellow-300 text-sm">
+                      <strong>Payment processing not configured.</strong> Please add your Stripe publishable key to enable online payments.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4 text-center">
+                    <p className="text-gray-600 dark:text-gray-400">
+                      For now, please record your payment after making it through your preferred method.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowPaymentModal(false);
+                        setShowRecordModal(true);
+                      }}
+                      className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+                    >
+                      Record a Payment Instead
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

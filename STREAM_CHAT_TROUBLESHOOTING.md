@@ -85,3 +85,4 @@ The app is designed to work perfectly without Stream Chat. You can:
 **Current Status:** App works with or without Stream Chat. Standard messaging is fully functional.
 
 
+

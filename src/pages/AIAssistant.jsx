@@ -7,7 +7,7 @@ import {
   Clock, ChevronRight, Mic, Upload, X, AlertCircle, Zap, Download, Play, Square,
   Plus, Minus, MapPin, Search, Star, History, Save, Share2, Volume2, VolumeX,
   ExternalLink, Calendar, Users, Shield, Briefcase, Phone, Mail, Globe, Filter,
-  ChevronDown, ChevronUp, Bookmark, BookmarkCheck, Settings, Bot, Image as ImageIcon
+  ChevronDown, ChevronUp, Bookmark, Settings, Bot, Image as ImageIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, serverTimestamp } from 'firebase/firestore';

@@ -1,0 +1,145 @@
+{
+  "providers": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-familyhousinghub-dev-49c08-authRole",
+      "UnauthRoleArn": "arn:aws:iam::651706769988:role/amplify-familyhousinghub-dev-49c08-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::651706769988:role/amplify-familyhousinghub-dev-49c08-authRole",
+      "Region": "us-west-2",
+      "DeploymentBucketName": "amplify-familyhousinghub-dev-49c08-deployment",
+      "UnauthRoleName": "amplify-familyhousinghub-dev-49c08-unauthRole",
+      "StackName": "amplify-familyhousinghub-dev-49c08",
+      "StackId": "arn:aws:cloudformation:us-west-2:651706769988:stack/amplify-familyhousinghub-dev-49c08/81b62fc0-cfbb-11f0-a1d2-062362c3c7f3",
+      "AmplifyAppId": "doqfhoemnpsg9",
+      "APIGatewayAuthURL": "https://s3.amazonaws.com/amplify-familyhousinghub-dev-49c08-deployment/amplify-cfn-templates/api/APIGatewayAuthStack.json"
+    }
+  },
+  "auth": {
+    "familyhousinghubea2f1d3b": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "customAuth": false,
+      "frontendAuthConfig": {
+        "socialProviders": [],
+        "usernameAttributes": [
+          "EMAIL"
+        ],
+        "signupAttributes": [
+          "EMAIL"
+        ],
+        "passwordProtectionSettings": {
+          "passwordPolicyMinLength": 8,
+          "passwordPolicyCharacters": []
+        },
+        "mfaConfiguration": "OFF",
+        "mfaTypes": [
+          "SMS"
+        ],
+        "verificationMechanisms": [
+          "EMAIL"
+        ]
+      },
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-familyhousinghub-dev-49c08-deployment/amplify-cfn-templates/auth/familyhousinghubea2f1d3b-cloudformation-template.json",
+        "logicalId": "authfamilyhousinghubea2f1d3b"
+      },
+      "lastPushTimeStamp": "2025-12-05T00:17:58.226Z",
+      "output": {
+        "UserPoolId": "us-west-2_sIL5JyEY7",
+        "AppClientIDWeb": "70h6bdf0sstbn61pd7gac88gqh",
+        "AppClientID": "2ba9jg5s5dvhqmg6ukfug2lbsv",
+        "IdentityPoolId": "us-west-2:223f306f-e110-4bc2-a947-e1f962a3d45a",
+        "UserPoolArn": "arn:aws:cognito-idp:us-west-2:651706769988:userpool/us-west-2_sIL5JyEY7",
+        "IdentityPoolName": "familyhousinghubea2f1d3b_identitypool_ea2f1d3b__dev",
+        "UserPoolName": "familyhousinghubea2f1d3b_userpool_ea2f1d3b"
+      },
+      "lastPushDirHash": "YCt1wG+SYB2uGwoyziYjbMIh1XU="
+    }
+  },
+  "storage": {
+    "familystorage": {
+      "service": "S3",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "lastPushTimeStamp": "2025-12-05T00:17:58.674Z",
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-familyhousinghub-dev-49c08-deployment/amplify-cfn-templates/storage/cloudformation-template.json",
+        "logicalId": "storagefamilystorage"
+      },
+      "output": {
+        "BucketName": "familyhousinghubb9b6e0ac58744f47afdb40bc8e8988649c08-dev",
+        "Region": "us-west-2"
+      },
+      "lastPushDirHash": "TdFL/XXpCCYH2HW9XfE2ni3IwsM="
+    }
+  },
+  "function": {
+    "familyfunction": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda",
+      "lastBuildTimeStamp": "2025-12-03T03:56:26.191Z",
+      "lastBuildType": "PROD",
+      "lastPackageTimeStamp": "2025-12-03T03:56:28.258Z",
+      "distZipFilename": "familyfunction-4245676e496e66693261-build.zip",
+      "s3Bucket": {
+        "deploymentBucketName": "amplify-familyhousinghub-dev-49c08-deployment",
+        "s3Key": "amplify-builds/familyfunction-4245676e496e66693261-build.zip"
+      },
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-familyhousinghub-dev-49c08-deployment/amplify-cfn-templates/function/familyfunction-cloudformation-template.json",
+        "logicalId": "functionfamilyfunction"
+      },
+      "lastPushTimeStamp": "2025-12-05T00:17:58.231Z",
+      "output": {
+        "LambdaExecutionRoleArn": "arn:aws:iam::651706769988:role/familyhousinghubLambdaRolec7a1e9b1-dev",
+        "Region": "us-west-2",
+        "Arn": "arn:aws:lambda:us-west-2:651706769988:function:familyfunction-dev",
+        "Name": "familyfunction-dev",
+        "LambdaExecutionRole": "familyhousinghubLambdaRolec7a1e9b1-dev"
+      },
+      "lastPushDirHash": "FNlQXkFvT0UIqakJr83PEJw3Yvc="
+    }
+  },
+  "api": {
+    "familyapi": {
+      "service": "API Gateway",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "function",
+          "resourceName": "familyfunction",
+          "attributes": [
+            "Name",
+            "Arn"
+          ]
+        }
+      ],
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-familyhousinghub-dev-49c08-deployment/amplify-cfn-templates/api/familyapi-cloudformation-template.json",
+        "logicalId": "apifamilyapi"
+      },
+      "lastPushTimeStamp": "2025-12-05T00:17:58.234Z",
+      "output": {
+        "ApiName": "familyapi",
+        "RootUrl": "https://qlgvcy36yh.execute-api.us-west-2.amazonaws.com/dev",
+        "ApiId": "qlgvcy36yh"
+      },
+      "lastPushDirHash": "z25NJ6fSjTh6OSLG5hkenutNPaU="
+    }
+  },
+  "hosting": {
+    "amplifyhosting": {
+      "service": "amplifyhosting",
+      "providerPlugin": "awscloudformation",
+      "type": "manual",
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-familyhousinghub-dev-49c08-deployment/amplify-cfn-templates/hosting/amplifyhosting-template.json",
+        "logicalId": "hostingamplifyhosting"
+      },
+      "lastPushTimeStamp": "2025-12-05T00:17:58.236Z",
+      "output": {},
+      "lastPushDirHash": "i5YXf8YaaWQ2I8+qSgnhQnMd7BI="
+    }
+  }
+}

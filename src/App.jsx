@@ -12,10 +12,16 @@ import { Toaster } from 'react-hot-toast';
 
 // Lazy loading for better performance
 const Layout = lazy(() => import('./components/Layout'));
+const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ChildDashboard = lazy(() => import('./pages/ChildDashboard'));
+const OwnerDashboard = lazy(() => import('./pages/OwnerDashboard'));
+const OwnerOnboarding = lazy(() => import('./pages/OwnerOnboarding'));
+const RenterOnboarding = lazy(() => import('./pages/RenterOnboarding'));
+const DashboardRouter = lazy(() => import('./components/DashboardRouter'));
 const Rent = lazy(() => import('./pages/Rent'));
 const Maintenance = lazy(() => import('./pages/Maintenance'));
 const Documents = lazy(() => import('./pages/Documents'));
@@ -25,6 +31,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
 const HelpCenter = lazy(() => import('./pages/HelpCenter'));
 const ChildrenSavings = lazy(() => import('./pages/ChildrenSavings'));
+const ParentChildrenManagement = lazy(() => import('./pages/ParentChildrenManagement'));
 const FamilyHealth = lazy(() => import('./pages/FamilyHealth'));
 const Budget = lazy(() => import('./pages/Budget'));
 const FamilyCalendar = lazy(() => import('./pages/FamilyCalendar'));
@@ -47,17 +54,46 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  // If profile is not complete and not on onboarding page
+  // CHILDREN: Always go to child dashboard, skip onboarding
+  if (userProfile?.role === 'child' || userProfile?.userType === 'child') {
+    if (location.pathname !== '/child-dashboard') {
+      return <Navigate to="/child-dashboard" replace />;
+    }
+    return children;
+  }
+
+  // OWNER: Check for onboarding
+  if (userProfile?.userType === 'owner') {
+    if (!profileComplete && location.pathname !== '/owner-onboarding') {
+      return <Navigate to="/owner-onboarding" replace />;
+    }
+    if (profileComplete && location.pathname === '/owner-onboarding') {
+      return <Navigate to="/owner-dashboard" replace />;
+    }
+    return children;
+  }
+
+  // RENTER: Check for onboarding
+  if (userProfile?.userType === 'renter') {
+    if (!profileComplete && location.pathname !== '/renter-onboarding') {
+      return <Navigate to="/renter-onboarding" replace />;
+    }
+    if (profileComplete && location.pathname === '/renter-onboarding') {
+      return <Navigate to="/dashboard" replace />;
+    }
+    return children;
+  }
+
+  // Default: old onboarding flow
   if (!profileComplete && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // If profile is complete but user is trying to access onboarding
   if (profileComplete && location.pathname === '/onboarding') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -72,7 +108,22 @@ const PublicRoute = ({ children }) => {
   }
 
   if (currentUser) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
+
+// Landing Route Component - Shows landing page for unauthenticated users
+const LandingRoute = ({ children }) => {
+  const { currentUser, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen message="Loading..." />;
+  }
+
+  if (currentUser) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -83,7 +134,19 @@ const AppRouter = () => {
   return (
     <Suspense fallback={<LoadingScreen message="Loading..." />}>
       <Routes>
-        {/* Public Routes */}
+        {/* Landing Page - First thing users see */}
+        <Route path="/" element={
+          <LandingRoute>
+            <Landing />
+          </LandingRoute>
+        } />
+        
+        <Route path="/landing" element={
+          <LandingRoute>
+            <Landing />
+          </LandingRoute>
+        } />
+        
         <Route path="/login" element={
           <PublicRoute>
             <Login />
@@ -96,19 +159,42 @@ const AppRouter = () => {
           </PublicRoute>
         } />
 
-        {/* Onboarding Route (Protected but special) */}
+        {/* Onboarding Routes */}
         <Route path="/onboarding" element={
           <ProtectedRoute>
             <Onboarding />
           </ProtectedRoute>
         } />
 
-        {/* Protected Routes with Layout */}
-        <Route path="/" element={
+        <Route path="/owner-onboarding" element={
           <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
+            <OwnerOnboarding />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/renter-onboarding" element={
+          <ProtectedRoute>
+            <RenterOnboarding />
+          </ProtectedRoute>
+        } />
+
+        {/* Dashboard Routes - Use DashboardRouter for intelligent routing */}
+        <Route path="/child-dashboard" element={
+          <ProtectedRoute>
+            <ChildDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/owner-dashboard" element={
+          <ProtectedRoute>
+            <DashboardRouter />
+          </ProtectedRoute>
+        } />
+
+        {/* Protected Routes with Layout */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <DashboardRouter />
           </ProtectedRoute>
         } />
 
@@ -177,6 +263,14 @@ const AppRouter = () => {
         } />
 
         <Route path="/children" element={
+          <ProtectedRoute>
+            <Layout>
+              <ParentChildrenManagement />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/children-savings" element={
           <ProtectedRoute>
             <Layout>
               <ChildrenSavings />

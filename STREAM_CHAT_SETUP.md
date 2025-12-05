@@ -129,3 +129,4 @@ VITE_FCM_VAPID_KEY=your-vapid-key-here
 **Current Status:** Stream Chat is integrated and ready. Complete the FCM setup in Stream Chat dashboard to enable push notifications.
 
 
+

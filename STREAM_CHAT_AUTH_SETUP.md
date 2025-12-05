@@ -84,3 +84,4 @@ Then use this token in the frontend instead of `devToken()`.
 **Note:** The app works perfectly with standard Firestore messaging even if Stream Chat fails. Stream Chat is an optimization, not a requirement.
 
 
+

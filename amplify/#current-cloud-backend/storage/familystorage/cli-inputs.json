@@ -1,0 +1,12 @@
+{
+  "resourceName": "familystorage",
+  "policyUUID": "8d4642e3",
+  "bucketName": "familyhousinghubb9b6e0ac58744f47afdb40bc8e89886",
+  "storageAccess": "auth",
+  "guestAccess": [],
+  "authAccess": [
+    "CREATE_AND_UPDATE"
+  ],
+  "triggerFunction": "NONE",
+  "groupAccess": {}
+}

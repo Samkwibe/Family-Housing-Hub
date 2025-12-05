@@ -4,10 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useFamily } from '../contexts/FamilyContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { 
-  DollarSign, 
-  Wrench, 
-  FileText, 
+import {
+  DollarSign,
+  Wrench,
+  FileText,
   MessageCircle,
   AlertTriangle,
   Calendar,
@@ -32,12 +32,15 @@ import {
 } from 'lucide-react';
 
 // Safe data processing with useMemo for performance
-export default function Dashboard() {
+export default function Dashboard({ dashboardData: onboardingData }) {
   const { maintenanceRequests = [], rentPayments = [], documents = [], messages = [], loading } = useFamily();
   const { userProfile } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
   
+  // Use onboarding data if available
+  const renterData = onboardingData || {};
+
   // Determine user type (owner or renter)
   const userType = userProfile?.userType || 'renter';
   const isOwner = userType === 'owner';
@@ -52,7 +55,7 @@ export default function Dashboard() {
     const pendingMaintenance = maintenanceRequests.filter(r => r.status === 'submitted' || r.status === 'pending').length;
     const urgentMaintenance = maintenanceRequests.filter(r => r.priority === 'urgent' && (r.status === 'submitted' || r.status === 'pending')).length;
     const unreadMessages = messages.filter(m => !m.read).length;
-    
+
     // Find next rent due (real data)
     const nextRentDue = rentPayments
       .filter(p => p.status === 'pending' || p.status === 'due')
@@ -169,8 +172,8 @@ export default function Dashboard() {
     {
       title: 'Rent Status',
       value: nextRentDue ? `$${nextRentDue.amount || '0'}` : 'Paid',
-      subtitle: nextRentDue ? 
-        `Due ${new Date(nextRentDue.dueDate).toLocaleDateString()}` : 
+      subtitle: nextRentDue ?
+        `Due ${new Date(nextRentDue.dueDate).toLocaleDateString()}` :
         'All caught up',
       icon: DollarSign,
       color: nextRentDue ? 'text-orange-600' : 'text-green-600',
@@ -298,7 +301,7 @@ export default function Dashboard() {
       'in-progress': { color: 'text-blue-600 bg-blue-100', text: 'In Progress', icon: Clock },
       default: { color: 'text-gray-600 bg-gray-100', text: status, icon: Clock }
     };
-    
+
     return configs[status] || configs.default;
   };
 
@@ -314,24 +317,26 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6 dark:bg-gray-900 min-h-screen transition-colors duration-200">
-      {/* Welcome Header with Theme Toggle */}
-      <div className={`bg-gradient-to-r rounded-2xl p-6 text-white relative overflow-hidden ${
-        isOwner 
-          ? 'from-emerald-600 to-teal-600 dark:from-emerald-700 dark:to-teal-700' 
-          : 'from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700'
+    <div className={`p-6 space-y-6 min-h-screen transition-colors duration-200 ${!isDark
+        ? 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50'
+        : 'bg-gray-900'
       }`}>
+      {/* Welcome Header with Theme Toggle */}
+      <div className={`bg-gradient-to-r rounded-2xl p-6 text-white relative overflow-hidden ${isOwner
+        ? 'from-emerald-600 to-teal-600 dark:from-emerald-700 dark:to-teal-700'
+        : 'from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700'
+        }`}>
         <div className="relative z-10 flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">
               Welcome back, {userProfile?.firstName || 'Family'}! 👋
             </h1>
             <p className="text-white/80 text-lg">
-              {isOwner ? 'Property Owner Dashboard' : 'Renter Dashboard'} • {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              {isOwner ? 'Property Owner Dashboard' : 'Renter Dashboard'} • {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
               })}
             </p>
           </div>
@@ -360,7 +365,7 @@ export default function Dashboard() {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div 
+            <div
               key={index}
               onClick={() => navigate(stat.link)}
               className="cursor-pointer transform hover:scale-105 transition-transform duration-200"
@@ -370,21 +375,20 @@ export default function Dashboard() {
                   <div className="p-3 rounded-xl bg-white dark:bg-gray-700 bg-opacity-50 dark:bg-opacity-100 shadow-sm">
                     <Icon className={`h-6 w-6 ${stat.color} dark:text-gray-200`} />
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    stat.status === 'paid' || stat.status === 'clear' || stat.status === 'read' 
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                    stat.status === 'pending' 
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${stat.status === 'paid' || stat.status === 'clear' || stat.status === 'read'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                    stat.status === 'pending'
                       ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                    stat.status === 'urgent' || stat.status === 'unread' || stat.status === 'overdue'
-                      ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
-                    stat.status === 'expiring'
-                      ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
-                      'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-                  }`}>
+                      stat.status === 'urgent' || stat.status === 'unread' || stat.status === 'overdue'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                        stat.status === 'expiring'
+                          ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
+                          'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                    }`}>
                     {stat.status.charAt(0).toUpperCase() + stat.status.slice(1)}
                   </span>
                 </div>
-                
+
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{stat.value}</h3>
                 <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{stat.title}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{stat.subtitle}</p>
@@ -439,9 +443,8 @@ export default function Dashboard() {
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Rent Overview</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Next Payment Card */}
-                <div className={`p-6 rounded-xl border-2 dark:border-gray-700 ${
-                  nextRentDue ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                }`}>
+                <div className={`p-6 rounded-xl border-2 dark:border-gray-700 ${nextRentDue ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                  }`}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-gray-900 dark:text-white">Next Payment</h3>
                     <DollarSign className={`h-5 w-5 ${nextRentDue ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'}`} />
@@ -450,22 +453,20 @@ export default function Dashboard() {
                     <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                       {nextRentDue ? `$${nextRentDue.amount || '0'}` : 'All Paid'}
                     </p>
-                    <p className={`text-sm font-medium ${
-                      nextRentDue ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'
-                    }`}>
-                      {nextRentDue ? 
-                        `Due ${new Date(nextRentDue.dueDate).toLocaleDateString()}` : 
+                    <p className={`text-sm font-medium ${nextRentDue ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'
+                      }`}>
+                      {nextRentDue ?
+                        `Due ${new Date(nextRentDue.dueDate).toLocaleDateString()}` :
                         'No pending payments'
                       }
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/rent')}
-                    className={`w-full mt-4 py-2 rounded-lg font-semibold transition-colors ${
-                      nextRentDue 
-                        ? 'bg-orange-600 hover:bg-orange-700 text-white' 
-                        : 'bg-green-600 hover:bg-green-700 text-white'
-                    }`}
+                    className={`w-full mt-4 py-2 rounded-lg font-semibold transition-colors ${nextRentDue
+                      ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                      }`}
                   >
                     {nextRentDue ? 'Pay Now' : 'View History'}
                   </button>
@@ -488,7 +489,7 @@ export default function Dashboard() {
                       <p className="text-sm text-green-600 dark:text-green-400">On track</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-white">Payment History</p>
@@ -549,7 +550,7 @@ export default function Dashboard() {
                           <p className="text-sm text-purple-600 dark:text-purple-400">Outstanding</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                         <div>
                           <p className="font-semibold text-gray-900 dark:text-white">Monthly Payment</p>
@@ -580,7 +581,7 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-        
+
         {/* Right Sidebar */}
         <div className="space-y-6">
           {/* Recent Activity */}
@@ -595,10 +596,10 @@ export default function Dashboard() {
                   const Icon = activity.icon;
                   const statusConfig = getStatusConfig(activity.status);
                   const StatusIcon = statusConfig.icon;
-                  
+
                   return (
-                    <div 
-                      key={activity.id} 
+                    <div
+                      key={activity.id}
                       className="flex items-start space-x-3 group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
                       onClick={() => navigate(`/${activity.type}`)}
                     >
@@ -630,7 +631,7 @@ export default function Dashboard() {
                   <Calendar className="h-8 w-8 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
                   <p className="text-sm text-gray-500 dark:text-gray-400">No recent activity</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    {isOwner 
+                    {isOwner
                       ? 'Get started by managing your property or viewing maintenance requests'
                       : 'Get started by paying rent or submitting a request'
                     }
@@ -677,7 +678,7 @@ export default function Dashboard() {
                 <p className="text-orange-600 dark:text-orange-400">You have {urgentMaintenance} urgent maintenance request(s) requiring attention</p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => navigate('/maintenance')}
               className="bg-orange-600 dark:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors"
             >

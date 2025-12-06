@@ -35,21 +35,51 @@ export default defineConfig(({ mode }) => {
       // Chunk splitting strategy
       rollupOptions: {
         output: {
-          manualChunks: {
+          manualChunks: (id) => {
             // React and related libraries
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'react-vendor';
+            }
+            
             // Firebase
-            'firebase-vendor': [
-              'firebase/app',
-              'firebase/auth',
-              'firebase/firestore',
-              'firebase/storage'
-            ],
-
+            if (id.includes('firebase')) {
+              return 'firebase-vendor';
+            }
+            
             // UI libraries
-            'ui-vendor': ['lucide-react', 'react-hot-toast'],
-          }
+            if (id.includes('lucide-react') || id.includes('react-hot-toast')) {
+              return 'ui-vendor';
+            }
+            
+            // Stream Chat
+            if (id.includes('stream-chat')) {
+              return 'stream-vendor';
+            }
+            
+            // Stripe
+            if (id.includes('stripe')) {
+              return 'stripe-vendor';
+            }
+            
+            // Large node_modules
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
+          },
+          // Optimize chunk names
+          chunkFileNames: 'assets/js/[name]-[hash].js',
+          entryFileNames: 'assets/js/[name]-[hash].js',
+          assetFileNames: (assetInfo) => {
+            const info = assetInfo.name.split('.');
+            const ext = info[info.length - 1];
+            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+              return 'assets/images/[name]-[hash][extname]';
+            }
+            if (/woff2?|eot|ttf|otf/i.test(ext)) {
+              return 'assets/fonts/[name]-[hash][extname]';
+            }
+            return 'assets/[name]-[hash][extname]';
+          },
         }
       },
 
@@ -102,6 +132,12 @@ export default defineConfig(({ mode }) => {
       hints: 'warning',
       maxEntrypointSize: 512000,
       maxAssetSize: 512000
+    },
+
+    // Additional optimizations
+    esbuild: {
+      // Drop console and debugger in production
+      drop: mode === 'production' ? ['console', 'debugger'] : [],
     },
 
     // Environment variables

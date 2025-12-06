@@ -1,9 +1,10 @@
 // src/components/PaymentForm.jsx - Stripe Payment Form Component
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { CreditCard, Lock, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { paymentService } from '../services/paymentService';
+import errorLogger from '../services/errorLoggingService';
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
@@ -36,11 +37,55 @@ export default function PaymentForm({
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [succeeded, setSucceeded] = useState(false);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [loadingIntent, setLoadingIntent] = useState(true);
+
+  // Create payment intent on mount
+  useEffect(() => {
+    const createIntent = async () => {
+      if (!amount || !userId) {
+        setLoadingIntent(false);
+        return;
+      }
+
+      try {
+        setLoadingIntent(true);
+        const amountInCents = Math.round(parseFloat(amount) * 100);
+        const response = await paymentService.createPaymentIntent({
+          amount: amountInCents,
+          currency: 'usd',
+          description: description || `Rent payment for ${new Date().toLocaleDateString()}`,
+          metadata: {
+            userId,
+            type: 'rent',
+            ...metadata
+          }
+        });
+
+        if (response.success && response.clientSecret) {
+          setClientSecret(response.clientSecret);
+        } else {
+          setError(response.error || 'Failed to initialize payment');
+        }
+      } catch (err) {
+        errorLogger.logError(err, {
+          component: 'PaymentForm',
+          action: 'createPaymentIntent',
+        });
+        setError('Failed to initialize payment. Please try again.');
+      } finally {
+        setLoadingIntent(false);
+      }
+    };
+
+    createIntent();
+  }, [amount, userId, description, metadata]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!stripe || !elements) {
+    if (!stripe || !elements || !clientSecret) {
+      setError('Payment system not ready. Please wait...');
       return;
     }
 
@@ -175,19 +220,27 @@ export default function PaymentForm({
         </div>
       )}
 
+      {/* Loading state while creating intent */}
+      {loadingIntent && (
+        <div className="text-center py-4">
+          <Loader className="h-6 w-6 animate-spin mx-auto text-blue-600 dark:text-blue-400 mb-2" />
+          <p className="text-sm text-gray-600 dark:text-gray-400">Initializing payment...</p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex space-x-3 pt-4">
         <button
           type="button"
           onClick={onCancel}
-          disabled={processing}
+          disabled={processing || loadingIntent}
           className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           type="submit"
-          disabled={!stripe || processing || !clientSecret}
+          disabled={!stripe || processing || !clientSecret || loadingIntent}
           className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-3 rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
         >
           {processing ? (

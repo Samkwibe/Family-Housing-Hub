@@ -1,6 +1,7 @@
  // src/components/ErrorBoundary.jsx
 import React from 'react';
 import { AlertTriangle, RefreshCw, Home, Shield, Wifi } from 'lucide-react';
+import errorLogger from '../services/errorLoggingService';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -25,11 +26,18 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Don't log blocked request errors as critical
+    // Log error using centralized logging service
     if (this.state.isBlockedRequest) {
-      console.warn('Request blocked - likely due to ad blocker:', error);
+      errorLogger.logWarning('Request blocked - likely due to ad blocker', {
+        error: error?.message,
+        errorInfo,
+      });
     } else {
-      console.error('Error caught by boundary:', error, errorInfo);
+      errorLogger.logError(error, {
+        component: 'ErrorBoundary',
+        errorInfo,
+        errorBoundary: true,
+      });
     }
   }
 

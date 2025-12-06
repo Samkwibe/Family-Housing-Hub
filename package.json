@@ -19,10 +19,12 @@
     "dependencies": {
         "@stripe/react-stripe-js": "^2.4.0",
         "@stripe/stripe-js": "^2.2.0",
+        "dompurify": "^3.3.0",
         "firebase": "^10.14.1",
         "lucide-react": "^0.263.1",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
+        "react-error-boundary": "^6.0.0",
         "react-hot-toast": "^2.4.1",
         "react-router-dom": "^6.8.0",
         "stream-chat": "^9.26.0",

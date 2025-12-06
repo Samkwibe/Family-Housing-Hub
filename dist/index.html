@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com; frame-src 'self' https://*.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Family Housing Hub</title>
     <!-- Google Maps JavaScript API with Places Library - Using callback for better loading control -->
     <script>
@@ -25,11 +30,11 @@
       defer
       onerror="handleGoogleMapsError()"
     ></script>
-    <script type="module" crossorigin src="/assets/index-979f7149.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/react-vendor-39d772da.js">
-    <link rel="modulepreload" crossorigin href="/assets/firebase-vendor-f8efe2b1.js">
-    <link rel="modulepreload" crossorigin href="/assets/ui-vendor-94cdd10f.js">
-    <link rel="stylesheet" href="/assets/index-ddef5c10.css">
+    <script type="module" crossorigin src="/assets/js/index-371d5059.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/js/vendor-1a31dd1e.js">
+    <link rel="modulepreload" crossorigin href="/assets/js/react-vendor-f9562d65.js">
+    <link rel="modulepreload" crossorigin href="/assets/js/firebase-vendor-6183b4d2.js">
+    <link rel="stylesheet" href="/assets/index-1fd288c5.css">
   </head>
   <body>
     <div id="root"></div>

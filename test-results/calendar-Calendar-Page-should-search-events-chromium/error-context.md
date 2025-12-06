@@ -1,0 +1,56 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - img [ref=e8]
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - img [ref=e16]
+        - generic [ref=e19]: FamilyHub
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - heading "Welcome Home" [level=1] [ref=e22]
+          - img [ref=e23]
+        - paragraph [ref=e26]: Simplify, Organize, Connect - Together.
+      - generic [ref=e27]:
+        - button "Family Dashboard" [ref=e28] [cursor=pointer]:
+          - img [ref=e30]
+          - generic [ref=e33]: Family Dashboard
+        - button "Smart Home" [ref=e34] [cursor=pointer]:
+          - img [ref=e36]
+          - generic [ref=e39]: Smart Home
+        - button "Memories" [ref=e40] [cursor=pointer]:
+          - img [ref=e42]
+          - generic [ref=e45]: Memories
+    - generic [ref=e46]:
+      - heading "Sign In" [level=2] [ref=e47]
+      - paragraph [ref=e49]: "Firebase: Error (auth/too-many-requests)."
+      - generic [ref=e50]:
+        - generic [ref=e51]:
+          - generic [ref=e52]: Email Address
+          - textbox "Enter your email" [ref=e54]: test@example.com
+        - generic [ref=e55]:
+          - generic [ref=e56]: Password
+          - generic [ref=e57]:
+            - textbox "Enter your password" [ref=e58]: Test123456!
+            - button "Show password" [ref=e59] [cursor=pointer]:
+              - img [ref=e60]
+        - link "Forgot password?" [ref=e64] [cursor=pointer]:
+          - /url: /login
+          - img [ref=e65]
+          - generic [ref=e68]: Forgot password?
+        - button "Log In" [ref=e69] [cursor=pointer]
+        - generic [ref=e74]: Or continue with
+        - generic [ref=e75]:
+          - button "Continue with Google" [ref=e76] [cursor=pointer]:
+            - img [ref=e77]
+            - generic [ref=e82]: Continue with Google
+          - button "Continue with Apple" [ref=e83] [cursor=pointer]:
+            - img [ref=e84]
+            - generic [ref=e86]: Continue with Apple
+      - paragraph [ref=e88]:
+        - text: Don't have an account?
+        - link "Sign Up" [ref=e89] [cursor=pointer]:
+          - /url: /register
+```

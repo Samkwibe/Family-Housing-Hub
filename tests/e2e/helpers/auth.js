@@ -9,69 +9,92 @@ import { expect } from '@playwright/test';
  * Default credentials: test@example.com / Test123456!
  */
 export async function loginUser(page, email = 'test@example.com', password = 'Test123456!') {
-  // Navigate to login page
-  await page.goto('/login', { waitUntil: 'networkidle' });
-  
-  // Wait for login form to be visible - try multiple selectors
-  const emailSelectors = [
-    'input[type="email"]',
-    'input[name="email"]',
-    'input[placeholder*="email" i]'
-  ];
-  
-  let emailInput = null;
-  for (const selector of emailSelectors) {
-    emailInput = page.locator(selector).first();
-    if (await emailInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-      break;
+  try {
+    // Check if page is closed
+    if (page.isClosed()) {
+      return false;
     }
-  }
-  
-  if (emailInput && await emailInput.isVisible().catch(() => false)) {
-    await emailInput.fill(email);
-  }
-  
-  // Try to find and fill password input
-  const passwordSelectors = [
-    'input[type="password"]',
-    'input[name="password"]',
-    'input[placeholder*="password" i]'
-  ];
-  
-  let passwordInput = null;
-  for (const selector of passwordSelectors) {
-    passwordInput = page.locator(selector).first();
-    if (await passwordInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-      break;
+    
+    // Navigate to login page
+    await page.goto('/login', { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {
+      // If navigation fails, page might be closed
+      return false;
+    });
+    
+    // Wait for login form to be visible - try multiple selectors
+    const emailSelectors = [
+      'input[type="email"]',
+      'input[name="email"]',
+      'input[placeholder*="email" i]'
+    ];
+    
+    let emailInput = null;
+    for (const selector of emailSelectors) {
+      if (page.isClosed()) return false;
+      emailInput = page.locator(selector).first();
+      if (await emailInput.isVisible({ timeout: 5000 }).catch(() => false)) {
+        break;
+      }
     }
-  }
-  
-  if (passwordInput && await passwordInput.isVisible().catch(() => false)) {
-    await passwordInput.fill(password);
-  }
-  
-  // Try to find and click submit button
-  const submitSelectors = [
-    'button[type="submit"]',
-    'button:has-text("Sign in")',
-    'button:has-text("Login")',
-    'button >> text=/sign in/i',
-    'button >> text=/login/i'
-  ];
-  
-  let submitButton = null;
-  for (const selector of submitSelectors) {
-    submitButton = page.locator(selector).first();
-    if (await submitButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-      break;
+    
+    if (emailInput && !page.isClosed() && await emailInput.isVisible().catch(() => false)) {
+      await emailInput.fill(email).catch(() => {});
     }
-  }
-  
-  if (submitButton && await submitButton.isVisible().catch(() => false)) {
-    await submitButton.click();
-    // Wait for navigation or dashboard to appear
-    await page.waitForURL(/\/(dashboard|calendar|owner-dashboard|child-dashboard)/, { timeout: 20000 }).catch(() => {});
-    await page.waitForTimeout(3000); // Wait for redirect and profile load
+    
+    // Try to find and fill password input
+    const passwordSelectors = [
+      'input[type="password"]',
+      'input[name="password"]',
+      'input[placeholder*="password" i]'
+    ];
+    
+    let passwordInput = null;
+    for (const selector of passwordSelectors) {
+      if (page.isClosed()) return false;
+      passwordInput = page.locator(selector).first();
+      if (await passwordInput.isVisible({ timeout: 5000 }).catch(() => false)) {
+        break;
+      }
+    }
+    
+    if (passwordInput && !page.isClosed() && await passwordInput.isVisible().catch(() => false)) {
+      await passwordInput.fill(password).catch(() => {});
+    }
+    
+    // Try to find and click submit button
+    const submitSelectors = [
+      'button[type="submit"]',
+      'button:has-text("Sign in")',
+      'button:has-text("Login")',
+      'button >> text=/sign in/i',
+      'button >> text=/login/i'
+    ];
+    
+    let submitButton = null;
+    for (const selector of submitSelectors) {
+      if (page.isClosed()) return false;
+      submitButton = page.locator(selector).first();
+      if (await submitButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+        break;
+      }
+    }
+    
+    if (submitButton && !page.isClosed() && await submitButton.isVisible().catch(() => false)) {
+      await submitButton.click().catch(() => {});
+      // Wait for navigation or dashboard to appear
+      await page.waitForURL(/\/(dashboard|calendar|owner-dashboard|child-dashboard)/, { timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(2000); // Wait for redirect and profile load
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    // If page is closed or any other error, return false
+    if (error.message && error.message.includes('closed')) {
+      return false;
+    }
+    console.warn('Login error:', error.message);
+    return false;
   }
 }
 
@@ -80,6 +103,11 @@ export async function loginUser(page, email = 'test@example.com', password = 'Te
  */
 export async function isLoggedIn(page) {
   try {
+    // Check if page is closed
+    if (page.isClosed()) {
+      return false;
+    }
+    
     // Check if we're on a dashboard or if user menu exists
     const dashboardIndicator = page.locator('text=Dashboard, text=Calendar, [data-testid="user-menu"]').first();
     await dashboardIndicator.waitFor({ timeout: 3000 });
@@ -94,20 +122,46 @@ export async function isLoggedIn(page) {
  */
 export async function ensureLoggedIn(page, email = 'test@example.com', password = 'Test123456!') {
   try {
+    // Check if page is closed first
+    if (page.isClosed()) {
+      console.warn('Page is closed, cannot authenticate');
+      return false;
+    }
+    
+    // Check current URL to see if already logged in
+    const currentUrl = page.url();
+    if (currentUrl.includes('/dashboard') || currentUrl.includes('/calendar') || currentUrl.includes('/owner-dashboard')) {
+      // Already on a protected page, likely logged in
+      return true;
+    }
+    
     const loggedIn = await isLoggedIn(page);
     if (!loggedIn) {
-      await loginUser(page, email, password);
-      // Verify login succeeded
-      await page.waitForTimeout(2000);
-      const stillNotLoggedIn = !(await isLoggedIn(page));
-      if (stillNotLoggedIn) {
+      const loginResult = await loginUser(page, email, password);
+      if (!loginResult) {
         console.warn('Login may have failed - test user might not exist');
-        // Don't throw - let test continue and fail gracefully
+        return false;
+      }
+      
+      // Verify login succeeded
+      if (!page.isClosed()) {
+        await page.waitForTimeout(2000);
+        const stillNotLoggedIn = !(await isLoggedIn(page));
+        if (stillNotLoggedIn) {
+          console.warn('Login may have failed - test user might not exist');
+          return false;
+        }
       }
     }
+    return true;
   } catch (error) {
+    // If page is closed or any other error
+    if (error.message && error.message.includes('closed')) {
+      console.warn('Page was closed during authentication');
+      return false;
+    }
     console.warn('Authentication check failed:', error.message);
-    // Don't throw - let test continue and fail gracefully
+    return false;
   }
 }
 

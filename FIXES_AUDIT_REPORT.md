@@ -275,3 +275,4 @@ cd /Users/samuelraymond/Documents/Family-Housing-Hub && npm run build && amplify
 **The app is stable and ready for use!** 🎉
 
 
+

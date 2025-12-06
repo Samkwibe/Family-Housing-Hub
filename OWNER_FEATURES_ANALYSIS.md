@@ -275,3 +275,4 @@
 4. **Enhance Rent Collection** - Make it owner-focused
 5. **Add Financial Tracking** - Income/expense management
 
+

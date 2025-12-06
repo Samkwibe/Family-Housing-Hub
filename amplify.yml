@@ -3,15 +3,21 @@ frontend:
   phases:
     preBuild:
       commands:
+        - echo "Node version:" && node --version
+        - echo "NPM version:" && npm --version
         - npm ci
     build:
       commands:
+        - echo "Starting build..."
         - npm run build
+        - echo "Build complete. Checking artifacts..."
+        - ls -la dist/ || echo "dist directory not found"
+        - test -f dist/index.html && echo "✅ index.html exists" || echo "❌ index.html missing"
+        - echo "Artifacts ready for deployment"
   artifacts:
     baseDirectory: dist
     files:
       - '**/*'
-    name: 'frontend-artifacts'
   cache:
     paths:
       - node_modules/**/*

@@ -147,56 +147,59 @@ test.describe('Page Reachability Tests', () => {
       
       // Now try to access protected page
       await page.goto('/dashboard', { waitUntil: 'domcontentloaded', timeout: 10000 });
-      await page.waitForTimeout(3000); // Wait for redirect to happen
+      
+      // Wait for redirect to happen (React Router redirects are async)
+      await page.waitForURL(url => !url.includes('/dashboard') || url.includes('/login'), { timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(1000); // Additional wait for page to settle
       
       // Check final URL - should NOT be on /dashboard if not authenticated
       const currentUrl = page.url();
       const isOnDashboard = currentUrl.includes('/dashboard') && !currentUrl.includes('/login');
       
-      // If we're still on dashboard, check if there's a loading state or error
+      // If we're still on dashboard after waiting, that's a problem
       if (isOnDashboard) {
-        // Wait a bit more for redirect
+        // Wait a bit more and check again
         await page.waitForTimeout(2000);
         const finalUrl = page.url();
         const stillOnDashboard = finalUrl.includes('/dashboard') && !finalUrl.includes('/login');
         
-        // If still on dashboard, check for loading screen or error
-        const hasLoading = await page.locator('text=/loading|checking|verifying/i').count() > 0;
-        const hasError = await page.locator('text=/error|unauthorized|access denied/i').count() > 0;
-        
-        // If loading or error, that's also a valid response (not accessible)
-        if (hasLoading || hasError) {
-          return; // Test passes - page is not accessible
+        if (stillOnDashboard) {
+          // Check for loading screen or error (which would indicate redirect is happening)
+          const hasLoading = await page.locator('text=/loading|checking|verifying/i').count() > 0;
+          const hasError = await page.locator('text=/error|unauthorized|access denied/i').count() > 0;
+          
+          // If loading or error, that's also a valid response (not accessible)
+          if (hasLoading || hasError) {
+            return; // Test passes - page is not accessible
+          }
+          
+          // If still on dashboard without loading/error, fail the test
+          throw new Error(`Expected redirect from /dashboard, but still on ${finalUrl}`);
         }
-        
-        // If still on dashboard without loading/error, might be a test environment issue
-        console.warn('Still on dashboard after redirect wait - might be test environment issue');
-        return; // Don't fail - might be test setup issue
       }
       
-      // If we're not on dashboard, that's good - we were redirected
-      // Check for landing page elements (from the error context, we know landing page has these)
-      const hasSignInLink = await page.locator('a[href="/login"], link:has-text("Sign In")').count() > 0;
-      const hasGetStarted = await page.locator('text=/get started|sign up|register/i').count() > 0;
-      const hasFamilyHub = await page.locator('text=/family.*hub|housing hub/i').count() > 0;
-      const hasLandingContent = await page.locator('text=/property owner|renter|50,000/i').count() > 0;
+      // If we're not on dashboard, verify we're on landing page or login page
       const isOnLanding = currentUrl === 'http://localhost:3001/' || 
                          currentUrl === 'http://localhost:3001' ||
+                         currentUrl.endsWith('/') ||
                          currentUrl.includes('/landing');
       const isOnLogin = currentUrl.includes('/login');
+      
+      // Check for landing page elements
+      const hasSignInLink = await page.locator('a[href="/login"]').count() > 0;
+      const hasGetStarted = await page.locator('text=/get started|sign up|register/i').count() > 0;
+      const hasFamilyHub = await page.locator('text=/family.*hub|housing hub/i').count() > 0;
       const hasLoginForm = await page.locator('input[type="email"], input[name="email"]').count() > 0;
       
-      // If we have any of these indicators, we were redirected (test passes)
+      // Test passes if we're on landing/login page OR have landing page elements
       const isRedirected = isOnLanding || 
                           isOnLogin ||
                           hasLoginForm ||
                           hasSignInLink ||
                           hasGetStarted ||
-                          hasFamilyHub ||
-                          hasLandingContent;
+                          hasFamilyHub;
       
-      // Test passes if we're redirected OR not on dashboard
-      expect(isRedirected || !isOnDashboard).toBeTruthy();
+      expect(isRedirected).toBeTruthy();
     });
   });
 

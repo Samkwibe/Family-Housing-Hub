@@ -1,9 +1,7 @@
 // Applitools Configuration
-// Get your API key from: https://applitools.com/
+// API key is loaded from .env file
 
 export const applitoolsConfig = {
-  // Set your API key as environment variable:
-  // export APPLITOOLS_API_KEY=your_api_key_here
   apiKey: process.env.APPLITOOLS_API_KEY || '',
   
   // Batch configuration

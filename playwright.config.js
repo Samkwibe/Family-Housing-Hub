@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { applitoolsConfig } from './applitools.config.js';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -11,6 +12,10 @@ export default defineConfig({
     baseURL: process.env.TEST_URL || 'http://localhost:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+  },
+  // Applitools configuration
+  use: {
+    ...applitoolsConfig,
   },
   projects: [
     {

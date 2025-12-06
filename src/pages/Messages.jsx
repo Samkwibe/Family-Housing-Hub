@@ -916,40 +916,43 @@ export default function Messages() {
   };
 
   return (
-    <div className="p-6 h-[calc(100vh-100px)]">
-      <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div className="h-[calc(100vh-80px)] flex flex-col bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <MessageCircle className="h-8 w-8 text-blue-600" />
-              Family Messages
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <MessageCircle className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              Messages
             </h1>
-            <p className="text-gray-600">Secure messaging with your family members only</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {allUsers.length} family member{allUsers.length !== 1 ? 's' : ''} available
+            </p>
           </div>
           <button
             onClick={() => setShowUserSearch(true)}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-xl font-semibold flex items-center space-x-2 hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg shadow-blue-200"
+            className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-sm"
           >
-            <UserPlus className="h-5 w-5" />
-            <span>New Chat</span>
+            <UserPlus className="h-4 w-4" />
+            <span className="hidden sm:inline">New Chat</span>
           </button>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 flex overflow-hidden min-h-0">
-          {/* Conversation List */}
-          <div className="w-full md:w-80 border-r border-gray-200 flex flex-col">
-            {/* Search */}
-            <div className="p-4 border-b border-gray-200">
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Conversation List - Cleaner Design */}
+        <div className="w-full md:w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+            {/* Search - Cleaner */}
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
-                  placeholder="Search conversations..."
+                  placeholder="Search messages or users..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-700 text-sm placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
             </div>
@@ -978,38 +981,41 @@ export default function Messages() {
                       <button
                         key={conversation.id}
                         onClick={() => handleSelectConversation(conversation.id)}
-                        className={`w-full p-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 ${isSelected ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                        className={`w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-600 dark:border-l-blue-500' : ''
                           }`}
                       >
-                        <div className="flex items-start space-x-3">
+                        <div className="flex items-center gap-3">
                           {otherUser?.photoURL ? (
                             <img
                               src={otherUser.photoURL}
                               alt={userName}
-                              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                              className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800"
                             />
                           ) : (
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${conversation.unreadCount > 0 ? 'bg-blue-600' : 'bg-gray-200'
-                              }`}>
-                              <span className={`text-sm font-semibold ${conversation.unreadCount > 0 ? 'text-white' : 'text-gray-600'
-                                }`}>
-                                {userName.charAt(0).toUpperCase()}
-                              </span>
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-white font-semibold text-base ${
+                              conversation.unreadCount > 0 
+                                ? 'bg-gradient-to-br from-blue-500 to-purple-600' 
+                                : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                            }`}>
+                              {userName.charAt(0).toUpperCase()}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <p className={`font-medium truncate ${conversation.unreadCount > 0 ? 'text-gray-900 font-semibold' : 'text-gray-700'
-                                }`}>
+                              <p className={`font-medium truncate text-sm ${
+                                conversation.unreadCount > 0 
+                                  ? 'text-gray-900 dark:text-white font-semibold' 
+                                  : 'text-gray-700 dark:text-gray-300'
+                              }`}>
                                 {userName}
                               </p>
                               {conversation.unreadCount > 0 && (
-                                <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5 ml-2 flex-shrink-0">
+                                <span className="bg-blue-600 dark:bg-blue-500 text-white text-xs font-semibold rounded-full px-2 py-0.5 ml-2 flex-shrink-0 min-w-[20px] text-center">
                                   {conversation.unreadCount}
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-gray-500 truncate mb-1">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-1">
                               {lastMsg?.location ? (
                                 <span className="flex items-center gap-1">
                                   <MapPin className="h-3 w-3" />
@@ -1021,12 +1027,12 @@ export default function Messages() {
                                   {lastMsg.attachments.length} file{lastMsg.attachments.length > 1 ? 's' : ''}
                                 </span>
                               ) : (
-                                lastMsg?.message?.substring(0, 50) || 'No messages'
+                                lastMsg?.message?.substring(0, 40) || 'No messages'
                               )}
-                              {lastMsg?.message && lastMsg.message.length > 50 ? '...' : ''}
+                              {lastMsg?.message && lastMsg.message.length > 40 ? '...' : ''}
                             </p>
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-400">
+                              <span className="text-xs text-gray-400 dark:text-gray-500">
                                 {formatTime(lastMsg?.createdAt)}
                               </span>
                               {lastMsg?.senderId === currentUser.uid && (
@@ -1168,69 +1174,52 @@ export default function Messages() {
             ) : (selectedConversation || selectedUser) && otherUser ? (
               /* Conversation View */
               <>
-                {/* Chat Header */}
-                <div className="p-4 border-b border-gray-200 bg-white">
+                {/* Chat Header - Cleaner */}
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3">
                       {otherUser.photoURL ? (
                         <img
                           src={otherUser.photoURL}
                           alt={`${otherUser.firstName || ''} ${otherUser.lastName || ''}`}
-                          className="w-10 h-10 rounded-full object-cover"
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ring-blue-500"
                         />
                       ) : (
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold">
-                            {`${otherUser.firstName || ''} ${otherUser.lastName || ''}`.charAt(0).toUpperCase() || 'U'}
-                          </span>
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          {`${otherUser.firstName || ''} ${otherUser.lastName || ''}`.charAt(0).toUpperCase() || 'U'}
                         </div>
                       )}
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-gray-900 dark:text-white text-base">
                           {`${otherUser.firstName || ''} ${otherUser.lastName || ''}`.trim() || otherUser.email || 'Unknown User'}
                         </h3>
                         <div className="flex items-center gap-2 mt-0.5">
-                          {otherUser.email && (
-                            <p className="text-sm text-gray-500 flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {otherUser.email}
-                            </p>
-                          )}
-                          <span className="flex items-center text-sm text-green-600">
-                            <span className="w-2 h-2 bg-green-500 rounded-full mr-1.5" />
+                          <span className="flex items-center text-xs text-green-600 dark:text-green-400">
+                            <span className="w-2 h-2 bg-green-500 rounded-full mr-1.5 animate-pulse" />
                             Online
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-1">
                       {otherUser.phone && (
                         <a
                           href={`tel:${otherUser.phone}`}
-                          className="p-2 hover:bg-gray-100 rounded-lg"
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                           title="Call"
                         >
-                          <Phone className="h-5 w-5 text-gray-600" />
+                          <Phone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                         </a>
                       )}
-                      {otherUser.email && (
-                        <a
-                          href={`mailto:${otherUser.email}`}
-                          className="p-2 hover:bg-gray-100 rounded-lg"
-                          title="Email"
-                        >
-                          <Mail className="h-5 w-5 text-gray-600" />
-                        </a>
-                      )}
-                      <button className="p-2 hover:bg-gray-100 rounded-lg">
-                        <MoreVertical className="h-5 w-5 text-gray-600" />
+                      <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <MoreVertical className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Messages - Enhanced UI with better organization */}
-                <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-gray-50 to-white">
+                {/* Messages - Cleaner Design */}
+                <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50 dark:bg-gray-900">
                   {currentMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-12">
                       <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
@@ -1345,12 +1334,12 @@ export default function Messages() {
 
                             {message.message && (
                               <div
-                                className={`px-4 py-3 rounded-2xl max-w-full break-words ${isSent
-                                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-md shadow-md'
-                                  : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100'
+                                className={`px-4 py-2.5 rounded-2xl max-w-[85%] break-words ${isSent
+                                  ? 'bg-blue-600 dark:bg-blue-500 text-white rounded-br-sm shadow-sm'
+                                  : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-sm shadow-sm'
                                   }`}
                               >
-                                <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.message}</p>
                               </div>
                             )}
 
@@ -1386,8 +1375,8 @@ export default function Messages() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Enhanced Message Input */}
-                <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 bg-white">
+                {/* Message Input - Cleaner */}
+                <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                   {attachments.length > 0 && (
                     <div className="mb-3 flex gap-2 overflow-x-auto pb-2">
                       {attachments.map((att) => (
@@ -1525,8 +1514,8 @@ export default function Messages() {
                         setNewMessage(e.target.value);
                         handleTyping();
                       }}
-                      placeholder="Type your message..."
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter Message..."
+                      className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-all placeholder-gray-400 dark:placeholder-gray-500"
                       onKeyPress={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
@@ -1535,17 +1524,17 @@ export default function Messages() {
                       }}
                     />
 
-                    {/* ALWAYS VISIBLE SEND BUTTON */}
+                    {/* Send Button */}
                     <button
                       type="submit"
                       disabled={(!newMessage.trim() && !userLocation && attachments.length === 0) || sending}
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[48px]"
+                      className="bg-blue-600 dark:bg-blue-500 text-white p-2.5 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[40px] shadow-sm"
                       title="Send message"
                     >
                       {sending ? (
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        <Send className="h-5 w-5" />
+                        <Send className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -1553,7 +1542,7 @@ export default function Messages() {
               </>
             ) : (
               /* Empty State */
-              <div className="flex-1 flex items-center justify-center bg-gray-50">
+              <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
                 <div className="text-center">
                   <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <MessageCircle className="h-10 w-10 text-gray-400" />
@@ -1575,6 +1564,5 @@ export default function Messages() {
           </div>
         </div>
       </div>
-    </div>
   );
 }

@@ -172,5 +172,12 @@ export const SkeletonMessage = ({ className = '' }) => {
   );
 };
 
+/**
+ * Generic skeleton loader component (alias for Skeleton)
+ */
+export const SkeletonLoader = ({ className = '', ...props }) => {
+  return <Skeleton className={className} {...props} />;
+};
+
 export default Skeleton;
 

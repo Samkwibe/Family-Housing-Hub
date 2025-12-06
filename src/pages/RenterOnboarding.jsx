@@ -36,15 +36,18 @@ import {
 import toast from 'react-hot-toast';
 import { userDataService } from '../services/userDataService';
 import { userService } from '../services/firebaseService';
+import FamilyInviteStep from '../components/FamilyInviteStep';
+import { familyInviteCodeService } from '../services/familyInviteCodeService';
 
 export default function RenterOnboarding() {
     const { currentUser, userProfile, completeProfile, updateUserProfile, loading: authLoading } = useAuth();
     const navigate = useNavigate();
-    const [currentStep, setCurrentStep] = useState(1);
+    const [currentStep, setCurrentStep] = useState(0); // Start at step 0 (family invite)
     const [loading, setLoading] = useState(false);
     const [animating, setAnimating] = useState(false);
     const [error, setError] = useState(null);
     const [initializing, setInitializing] = useState(true);
+    const [familyInviteCompleted, setFamilyInviteCompleted] = useState(false);
 
     // Check if user is logged in and handle redirects
     useEffect(() => {
@@ -111,7 +114,7 @@ export default function RenterOnboarding() {
         }
     });
 
-    const totalSteps = 4;
+    const totalSteps = 5; // Added family invite step
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -133,7 +136,46 @@ export default function RenterOnboarding() {
         }
     };
 
+    const handleFamilyInviteComplete = async (result) => {
+        try {
+            if (result.joinedFamily) {
+                // User joined an existing family via invite code
+                setFamilyInviteCompleted(true);
+                toast.success('Family connection established!');
+                // Family connection is already saved by acceptInviteCode
+            } else if (result.createNew) {
+                // User is creating a new family - generate invite code for them
+                if (currentUser) {
+                    const familyId = currentUser.uid; // User becomes family head
+                    await familyInviteCodeService.createOrGetInviteCode(familyId, currentUser.uid);
+                    // Set user as family head
+                    await updateUserProfile(currentUser.uid, {
+                        familyId: familyId,
+                    });
+                    setFamilyInviteCompleted(true);
+                    toast.success('Your family group has been created!');
+                }
+            }
+            // Move to next step
+            setCurrentStep(1);
+        } catch (error) {
+            console.error('Error handling family invite:', error);
+            toast.error('Failed to process family invitation');
+        }
+    };
+
+    const handleFamilyInviteSkip = () => {
+        setFamilyInviteCompleted(false);
+        setCurrentStep(1);
+        toast.info('You can join a family later in Settings');
+    };
+
     const nextStep = () => {
+        // Skip validation for step 0 (family invite - handled separately)
+        if (currentStep === 0) {
+            return; // Family invite step handles its own navigation
+        }
+        
         // Validation
         if (currentStep === 1) {
             if (!formData.dateOfBirth || !formData.occupation) {
@@ -159,7 +201,7 @@ export default function RenterOnboarding() {
     };
 
     const prevStep = () => {
-        if (currentStep > 1) {
+        if (currentStep > 0) {
             setAnimating(true);
             setTimeout(() => {
                 setCurrentStep(currentStep - 1);
@@ -322,7 +364,7 @@ export default function RenterOnboarding() {
         navigate('/dashboard', { replace: true });
     };
 
-    const progress = (currentStep / totalSteps) * 100;
+    const progress = currentStep === 0 ? 0 : ((currentStep) / (totalSteps - 1)) * 100;
 
     // Show loading while initializing
     if (initializing || authLoading || !currentUser) {
@@ -338,14 +380,16 @@ export default function RenterOnboarding() {
 
     // Background images for each step - Different from owner
     const stepBackgrounds = [
-        'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=1920&h=1080&fit=crop', // Family
-        'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=1920&h=1080&fit=crop', // Home
-        'https://images.unsplash.com/photo-1568992687947-868a62a9f521?w=1920&h=1080&fit=crop', // Documents/Lease
-        'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1920&h=1080&fit=crop' // Budget/Finance
+        'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=1920&h=1080&fit=crop', // Step 0: Family Connection
+        'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=1920&h=1080&fit=crop', // Step 1: Personal Info
+        'https://images.unsplash.com/photo-1568992687947-868a62a9f521?w=1920&h=1080&fit=crop', // Step 2: Family Details
+        'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1920&h=1080&fit=crop', // Step 3: Housing Info
+        'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1920&h=1080&fit=crop' // Step 4: Financial Info
     ];
 
-    // Step titles and descriptions
+    // Step titles and descriptions (step 0 is family invite, handled separately)
     const stepInfo = [
+        { title: 'Family Connection', desc: 'Join or create your family', icon: Users },
         { title: 'Personal Info', desc: 'Tell us about yourself', icon: User },
         { title: 'Family Details', desc: 'Share your family information', icon: Heart },
         { title: 'Housing Info', desc: 'Your current or desired home', icon: Home },
@@ -358,7 +402,7 @@ export default function RenterOnboarding() {
             <div 
                 className="fixed inset-0 z-0 transition-all duration-1000 ease-in-out"
                 style={{
-                    backgroundImage: `url(${stepBackgrounds[currentStep - 1]})`,
+                    backgroundImage: `url(${stepBackgrounds[currentStep]})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat'
@@ -396,8 +440,8 @@ export default function RenterOnboarding() {
                     <div className="mb-10">
                         {/* Progress Steps */}
                         <div className="flex items-center justify-between mb-4">
-                            {[1, 2, 3, 4].map((step) => {
-                                const StepInfo = stepInfo[step - 1];
+                            {[0, 1, 2, 3, 4].map((step) => {
+                                const StepInfo = stepInfo[step];
                                 const StepIcon = StepInfo.icon;
                                 const isActive = currentStep === step;
                                 const isCompleted = currentStep > step;
@@ -979,7 +1023,7 @@ export default function RenterOnboarding() {
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                             <span>Saving...</span>
                                         </>
-                                    ) : currentStep === totalSteps ? (
+                                    ) : currentStep === totalSteps - 1 ? (
                                         <>
                                             <span>Complete Setup</span>
                                             <Sparkles className="w-5 h-5 group-hover:animate-pulse" />

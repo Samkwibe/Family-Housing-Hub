@@ -15,6 +15,9 @@ from datetime import datetime, timedelta
 import schedule
 import threading
 import time
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
 
@@ -30,6 +33,18 @@ ZILLOW_API_KEY = RAPIDAPI_KEY  # Zillow scraper uses RapidAPI key
 REALTOR_API_KEY = RAPIDAPI_KEY  # Realtor.com API uses RapidAPI key
 ESTATED_API_KEY = os.getenv('ESTATED_API_KEY') or 'ec5c7745e9236b9519809c1d4c3f9c87'  # Estated.com API key
 ATTOM_API_KEY = os.getenv('ATTOM_API_KEY')  # ATTOM Data API key
+
+# Email configuration
+SMTP_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
+SMTP_USER = os.getenv('SMTP_USER')
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
+EMAIL_FROM = os.getenv('EMAIL_FROM', SMTP_USER or 'noreply@family-housing-hub.com')
+
+# SMS configuration (using Twilio or similar)
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
 
 # Initialize AI clients
 if OPENAI_API_KEY:
@@ -1193,9 +1208,147 @@ def health_check():
         'services': {
             'openai': 'configured' if OPENAI_API_KEY else 'not configured',
             'gemini': 'configured' if GEMINI_API_KEY else 'not configured',
-            'google_maps': 'configured' if GOOGLE_MAPS_API_KEY else 'not configured'
+            'google_maps': 'configured' if GOOGLE_MAPS_API_KEY else 'not configured',
+            'email': 'configured' if (SMTP_USER and SMTP_PASSWORD) else 'not configured',
+            'sms': 'configured' if (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER) else 'not configured'
         }
     })
+
+# ==================== VERIFICATION SERVICES ====================
+
+@app.route('/api/verification/send-email', methods=['POST'])
+def send_verification_email():
+    """Send email verification code"""
+    try:
+        data = request.json
+        email = data.get('email')
+        code = data.get('code')
+        verification_type = data.get('type', 'email_verification')
+
+        if not email or not code:
+            return jsonify({'error': 'Email and code are required'}), 400
+
+        # Email template
+        subject = 'Family Housing Hub - Email Verification Code'
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #4F46E5;">Email Verification</h2>
+                <p>Thank you for signing up for Family Housing Hub!</p>
+                <p>Your verification code is:</p>
+                <div style="background-color: #F3F4F6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+                    <h1 style="color: #4F46E5; font-size: 32px; letter-spacing: 5px; margin: 0;">{code}</h1>
+                </div>
+                <p>This code will expire in 10 minutes.</p>
+                <p>If you didn't request this code, please ignore this email.</p>
+                <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 20px 0;">
+                <p style="color: #6B7280; font-size: 12px;">Family Housing Hub - Secure Family Management</p>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Send email
+        if SMTP_USER and SMTP_PASSWORD:
+            try:
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = subject
+                msg['From'] = EMAIL_FROM
+                msg['To'] = email
+
+                msg.attach(MIMEText(body, 'html'))
+
+                server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+                server.starttls()
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.send_message(msg)
+                server.quit()
+
+                return jsonify({
+                    'success': True,
+                    'message': 'Verification email sent successfully'
+                })
+            except Exception as e:
+                print(f'Error sending email via SMTP: {e}')
+                # Fallback: log for development
+                if os.getenv('FLASK_ENV') == 'development':
+                    print(f'[DEV] Email verification code for {email}: {code}')
+                    return jsonify({
+                        'success': True,
+                        'message': 'Email sent (dev mode - check console)'
+                    })
+                return jsonify({'error': 'Failed to send email'}), 500
+        else:
+            # Development mode - just log
+            print(f'[DEV] Email verification code for {email}: {code}')
+            return jsonify({
+                'success': True,
+                'message': 'Email sent (dev mode - check console)'
+            })
+
+    except Exception as e:
+        print(f'Error in send_verification_email: {e}')
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/verification/send-sms', methods=['POST'])
+def send_verification_sms():
+    """Send SMS verification code"""
+    try:
+        data = request.json
+        phone = data.get('phone')
+        code = data.get('code')
+        verification_type = data.get('type', 'phone_verification')
+
+        if not phone or not code:
+            return jsonify({'error': 'Phone and code are required'}), 400
+
+        # Format phone number
+        if len(phone) == 10:
+            formatted_phone = f'+1{phone}'
+        else:
+            formatted_phone = phone
+
+        # Send SMS via Twilio
+        if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER:
+            try:
+                from twilio.rest import Client
+                client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+                
+                message = client.messages.create(
+                    body=f'Your Family Housing Hub verification code is: {code}. This code expires in 10 minutes.',
+                    from_=TWILIO_PHONE_NUMBER,
+                    to=formatted_phone
+                )
+
+                return jsonify({
+                    'success': True,
+                    'message': 'Verification SMS sent successfully',
+                    'message_id': message.sid
+                })
+            except ImportError:
+                print('Twilio not installed. Install with: pip install twilio')
+            except Exception as e:
+                print(f'Error sending SMS via Twilio: {e}')
+                # Fallback for development
+                if os.getenv('FLASK_ENV') == 'development':
+                    print(f'[DEV] SMS verification code for {phone}: {code}')
+                    return jsonify({
+                        'success': True,
+                        'message': 'SMS sent (dev mode - check console)'
+                    })
+                return jsonify({'error': 'Failed to send SMS'}), 500
+        else:
+            # Development mode - just log
+            print(f'[DEV] SMS verification code for {phone}: {code}')
+            return jsonify({
+                'success': True,
+                'message': 'SMS sent (dev mode - check console)'
+            })
+
+    except Exception as e:
+        print(f'Error in send_verification_sms: {e}')
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/', methods=['GET'])
 def index():
@@ -1209,6 +1362,7 @@ def index():
             'budget': '/api/budget/analyze',
             'location': '/api/location/nearby-places',
             'automation': '/api/automation/reminders',
+            'verification': '/api/verification/send-email, /api/verification/send-sms',
             'health': '/api/health'
         }
     })

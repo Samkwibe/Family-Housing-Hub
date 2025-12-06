@@ -33,6 +33,7 @@ import {
 import toast from 'react-hot-toast';
 import { familyInvitationService } from '../services/firebaseService';
 import { userDataService } from '../services/userDataService';
+import FamilyInviteManager from '../components/FamilyInviteManager';
 
 export default function Profile() {
   const {
@@ -500,9 +501,22 @@ export default function Profile() {
     };
 
     const familyMembers = userProfile?.familyMembers || [];
+    const familyId = userProfile?.familyId || currentUser?.uid;
 
     return (
-      <div>
+      <div className="space-y-6">
+        {/* Family Invite Manager */}
+        {familyId && (
+          <FamilyInviteManager
+            userId={currentUser?.uid}
+            familyId={familyId}
+            onInviteSent={() => {
+              // Refresh invitations if needed
+              loadSentInvitations();
+            }}
+          />
+        )}
+
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
             <Users className="h-5 w-5 text-blue-600" />

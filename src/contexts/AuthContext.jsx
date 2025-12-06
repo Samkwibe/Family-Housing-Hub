@@ -95,6 +95,9 @@ export function AuthProvider({ children }) {
         phone: userData.phone || '',
         role: 'family',
         userType: userData.userType || 'renter', // 'owner' or 'renter'
+        emailVerified: userData.emailVerified || false,
+        phoneVerified: userData.phoneVerified || false,
+        createdAt: new Date().toISOString(),
 
         // Address information (empty for new users)
         address: {
@@ -153,8 +156,7 @@ export function AuthProvider({ children }) {
         profileComplete: false,
         onboardingComplete: false,
 
-        // Timestamps
-        createdAt: new Date(),
+        // Timestamps (createdAt already set above)
         updatedAt: new Date(),
         lastLogin: new Date()
       };

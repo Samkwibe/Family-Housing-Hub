@@ -13,4 +13,22 @@ services:
         sync: false
       - key: PORT
         value: 10000
+      # Email Configuration (Gmail SMTP)
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false  # Set in Render dashboard
+      - key: SMTP_PASSWORD
+        sync: false  # Set in Render dashboard
+      - key: EMAIL_FROM
+        value: noreply@family-housing-hub.com
+      # SMS Configuration (Twilio)
+      - key: TWILIO_ACCOUNT_SID
+        sync: false  # Set in Render dashboard
+      - key: TWILIO_AUTH_TOKEN
+        sync: false  # Set in Render dashboard
+      - key: TWILIO_PHONE_NUMBER
+        sync: false  # Set in Render dashboard
 

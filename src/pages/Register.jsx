@@ -4,11 +4,16 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Home, Eye, EyeOff, Mail, Lock, User, Phone, Building2, Users, Baby, ArrowRight, Sparkles, CheckCircle } from 'lucide-react';
 import { familyInvitationService } from '../services/firebaseService';
+import { familyInviteCodeService } from '../services/familyInviteCodeService';
+import { verificationService, validateEmail, validatePhoneNumber } from '../services/verificationService';
+import EmailVerificationStep from '../components/EmailVerificationStep';
+import PhoneVerificationStep from '../components/PhoneVerificationStep';
 import toast from 'react-hot-toast';
 
 export default function Register() {
   const [searchParams] = useSearchParams();
   const invitationId = searchParams.get('invitation');
+  const inviteCode = searchParams.get('invite'); // New invite code parameter
   const roleParam = searchParams.get('role');
 
   // Map URL roles to actual roles
@@ -38,6 +43,9 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [verificationStep, setVerificationStep] = useState(null); // 'email', 'phone', null
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const { signup, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
@@ -72,24 +80,52 @@ export default function Register() {
     }
   };
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
+  // Validate email and phone before proceeding
+  const validateFormData = () => {
+    // Validate email
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      toast.error(emailValidation.message);
+      return false;
     }
 
-    if (formData.password.length < 6) {
-      toast.error('Password should be at least 6 characters');
-      return;
+    // Validate phone (required for all roles except child)
+    if (selectedRole !== 'child') {
+      const phoneValidation = validatePhoneNumber(formData.phone);
+      if (!phoneValidation.isValid) {
+        toast.error(phoneValidation.message);
+        return false;
+      }
     }
 
-    if (!formData.termsAccepted) {
-      toast.error('Please accept the terms and conditions');
-      return;
-    }
+    return true;
+  };
 
+  // Handle email verification
+  const handleEmailVerified = () => {
+    setEmailVerified(true);
+    setVerificationStep(null);
+    
+    // If phone is required and not verified, move to phone verification
+    if (selectedRole !== 'child' && !phoneVerified && formData.phone) {
+      setVerificationStep('phone');
+    } else {
+      // Both verified, proceed with signup
+      proceedWithSignup();
+    }
+  };
+
+  // Handle phone verification
+  const handlePhoneVerified = () => {
+    setPhoneVerified(true);
+    setVerificationStep(null);
+    
+    // Both verified, proceed with signup
+    proceedWithSignup();
+  };
+
+  // Proceed with actual account creation
+  const proceedWithSignup = async () => {
     try {
       setLoading(true);
       toast.loading(selectedRole === 'child' ? 'Creating your account...' : 'Creating account...', { id: 'signup' });
@@ -110,11 +146,23 @@ export default function Register() {
         parentId: parentId,
         parentEmail: selectedRole === 'child' ? formData.parentEmail : null,
         familyMembers: selectedRole === 'child' ? undefined : [],
+        emailVerified: emailVerified,
+        phoneVerified: phoneVerified,
         // Children profiles are auto-complete - no onboarding needed
         profileComplete: selectedRole === 'child' ? true : false
       });
 
-      if (invitations.length > 0 && selectedRole !== 'child') {
+      // Handle invite code if provided
+      if (inviteCode && selectedRole !== 'child') {
+        try {
+          await familyInviteCodeService.acceptInviteCode(inviteCode, userCredential.user.uid);
+          toast.success('Welcome! You\'ve been added to the family!', { id: 'signup' });
+        } catch (invError) {
+          console.error('Error accepting invite code:', invError);
+          toast.error('Failed to join family. You can join later in settings.', { id: 'signup' });
+        }
+      } else if (invitations.length > 0 && selectedRole !== 'child') {
+        // Handle old invitation system
         try {
           await familyInvitationService.acceptInvitation(invitations[0].id, userCredential.user.uid);
           toast.success('Welcome! You\'ve been added to the family account.', { id: 'signup' });
@@ -142,6 +190,71 @@ export default function Register() {
     } finally {
       setLoading(false);
     }
+  };
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    // Validate form data
+    if (!validateFormData()) {
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error('Password should be at least 6 characters');
+      return;
+    }
+
+    if (!formData.termsAccepted) {
+      toast.error('Please accept the terms and conditions');
+      return;
+    }
+
+    // Check if email is already verified
+    if (!emailVerified) {
+      // Start email verification
+      setVerificationStep('email');
+      return;
+    }
+
+    // Check if phone is required and verified
+    if (selectedRole !== 'child' && !phoneVerified && formData.phone) {
+      setVerificationStep('phone');
+      return;
+    }
+
+    // Both verified, proceed with signup
+    proceedWithSignup();
+  }
+
+  // Show verification step if needed
+  if (verificationStep === 'email') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+        <EmailVerificationStep
+          email={formData.email}
+          onVerified={handleEmailVerified}
+          onSkip={null} // Don't allow skipping email verification
+        />
+      </div>
+    );
+  }
+
+  if (verificationStep === 'phone') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-50">
+        <PhoneVerificationStep
+          phone={formData.phone}
+          onVerified={handlePhoneVerified}
+          onSkip={null} // Don't allow skipping phone verification
+        />
+      </div>
+    );
   }
 
   // Role Selection Screen

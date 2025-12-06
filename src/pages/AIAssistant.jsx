@@ -377,7 +377,13 @@ How can I help you today?`,
       const snapshot = await getDocs(q);
       setSavedChats(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
+      // Silently handle permission errors - feature will work but saved chats won't load
+      if (error.code === 'permission-denied' || error.message?.includes('permissions')) {
+        console.warn('Saved chats feature requires Firestore permissions. Feature disabled.');
+        setSavedChats([]); // Set empty array to prevent UI issues
+      } else {
       console.error('Error loading saved chats:', error);
+      }
     }
   };
 
@@ -839,13 +845,13 @@ I'll keep trying to help - please ask again!`,
         detectedObjects: rekognitionLabels.Labels || [],
         context: 'general',
         model: 'rekognition',
-        suggestions: [
-          "If it's a document, I can help you understand it",
-          "If it's homework, I can provide study tips",
-          "If it's a bill, I can help with payment assistance",
-          "If it's a form, I can guide you through filling it out"
-        ]
-      };
+      suggestions: [
+        "If it's a document, I can help you understand it",
+        "If it's homework, I can provide study tips",
+        "If it's a bill, I can help with payment assistance",
+        "If it's a form, I can guide you through filling it out"
+      ]
+    };
     } catch (error) {
       console.error('Image analysis error:', error);
       return {
@@ -958,10 +964,10 @@ I'll keep trying to help - please ask again!`,
       }
 
       const parsedResponse = parseAIResponse(response.response, query, userContext);
-      
-      const assistantMessage = {
-        id: Date.now() + 1,
-        type: 'assistant',
+    
+    const assistantMessage = {
+      id: Date.now() + 1,
+      type: 'assistant',
         title: parsedResponse.title,
         content: parsedResponse.content,
         structuredContent: parsedResponse.structured,
@@ -969,15 +975,15 @@ I'll keep trying to help - please ask again!`,
         resources: parsedResponse.resources,
         category: parsedResponse.category || 'general',
         model: response.model,
-        timestamp: new Date(),
-        features: {
+      timestamp: new Date(),
+      features: {
           hasAudio: true,
           canSave: true,
           canShare: true
         }
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+    setMessages(prev => [...prev, assistantMessage]);
       toast.success(`Response from ${response.model || 'AI'} Assistant`);
     } catch (error) {
       console.error('Error getting AI response:', error);
@@ -1043,8 +1049,14 @@ I'll keep trying to help - please ask again!`,
       toast.success('Conversation saved!');
       loadSavedChats();
     } catch (error) {
+      // Handle permission errors gracefully
+      if (error.code === 'permission-denied' || error.message?.includes('permissions')) {
+        toast.error('Save feature requires Firestore permissions. Please contact support.');
+        console.warn('Save conversation feature requires Firestore permissions.');
+      } else {
       console.error('Error saving conversation:', error);
       toast.error('Failed to save conversation');
+      }
     }
   };
 
@@ -1239,9 +1251,9 @@ I'll keep trying to help - please ask again!`,
               >
                 Change
               </button>
-            </div>
-            <p className={`text-xs mt-1 ${designTheme.iconClass}`}>{designTheme.subtitle}</p>
           </div>
+            <p className={`text-xs mt-1 ${designTheme.iconClass}`}>{designTheme.subtitle}</p>
+        </div>
         </div>
         
         <div className="flex items-center gap-2 flex-wrap">
@@ -1273,13 +1285,13 @@ I'll keep trying to help - please ask again!`,
           >
             <Settings className="h-5 w-5" />
           </button>
-          <button
-            onClick={clearChat}
+        <button
+          onClick={clearChat}
             className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            title="Clear chat"
-          >
+          title="Clear chat"
+        >
             <Trash2 className="h-5 w-5" />
-          </button>
+        </button>
         </div>
       </div>
 
@@ -1297,7 +1309,7 @@ I'll keep trying to help - please ask again!`,
               <div>
                 <span className="text-sm font-medium text-gray-700">🤖 AWS Bedrock AI</span>
                 <p className="text-xs text-gray-500">Use advanced AI for intelligent responses</p>
-              </div>
+            </div>
               <button
                 onClick={() => setUseBedrock(!useBedrock)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -1465,15 +1477,15 @@ I'll keep trying to help - please ask again!`,
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
           {QUICK_ACTIONS.map((action) => (
-            <button
-              key={action.id}
-              onClick={() => handleQuickAction(action.query)}
+          <button
+            key={action.id}
+            onClick={() => handleQuickAction(action.query)}
               className={`flex flex-col items-center gap-2 p-3 bg-white border-2 rounded-xl text-sm font-medium hover:shadow-md transition-all duration-200 border-${action.color}-200 hover:border-${action.color}-300`}
             >
               <action.icon className={`h-5 w-5 text-${action.color}-600`} />
               <span className="text-xs text-center">{action.label}</span>
-            </button>
-          ))}
+          </button>
+        ))}
         </div>
       </div>
 
@@ -1483,11 +1495,11 @@ I'll keep trying to help - please ask again!`,
           {(searchQuery ? searchMessages : messages).map((message) => (
             <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
-                {message.type === 'assistant' && (
+              {message.type === 'assistant' && (
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`w-6 h-6 bg-gradient-to-br ${designTheme.gradientFrom} ${designTheme.gradientTo} rounded-full flex items-center justify-center`}>
                       <Brain className="h-3 w-3 text-white" />
-                    </div>
+                  </div>
                     <span className="text-xs text-gray-500 font-medium">{designTheme.title}</span>
                     {message.model && (
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -1498,20 +1510,20 @@ I'll keep trying to help - please ask again!`,
                         {message.model}
                       </span>
                     )}
-                  </div>
-                )}
-                
-                <div className={`rounded-2xl p-4 ${
-                  message.type === 'user'
+                </div>
+              )}
+              
+              <div className={`rounded-2xl p-4 ${
+                message.type === 'user'
                     ? `bg-gradient-to-r ${designTheme.gradientFrom} ${designTheme.gradientTo} text-white`
                     : 'bg-gray-50 border border-gray-100'
-                }`}>
-                  {message.title && (
+              }`}>
+                {message.title && (
                     <h3 className={`font-semibold mb-3 flex items-center gap-2 ${designTheme.iconClass}`}>
                       <Sparkles className="h-4 w-4" />
-                      {message.title}
-                    </h3>
-                  )}
+                    {message.title}
+                  </h3>
+                )}
                   
                   {message.images && message.images.length > 0 && (
                     <div className="mb-3 space-y-2">
@@ -1564,7 +1576,7 @@ I'll keep trying to help - please ask again!`,
                             {link.label}
                           </a>
                         ))}
-                      </div>
+              </div>
                     </div>
                   )}
 
@@ -1573,7 +1585,7 @@ I'll keep trying to help - please ask again!`,
                       <h4 className="text-xs font-semibold text-gray-600 mb-2">You might also ask:</h4>
                       <div className="flex flex-wrap gap-2">
                         {message.suggestions.map((suggestion, idx) => (
-                          <button
+                          <button 
                             key={idx}
                             onClick={() => handleQuickAction(suggestion)}
                             className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs hover:bg-gray-200 transition-colors"
@@ -1583,32 +1595,32 @@ I'll keep trying to help - please ask again!`,
                         ))}
                       </div>
                     </div>
-                  )}
+                        )}
 
                   {message.type === 'assistant' && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <div className="flex flex-wrap gap-2">
-                        <button 
+                          <button 
                           onClick={() => speakMessage(message.content)}
                           className={`flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs hover:bg-blue-200 transition-colors`}
                         >
                           <Volume2 className="h-3 w-3" />
                           🔊 Listen
-                        </button>
-                        <button
+                          </button>
+                          <button 
                           onClick={() => setInputValue(`Can you elaborate on: ${message.title || 'this topic'}?`)}
                           className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs hover:bg-gray-200 transition-colors"
                         >
                           <MessageCircle className="h-3 w-3" />
                           Ask follow-up
-                        </button>
+                          </button>
                       </div>
                     </div>
                   )}
                 </div>
 
                 <div className={`flex items-center gap-3 mt-2 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {message.type === 'assistant' && (
+              {message.type === 'assistant' && (
                     <>
                       <button
                         onClick={() => toggleBookmark(message.id)}
@@ -1617,15 +1629,15 @@ I'll keep trying to help - please ask again!`,
                       >
                         <Bookmark className={`h-4 w-4 ${bookmarkedMessages.has(message.id) ? 'text-yellow-500 fill-yellow-500' : ''}`} />
                       </button>
-                      <button
-                        onClick={() => copyMessage(message.id, message.content)}
+                  <button
+                    onClick={() => copyMessage(message.id, message.content)}
                         className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        {copiedId === message.id ? (
+                  >
+                    {copiedId === message.id ? (
                           <Check className="h-3 w-3 text-green-500" />
-                        ) : (
+                    ) : (
                           <Copy className="h-3 w-3" />
-                        )}
+                    )}
                         {copiedId === message.id ? 'Copied!' : 'Copy'}
                       </button>
                     </>
@@ -1634,28 +1646,28 @@ I'll keep trying to help - please ask again!`,
                     {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-              </div>
             </div>
-          ))}
+          </div>
+        ))}
 
-          {isTyping && (
+        {isTyping && (
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 bg-gradient-to-br ${designTheme.gradientFrom} ${designTheme.gradientTo} rounded-full flex items-center justify-center`}>
                 <Brain className="h-4 w-4 text-white" />
-              </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Finding the best resources for {userLocation}...</p>
-              </div>
             </div>
-          )}
+              <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
+              <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+                <p className="text-xs text-gray-500 mt-1">Finding the best resources for {userLocation}...</p>
+            </div>
+          </div>
+        )}
 
-          <div ref={messagesEndRef} />
-        </div>
+        <div ref={messagesEndRef} />
+      </div>
 
         {/* Input Area */}
         <div className="border-t border-gray-200 p-4 bg-white">
@@ -1756,11 +1768,11 @@ I'll keep trying to help - please ask again!`,
             />
             
             <div className="flex-1">
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -1772,14 +1784,14 @@ I'll keep trying to help - please ask again!`,
               />
             </div>
             
-            <button
+          <button
               onClick={() => handleSend()}
               disabled={!inputValue.trim() && uploadedImages.length === 0 && uploadedFiles.length === 0}
               className={`bg-gradient-to-r ${designTheme.gradientFrom} ${designTheme.gradientTo} text-white p-3 rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm`}
-            >
-              <Send className="h-5 w-5" />
-            </button>
-          </div>
+          >
+            <Send className="h-5 w-5" />
+          </button>
+        </div>
           
           <div className="flex justify-between items-center text-xs text-gray-500">
             <span>💡 Try: "help with rent in {userLocation}", upload a photo, or record audio</span>

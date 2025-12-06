@@ -11,30 +11,60 @@ export default function Onboarding() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
+    let timeoutId;
+    let isMounted = true;
+
     const checkAndRedirect = async () => {
+      // Safety timeout - if stuck for more than 10 seconds, force redirect
+      timeoutId = setTimeout(() => {
+        if (isMounted) {
+          console.warn('Onboarding redirect timeout - forcing redirect to renter onboarding');
+          navigate('/renter-onboarding', { replace: true });
+          setChecking(false);
+        }
+      }, 10000);
+
       if (loading) {
         return; // Still loading, wait
       }
 
       if (!currentUser) {
         // Not logged in - redirect to login
+        clearTimeout(timeoutId);
         navigate('/login', { replace: true });
         return;
       }
 
       try {
+        // Wait a bit for userProfile to load if it's null
+        if (!userProfile) {
+          console.log('Waiting for userProfile to load...');
+          // Give it 2 seconds to load
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          // If still no profile after waiting, proceed with default
+          if (!userProfile) {
+            console.log('No userProfile found, defaulting to renter onboarding');
+            clearTimeout(timeoutId);
+            navigate('/renter-onboarding', { replace: true });
+            return;
+          }
+        }
+
         // First, check if onboarding is already complete
         if (userProfile?.onboardingComplete || userProfile?.profileComplete) {
           // User has completed onboarding - redirect to appropriate dashboard
           const userType = userProfile?.userType || userProfile?.role;
           
           if (userType === 'owner') {
+            clearTimeout(timeoutId);
             navigate('/owner-dashboard', { replace: true });
             return;
           } else if (userType === 'renter') {
+            clearTimeout(timeoutId);
             navigate('/dashboard', { replace: true });
             return;
           } else if (userType === 'child') {
+            clearTimeout(timeoutId);
             navigate('/child-dashboard', { replace: true });
             return;
           }
@@ -43,12 +73,14 @@ export default function Onboarding() {
           try {
             const ownerData = await userDataService.getOwnerData(currentUser.uid);
             if (ownerData) {
+              clearTimeout(timeoutId);
               navigate('/owner-dashboard', { replace: true });
               return;
             }
             
             const renterData = await userDataService.getRenterData(currentUser.uid);
             if (renterData) {
+              clearTimeout(timeoutId);
               navigate('/dashboard', { replace: true });
               return;
             }
@@ -61,12 +93,15 @@ export default function Onboarding() {
         const userType = userProfile?.userType || userProfile?.role;
         
         if (userType === 'owner') {
+          clearTimeout(timeoutId);
           navigate('/owner-onboarding', { replace: true });
           return;
         } else if (userType === 'renter') {
+          clearTimeout(timeoutId);
           navigate('/renter-onboarding', { replace: true });
           return;
         } else if (userType === 'child') {
+          clearTimeout(timeoutId);
           navigate('/child-dashboard', { replace: true });
           return;
         }
@@ -76,19 +111,27 @@ export default function Onboarding() {
         if (!userProfile?.userType && !userProfile?.role) {
           // New user without userType - default to renter onboarding
           console.log('No userType set, defaulting to renter onboarding');
+          clearTimeout(timeoutId);
           navigate('/renter-onboarding', { replace: true });
           return;
         }
         
+        clearTimeout(timeoutId);
         setChecking(false);
       } catch (error) {
         console.error('Error in onboarding redirect:', error);
+        clearTimeout(timeoutId);
         // On error, default to renter onboarding for safety
         navigate('/renter-onboarding', { replace: true });
       }
     };
 
     checkAndRedirect();
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [userProfile, loading, currentUser, navigate]);
 
   if (loading || checking) {

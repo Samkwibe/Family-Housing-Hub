@@ -36,6 +36,7 @@ export default function Register() {
     password: '',
     confirmPassword: '',
     parentEmail: '',
+    inviteCode: inviteCode || '', // Initialize with URL parameter if available
     termsAccepted: false
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -106,11 +107,11 @@ export default function Register() {
     setEmailVerified(true);
     setVerificationStep(null);
     
-    // If phone is required and not verified, move to phone verification
-    if (selectedRole !== 'child' && !phoneVerified && formData.phone) {
+    // If phone is provided and not verified, move to phone verification
+    if (selectedRole !== 'child' && formData.phone && !phoneVerified) {
       setVerificationStep('phone');
     } else {
-      // Both verified, proceed with signup
+      // Email verified and phone either verified or not required, proceed with signup
       proceedWithSignup();
     }
   };
@@ -126,6 +127,13 @@ export default function Register() {
 
   // Proceed with actual account creation
   const proceedWithSignup = async () => {
+    // Safety check: Ensure email is verified before proceeding
+    if (!emailVerified) {
+      toast.error('Please verify your email address first');
+      setVerificationStep('email');
+      return;
+    }
+
     try {
       setLoading(true);
       toast.loading(selectedRole === 'child' ? 'Creating your account...' : 'Creating account...', { id: 'signup' });
@@ -152,10 +160,11 @@ export default function Register() {
         profileComplete: selectedRole === 'child' ? true : false
       });
 
-      // Handle invite code if provided
-      if (inviteCode && selectedRole !== 'child') {
+      // Handle invite code if provided (from URL or form input)
+      const codeToUse = formData.inviteCode || inviteCode;
+      if (codeToUse && selectedRole !== 'child') {
         try {
-          await familyInviteCodeService.acceptInviteCode(inviteCode, userCredential.user.uid);
+          await familyInviteCodeService.acceptInviteCode(codeToUse.trim().toUpperCase(), userCredential.user.uid);
           toast.success('Welcome! You\'ve been added to the family!', { id: 'signup' });
         } catch (invError) {
           console.error('Error accepting invite code:', invError);
@@ -215,20 +224,20 @@ export default function Register() {
       return;
     }
 
-    // Check if email is already verified
+    // ALWAYS require email verification before signup
     if (!emailVerified) {
-      // Start email verification
+      // Start email verification - this is mandatory
       setVerificationStep('email');
       return;
     }
 
-    // Check if phone is required and verified
-    if (selectedRole !== 'child' && !phoneVerified && formData.phone) {
+    // If phone is provided, require phone verification (for non-child roles)
+    if (selectedRole !== 'child' && formData.phone && !phoneVerified) {
       setVerificationStep('phone');
       return;
     }
 
-    // Both verified, proceed with signup
+    // Both verified (or phone not required), proceed with signup
     proceedWithSignup();
   }
 
@@ -518,6 +527,32 @@ export default function Register() {
                     placeholder="+1 (555) 123-4567"
                   />
                 </div>
+
+                {/* Invite Code */}
+                {selectedRole !== 'child' && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      Family Invite Code (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      name="inviteCode"
+                      value={formData.inviteCode}
+                      onChange={(e) => {
+                        // Auto-format to uppercase and allow only valid characters
+                        const formatted = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+                        setFormData(prev => ({ ...prev, inviteCode: formatted }));
+                      }}
+                      maxLength={13}
+                      className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 text-center text-lg font-mono tracking-widest"
+                      placeholder="FAM-XXXX-XXXX"
+                      style={{ letterSpacing: '0.2em' }}
+                    />
+                    <p className="mt-1 text-xs text-gray-500 text-center">
+                      Enter a family invite code if you have one
+                    </p>
+                  </div>
+                )}
 
                 {/* Parent Email for Children */}
                 {selectedRole === 'child' && (

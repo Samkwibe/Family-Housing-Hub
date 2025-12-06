@@ -92,5 +92,38 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
+    
+    // Family invite codes collection
+    match /familyInviteCodes/{codeId} {
+      // Allow authenticated users to read any active invite code
+      allow read: if isAuthenticated();
+      // Allow users to create invite codes for their own family
+      allow create: if isAuthenticated() && 
+                      request.resource.data.createdBy == request.auth.uid &&
+                      (request.resource.data.familyId == request.auth.uid || 
+                       request.resource.data.familyId != null);
+      // Allow users to update invite codes they created or for their family
+      allow update: if isAuthenticated() && 
+                      (resource.data.createdBy == request.auth.uid ||
+                       resource.data.familyId == request.auth.uid);
+      // Allow users to delete invite codes they created
+      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+    }
+    
+    // Family invitations collection
+    match /familyInvitations/{invitationId} {
+      // Allow authenticated users to read invitations they sent or received
+      allow read: if isAuthenticated() && 
+                    (resource.data.inviterId == request.auth.uid ||
+                     resource.data.inviteeEmail == request.auth.token.email);
+      // Allow users to create invitations
+      allow create: if isAuthenticated() && 
+                      request.resource.data.inviterId == request.auth.uid;
+      // Allow users to update invitations they sent
+      allow update: if isAuthenticated() && 
+                      resource.data.inviterId == request.auth.uid;
+      // Allow users to delete invitations they sent
+      allow delete: if isAuthenticated() && resource.data.inviterId == request.auth.uid;
+    }
   }
 }

@@ -19,17 +19,30 @@ const FamilyInviteManager = ({ userId, familyId, onInviteSent }) => {
   });
 
   useEffect(() => {
-    loadInviteCode();
-  }, [familyId]);
+    if (familyId && userId) {
+      loadInviteCode();
+    } else {
+      setLoading(false);
+    }
+  }, [familyId, userId]);
 
   const loadInviteCode = async () => {
+    if (!userId) {
+      console.warn('Cannot load invite code: missing userId');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const code = await familyInviteCodeService.createOrGetInviteCode(familyId, userId);
+      // Use familyId if available, otherwise use userId as familyId (for users without a family yet)
+      const effectiveFamilyId = familyId || userId;
+      console.log('Loading invite code for:', { effectiveFamilyId, userId });
+      const code = await familyInviteCodeService.createOrGetInviteCode(effectiveFamilyId, userId);
       setInviteCode(code);
     } catch (error) {
       console.error('Error loading invite code:', error);
-      toast.error('Failed to load invite code');
+      toast.error(error.message || 'Failed to load invite code');
     } finally {
       setLoading(false);
     }

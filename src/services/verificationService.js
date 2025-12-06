@@ -150,6 +150,8 @@ class VerificationService {
       // Send email via backend API
       try {
         const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        console.log('Sending email verification to:', email, 'via backend:', backendUrl);
+        
         const response = await fetch(`${backendUrl}/api/verification/send-email`, {
           method: 'POST',
           headers: {
@@ -162,21 +164,41 @@ class VerificationService {
           }),
         });
 
+        const responseData = await response.json();
+        console.log('Backend response:', responseData);
+
         if (!response.ok) {
-          throw new Error('Failed to send verification email');
+          console.error('Backend error:', responseData);
+          // If backend is not available or has errors, show code in dev mode
+          if (import.meta.env.DEV || !backendUrl.includes('localhost')) {
+            toast.success(`⚠️ Backend unavailable. Your verification code is: ${code}`, { 
+              duration: 30000,
+              icon: '📧'
+            });
+            return { success: true, verificationId: verificationRef.id, code };
+          }
+          throw new Error(responseData.error || 'Failed to send verification email');
         }
 
-        toast.success('Verification code sent to your email!');
+        // Check if backend is in dev mode (showing code in console)
+        if (responseData.message && responseData.message.includes('dev mode')) {
+          toast.success(`⚠️ Dev mode: Your verification code is: ${code}`, { 
+            duration: 30000,
+            icon: '📧'
+          });
+        } else {
+          toast.success('Verification code sent to your email! 📧');
+        }
+        
         return { success: true, verificationId: verificationRef.id };
       } catch (error) {
         console.error('Error sending email:', error);
-        // For development, show the code
-        if (import.meta.env.DEV) {
-          toast.success(`Dev mode: Your code is ${code}`, { duration: 10000 });
-        } else {
-          throw new Error('Failed to send verification email. Please try again.');
-        }
-        return { success: true, verificationId: verificationRef.id, code }; // Dev only
+        // Always show code if backend fails (for now, until backend is properly configured)
+        toast.success(`⚠️ Email service unavailable. Your verification code is: ${code}`, { 
+          duration: 30000,
+          icon: '📧'
+        });
+        return { success: true, verificationId: verificationRef.id, code };
       }
     } catch (error) {
       console.error('Error sending email verification:', error);

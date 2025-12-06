@@ -38,6 +38,12 @@ class FamilyInviteCodeService {
    */
   async createOrGetInviteCode(familyId, createdBy) {
     try {
+      // Validate inputs
+      if (!familyId || !createdBy) {
+        console.error('Missing required parameters:', { familyId, createdBy });
+        throw new Error('Family ID and creator ID are required');
+      }
+
       // Check if family already has an invite code
       const existingCodeQuery = query(
         collection(db, 'familyInviteCodes'),
@@ -48,13 +54,14 @@ class FamilyInviteCodeService {
 
       if (!existingSnap.empty) {
         const existingCode = existingSnap.docs[0].data();
+        console.log('Found existing invite code:', existingCode.code);
         return existingCode.code;
       }
 
       // Generate new code
       let code = generateInviteCode();
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 20; // Increased attempts
 
       // Ensure code is unique
       while (attempts < maxAttempts) {
@@ -73,7 +80,8 @@ class FamilyInviteCodeService {
       }
 
       if (attempts >= maxAttempts) {
-        throw new Error('Failed to generate unique invite code');
+        console.error('Failed to generate unique code after', maxAttempts, 'attempts');
+        throw new Error('Failed to generate unique invite code. Please try again.');
       }
 
       // Create invite code document
@@ -90,10 +98,22 @@ class FamilyInviteCodeService {
         updatedAt: serverTimestamp(),
       });
 
+      console.log('Successfully created invite code:', code);
       return code;
     } catch (error) {
       console.error('Error creating invite code:', error);
-      throw new Error('Failed to create invite code');
+      // Provide more specific error messages
+      if (error.message.includes('permission') || error.message.includes('Permission')) {
+        throw new Error('Permission denied. Please check your Firestore security rules.');
+      }
+      if (error.message.includes('network') || error.message.includes('Network')) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      }
+      // Re-throw with original message if it's already descriptive
+      if (error.message && error.message !== 'Failed to create invite code') {
+        throw error;
+      }
+      throw new Error(`Failed to create invite code: ${error.message || 'Unknown error'}`);
     }
   }
 

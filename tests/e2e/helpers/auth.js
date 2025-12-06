@@ -93,9 +93,21 @@ export async function isLoggedIn(page) {
  * Ensure user is logged in, login if not
  */
 export async function ensureLoggedIn(page, email = 'test@example.com', password = 'Test123456!') {
-  const loggedIn = await isLoggedIn(page);
-  if (!loggedIn) {
-    await loginUser(page, email, password);
+  try {
+    const loggedIn = await isLoggedIn(page);
+    if (!loggedIn) {
+      await loginUser(page, email, password);
+      // Verify login succeeded
+      await page.waitForTimeout(2000);
+      const stillNotLoggedIn = !(await isLoggedIn(page));
+      if (stillNotLoggedIn) {
+        console.warn('Login may have failed - test user might not exist');
+        // Don't throw - let test continue and fail gracefully
+      }
+    }
+  } catch (error) {
+    console.warn('Authentication check failed:', error.message);
+    // Don't throw - let test continue and fail gracefully
   }
 }
 

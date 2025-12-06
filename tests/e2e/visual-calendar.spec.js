@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { Eyes, ClassicRunner } from '@applitools/eyes-playwright';
+import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();

@@ -3,12 +3,12 @@ frontend:
   phases:
     preBuild:
       commands:
-        - node --version
-        - npm --version
         - npm ci
     build:
       commands:
         - npm run build
+        - ls -la dist/
+        - test -f dist/index.html && echo "✅ index.html found" || echo "❌ index.html missing"
   artifacts:
     baseDirectory: dist
     files:

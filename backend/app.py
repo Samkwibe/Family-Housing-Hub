@@ -511,16 +511,6 @@ def process_expenses():
 
 # ==================== HEALTH CHECK ====================
 
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """Health check endpoint to verify backend is running"""
-    return jsonify({
-        'status': 'healthy',
-        'estated_configured': bool(ESTATED_API_KEY),
-        'rapidapi_configured': bool(RAPIDAPI_KEY),
-        'attom_configured': bool(ATTOM_API_KEY),
-        'timestamp': datetime.now().isoformat()
-    })
 
 # ==================== REAL ESTATE / ZILLOW INTEGRATION ====================
 

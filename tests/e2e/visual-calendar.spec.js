@@ -22,7 +22,19 @@ test.describe('Calendar Visual Testing with Applitools', () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/calendar');
+    // Wait for page to load
+    await page.goto('/calendar', { waitUntil: 'networkidle' });
+    
+    // Wait for calendar to be visible
+    await page.waitForSelector('text=Calendar', { timeout: 10000 }).catch(() => {});
+    
+    // Ensure we're on calendar view (not tasks)
+    const calendarButton = page.locator('button:has-text("Calendar")');
+    if (await calendarButton.isVisible().catch(() => false)) {
+      await calendarButton.click();
+      await page.waitForTimeout(500); // Wait for view to switch
+    }
+    
     if (process.env.APPLITOOLS_API_KEY) {
       await eyes.open(page, 'Family Housing Hub', 'Calendar Visual Tests');
     }
@@ -70,7 +82,12 @@ test.describe('Calendar Visual Testing with Applitools', () => {
       return;
     }
     
-    await page.click('button:has-text("Week")');
+    // Try multiple selectors for the Week button
+    const weekButton = page.locator('button[title="Week"], button:has-text("Week")').first();
+    await weekButton.waitFor({ timeout: 10000 });
+    await weekButton.click();
+    await page.waitForTimeout(1000); // Wait for view to switch
+    
     await eyes.check('Calendar Week View', {
       target: 'window',
       fully: true
@@ -83,7 +100,12 @@ test.describe('Calendar Visual Testing with Applitools', () => {
       return;
     }
     
-    await page.click('button:has-text("Day")');
+    // Try multiple selectors for the Day button
+    const dayButton = page.locator('button[title="Day"], button:has-text("Day")').first();
+    await dayButton.waitFor({ timeout: 10000 });
+    await dayButton.click();
+    await page.waitForTimeout(1000); // Wait for view to switch
+    
     await eyes.check('Calendar Day View', {
       target: 'window',
       fully: true
@@ -96,7 +118,19 @@ test.describe('Calendar Visual Testing with Applitools', () => {
       return;
     }
     
-    await page.click('button:has-text("New Event")');
+    // Ensure we're on calendar view first
+    const calendarViewButton = page.locator('button:has-text("Calendar")');
+    if (await calendarViewButton.isVisible().catch(() => false)) {
+      await calendarViewButton.click();
+      await page.waitForTimeout(500);
+    }
+    
+    // Try multiple selectors for the New Event button
+    const newEventButton = page.locator('button:has-text("New Event"), button:has-text("New Task")').first();
+    await newEventButton.waitFor({ timeout: 10000 });
+    await newEventButton.click();
+    await page.waitForTimeout(1000); // Wait for modal to open
+    
     await eyes.check('Event Creation Modal', {
       target: 'window',
       fully: true

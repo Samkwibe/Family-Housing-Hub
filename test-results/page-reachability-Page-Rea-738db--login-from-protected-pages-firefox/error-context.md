@@ -1,0 +1,302 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - navigation [ref=e5]:
+    - generic [ref=e7]:
+      - link "FamilyHub" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - img [ref=e10]
+        - generic [ref=e13]: FamilyHub
+      - generic [ref=e14]:
+        - link "Features" [ref=e15] [cursor=pointer]:
+          - /url: "#features"
+        - link "Testimonials" [ref=e16] [cursor=pointer]:
+          - /url: "#testimonials"
+        - link "Contact" [ref=e17] [cursor=pointer]:
+          - /url: "#contact"
+        - link "Sign In" [ref=e18] [cursor=pointer]:
+          - /url: /login
+        - link "Get Started" [ref=e19] [cursor=pointer]:
+          - /url: /register
+  - generic [ref=e21]:
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - img [ref=e24]
+        - generic [ref=e30]: Trusted by 50,000+ Families
+      - heading "Your Family's Complete Housing Hub" [level=1] [ref=e31]:
+        - generic [ref=e32]: Your Family's
+        - generic [ref=e33]: Complete
+        - generic [ref=e34]: Housing Hub
+      - paragraph [ref=e35]: Manage properties, organize family life, track budgets, and create lasting memories - all in one beautiful platform.
+      - generic [ref=e36]:
+        - link "I'm a Property Owner" [ref=e37] [cursor=pointer]:
+          - /url: /register?role=owner
+          - img [ref=e38]
+          - generic [ref=e46]: I'm a Property Owner
+        - link "I'm a Renter" [ref=e47] [cursor=pointer]:
+          - /url: /register?role=renter
+          - img [ref=e48]
+          - generic [ref=e53]: I'm a Renter
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - img [ref=e56]
+          - generic [ref=e58]: SSL Secured
+        - generic [ref=e59]:
+          - img [ref=e60]
+          - generic [ref=e63]: Top Rated
+    - generic [ref=e65]:
+      - img "Happy family in beautiful home"
+      - generic [ref=e67]:
+        - img [ref=e69]
+        - generic [ref=e72]:
+          - paragraph [ref=e73]: 50K+
+          - paragraph [ref=e74]: Active Users
+      - generic [ref=e76]:
+        - img [ref=e78]
+        - generic [ref=e80]:
+          - paragraph [ref=e81]: 4.9/5
+          - paragraph [ref=e82]: User Rating
+  - generic [ref=e86]:
+    - generic [ref=e87]:
+      - img [ref=e89]
+      - heading "50K+" [level=3] [ref=e94]
+      - paragraph [ref=e95]: Happy Families
+    - generic [ref=e96]:
+      - img [ref=e98]
+      - heading "12K+" [level=3] [ref=e106]
+      - paragraph [ref=e107]: Properties Managed
+    - generic [ref=e108]:
+      - img [ref=e110]
+      - heading "1M+" [level=3] [ref=e112]
+      - paragraph [ref=e113]: Messages Sent
+    - generic [ref=e114]:
+      - img [ref=e116]
+      - heading "4.9★" [level=3] [ref=e118]
+      - paragraph [ref=e119]: Average Rating
+  - generic [ref=e121]:
+    - generic [ref=e122]:
+      - heading "Everything Your Family Needs" [level=2] [ref=e123]
+      - paragraph [ref=e124]: Powerful features designed to simplify property management and family organization
+    - generic [ref=e125]:
+      - generic [ref=e126]:
+        - generic [ref=e127]:
+          - img "Property Management" [ref=e128]
+          - img [ref=e131]
+        - generic [ref=e139]:
+          - heading "Property Management" [level=3] [ref=e140]
+          - paragraph [ref=e141]: Manage properties, tenants, and rent collection with professional-grade tools.
+      - generic [ref=e142]:
+        - generic [ref=e143]:
+          - img "Family Dashboard" [ref=e144]
+          - img [ref=e147]
+        - generic [ref=e152]:
+          - heading "Family Dashboard" [level=3] [ref=e153]
+          - paragraph [ref=e154]: Connect your family with shared calendars, tasks, and real-time messaging.
+      - generic [ref=e155]:
+        - generic [ref=e156]:
+          - img "Smart Scheduling" [ref=e157]
+          - img [ref=e160]
+        - generic [ref=e165]:
+          - heading "Smart Scheduling" [level=3] [ref=e166]
+          - paragraph [ref=e167]: Never miss rent payments, maintenance dates, or family events again.
+      - generic [ref=e168]:
+        - generic [ref=e169]:
+          - img "Document Storage" [ref=e170]
+          - img [ref=e173]
+        - generic [ref=e179]:
+          - heading "Document Storage" [level=3] [ref=e180]
+          - paragraph [ref=e181]: Securely store leases, receipts, and important housing documents in the cloud.
+      - generic [ref=e182]:
+        - generic [ref=e183]:
+          - img "Budget Tracking" [ref=e184]
+          - img [ref=e187]
+        - generic [ref=e191]:
+          - heading "Budget Tracking" [level=3] [ref=e192]
+          - paragraph [ref=e193]: Track expenses, manage budgets, and achieve your family financial goals.
+      - generic [ref=e194]:
+        - generic [ref=e195]:
+          - img "Instant Communication" [ref=e196]
+          - img [ref=e199]
+        - generic [ref=e201]:
+          - heading "Instant Communication" [level=3] [ref=e202]
+          - paragraph [ref=e203]: Stay connected with landlords, tenants, and family members instantly.
+  - generic [ref=e207]:
+    - generic [ref=e208]:
+      - heading "Loved by Families Everywhere" [level=2] [ref=e209]
+      - paragraph [ref=e210]: See what our community has to say about transforming their family life
+    - generic [ref=e211]:
+      - generic [ref=e212]:
+        - generic [ref=e213]:
+          - img [ref=e214]
+          - img [ref=e216]
+          - img [ref=e218]
+          - img [ref=e220]
+          - img [ref=e222]
+        - paragraph [ref=e224]: "\"This platform transformed how I manage my rental properties. Everything is organized and efficient!\""
+        - generic [ref=e225]:
+          - img "Sarah Johnson" [ref=e226]
+          - generic [ref=e227]:
+            - heading "Sarah Johnson" [level=4] [ref=e228]
+            - paragraph [ref=e229]: Property Owner
+      - generic [ref=e230]:
+        - generic [ref=e231]:
+          - img [ref=e232]
+          - img [ref=e234]
+          - img [ref=e236]
+          - img [ref=e238]
+          - img [ref=e240]
+        - paragraph [ref=e242]: "\"Finally, a central place for our family to manage housing, budget, and stay organized together.\""
+        - generic [ref=e243]:
+          - img "Michael Chen" [ref=e244]
+          - generic [ref=e245]:
+            - heading "Michael Chen" [level=4] [ref=e246]
+            - paragraph [ref=e247]: Family of 4
+      - generic [ref=e248]:
+        - generic [ref=e249]:
+          - img [ref=e250]
+          - img [ref=e252]
+          - img [ref=e254]
+          - img [ref=e256]
+          - img [ref=e258]
+        - paragraph [ref=e260]: "\"The children management features are amazing! My kids love earning rewards for completing chores.\""
+        - generic [ref=e261]:
+          - img "Emily Rodriguez" [ref=e262]
+          - generic [ref=e263]:
+            - heading "Emily Rodriguez" [level=4] [ref=e264]
+            - paragraph [ref=e265]: Renter & Parent
+  - generic [ref=e267]:
+    - generic [ref=e268]:
+      - heading "Frequently Asked Questions" [level=2] [ref=e269]
+      - paragraph [ref=e270]: Got questions? We've got answers!
+    - generic [ref=e271]:
+      - button "How do I get started?" [ref=e273] [cursor=pointer]:
+        - generic [ref=e274]: How do I get started?
+        - img [ref=e275]
+      - button "Is my data secure?" [ref=e278] [cursor=pointer]:
+        - generic [ref=e279]: Is my data secure?
+        - img [ref=e280]
+      - button "What features are included?" [ref=e283] [cursor=pointer]:
+        - generic [ref=e284]: What features are included?
+        - img [ref=e285]
+      - button "Can I access it on mobile?" [ref=e288] [cursor=pointer]:
+        - generic [ref=e289]: Can I access it on mobile?
+        - img [ref=e290]
+      - button "Is there a free trial?" [ref=e293] [cursor=pointer]:
+        - generic [ref=e294]: Is there a free trial?
+        - img [ref=e295]
+  - generic [ref=e297]:
+    - img "Family" [ref=e299]
+    - generic [ref=e300]:
+      - heading "Ready to Transform Your Family Life?" [level=2] [ref=e301]
+      - paragraph [ref=e302]: Join 50,000+ families who've already simplified their housing management with FamilyHub
+      - generic [ref=e303]:
+        - link "Get Started Free" [ref=e304] [cursor=pointer]:
+          - /url: /register
+          - generic [ref=e305]: Get Started Free
+          - img [ref=e306]
+        - link "Sign In" [ref=e309] [cursor=pointer]:
+          - /url: /login
+      - generic [ref=e310]:
+        - generic [ref=e311]:
+          - img [ref=e312]
+          - generic [ref=e315]: No credit card required
+        - generic [ref=e316]:
+          - img [ref=e317]
+          - generic [ref=e320]: Free forever plan
+  - generic [ref=e322]:
+    - generic [ref=e323]:
+      - heading "Get In Touch" [level=2] [ref=e324]
+      - paragraph [ref=e325]: Have questions? We'd love to hear from you!
+    - generic [ref=e326]:
+      - generic [ref=e328]:
+        - generic [ref=e329]:
+          - generic [ref=e330]: Your Name
+          - textbox "John Doe" [ref=e331]
+        - generic [ref=e332]:
+          - generic [ref=e333]: Your Email
+          - textbox "john@example.com" [ref=e334]
+        - generic [ref=e335]:
+          - generic [ref=e336]: Your Message
+          - textbox "Tell us how we can help..." [ref=e337]
+        - button "Send Message" [ref=e338] [cursor=pointer]:
+          - img [ref=e339]
+          - generic [ref=e342]: Send Message
+      - generic [ref=e343]:
+        - generic [ref=e344]:
+          - img [ref=e346]
+          - generic [ref=e348]:
+            - heading "Phone" [level=3] [ref=e349]
+            - paragraph [ref=e350]: (603) 661-5417
+            - paragraph [ref=e351]: Mon-Fri, 9am-5pm EST
+        - generic [ref=e352]:
+          - img [ref=e354]
+          - generic [ref=e357]:
+            - heading "Email" [level=3] [ref=e358]
+            - paragraph [ref=e359]: kwibesamuel@gmail.com
+            - paragraph [ref=e360]: We'll reply within 24 hours
+        - generic [ref=e361]:
+          - img [ref=e363]
+          - generic [ref=e366]:
+            - heading "Location" [level=3] [ref=e367]
+            - paragraph [ref=e368]: New Hampshire, USA
+            - paragraph [ref=e369]: Serving families nationwide
+        - generic [ref=e371]:
+          - generic [ref=e372]:
+            - img [ref=e373]
+            - paragraph [ref=e375]: SSL Secured
+          - generic [ref=e376]:
+            - img [ref=e377]
+            - paragraph [ref=e380]: Privacy First
+          - generic [ref=e381]:
+            - img [ref=e382]
+            - paragraph [ref=e385]: Top Rated
+  - contentinfo [ref=e386]:
+    - generic [ref=e387]:
+      - generic [ref=e388]:
+        - generic [ref=e389]:
+          - generic [ref=e390]:
+            - img [ref=e392]
+            - generic [ref=e395]: FamilyHub
+          - paragraph [ref=e396]: Your family's complete housing management solution. Trusted by 50,000+ families nationwide.
+        - generic [ref=e397]:
+          - heading "Product" [level=4] [ref=e398]
+          - list [ref=e399]:
+            - listitem [ref=e400]:
+              - link "Features" [ref=e401] [cursor=pointer]:
+                - /url: "#features"
+            - listitem [ref=e402]:
+              - link "Sign Up" [ref=e403] [cursor=pointer]:
+                - /url: /register
+            - listitem [ref=e404]:
+              - link "Sign In" [ref=e405] [cursor=pointer]:
+                - /url: /login
+        - generic [ref=e406]:
+          - heading "Company" [level=4] [ref=e407]
+          - list [ref=e408]:
+            - listitem [ref=e409]:
+              - link "About Us" [ref=e410] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e411]:
+              - link "Contact" [ref=e412] [cursor=pointer]:
+                - /url: "#contact"
+            - listitem [ref=e413]:
+              - link "Careers" [ref=e414] [cursor=pointer]:
+                - /url: "#"
+        - generic [ref=e415]:
+          - heading "Legal" [level=4] [ref=e416]
+          - list [ref=e417]:
+            - listitem [ref=e418]:
+              - link "Privacy Policy" [ref=e419] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e420]:
+              - link "Terms of Service" [ref=e421] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e422]:
+              - link "Security" [ref=e423] [cursor=pointer]:
+                - /url: "#"
+      - paragraph [ref=e425]:
+        - text: © 2025 FamilyHub. All rights reserved. Made with
+        - img [ref=e426]
+        - text: for families everywhere.
+```

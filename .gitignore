@@ -19,3 +19,4 @@ firebase-debug.log
 # Firebase service account keys
 *-firebase-adminsdk-*.json
 node_modules/
+.env

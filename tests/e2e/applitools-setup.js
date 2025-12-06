@@ -1,6 +1,5 @@
 // Applitools setup for Playwright tests
-import { Eyes, ClassicRunner, VisualGridRunner, Configuration, BatchInfo, BrowserType, DeviceName, ScreenOrientation } from '@applitools/eyes-playwright';
-import { chromium } from '@playwright/test';
+import { Eyes, ClassicRunner, Configuration, BatchInfo, BrowserType } from '@applitools/eyes-playwright';
 
 // Initialize Eyes
 export function createEyes() {

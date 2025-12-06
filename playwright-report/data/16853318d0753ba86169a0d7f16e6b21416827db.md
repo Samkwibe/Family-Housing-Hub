@@ -1,0 +1,75 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - img [ref=e8]
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - img [ref=e14]
+        - generic [ref=e17]: FamilyHub
+      - generic [ref=e18]:
+        - heading "Choose Your Role" [level=1] [ref=e19]
+        - paragraph [ref=e20]: Select the account type that best describes you
+      - generic [ref=e21]:
+        - button "Property Owner Manage properties, tenants, and rent collection professionally Property management tools Tenant tracking & payments Business analytics Get Started" [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]:
+            - img [ref=e25]
+            - heading "Property Owner" [level=3] [ref=e29]
+            - paragraph [ref=e30]: Manage properties, tenants, and rent collection professionally
+            - generic [ref=e31]:
+              - generic [ref=e32]:
+                - img [ref=e33]
+                - generic [ref=e36]: Property management tools
+              - generic [ref=e37]:
+                - img [ref=e38]
+                - generic [ref=e41]: Tenant tracking & payments
+              - generic [ref=e42]:
+                - img [ref=e43]
+                - generic [ref=e46]: Business analytics
+            - generic [ref=e47]:
+              - generic [ref=e48]: Get Started
+              - img [ref=e49]
+        - button "Renter/Family Organize family life, manage budget, and track housing needs Family dashboard Budget & expense tracking Children management Get Started" [ref=e51] [cursor=pointer]:
+          - generic [ref=e52]:
+            - img [ref=e54]
+            - heading "Renter/Family" [level=3] [ref=e59]
+            - paragraph [ref=e60]: Organize family life, manage budget, and track housing needs
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - img [ref=e63]
+                - generic [ref=e66]: Family dashboard
+              - generic [ref=e67]:
+                - img [ref=e68]
+                - generic [ref=e71]: Budget & expense tracking
+              - generic [ref=e72]:
+                - img [ref=e73]
+                - generic [ref=e76]: Children management
+            - generic [ref=e77]:
+              - generic [ref=e78]: Get Started
+              - img [ref=e79]
+        - button "Child Account Fun kid-friendly dashboard with tasks, rewards, and games Simple, colorful interface Tasks & rewards system Parent-controlled safety Get Started" [ref=e81] [cursor=pointer]:
+          - generic [ref=e82]:
+            - img [ref=e84]
+            - heading "Child Account" [level=3] [ref=e87]
+            - paragraph [ref=e88]: Fun kid-friendly dashboard with tasks, rewards, and games
+            - generic [ref=e89]:
+              - generic [ref=e90]:
+                - img [ref=e91]
+                - generic [ref=e94]: Simple, colorful interface
+              - generic [ref=e95]:
+                - img [ref=e96]
+                - generic [ref=e99]: Tasks & rewards system
+              - generic [ref=e100]:
+                - img [ref=e101]
+                - generic [ref=e104]: Parent-controlled safety
+            - generic [ref=e105]:
+              - generic [ref=e106]: Get Started
+              - img [ref=e107]
+      - paragraph [ref=e110]:
+        - text: Already have an account?
+        - link "Sign In" [ref=e111] [cursor=pointer]:
+          - /url: /login
+  - iframe [ref=e112]:
+    
+```

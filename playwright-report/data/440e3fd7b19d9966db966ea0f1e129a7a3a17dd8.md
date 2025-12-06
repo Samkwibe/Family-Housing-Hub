@@ -1,0 +1,55 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - img [ref=e8]
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - img [ref=e20]
+        - generic [ref=e23]: FamilyHub
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - heading "Welcome Home" [level=1] [ref=e26]
+          - img [ref=e27]
+        - paragraph [ref=e30]: Simplify, Organize, Connect - Together.
+      - generic [ref=e31]:
+        - button "Family Dashboard" [ref=e32] [cursor=pointer]:
+          - img [ref=e34]
+          - generic [ref=e37]: Family Dashboard
+        - button "Smart Home" [ref=e38] [cursor=pointer]:
+          - img [ref=e40]
+          - generic [ref=e43]: Smart Home
+        - button "Memories" [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - generic [ref=e49]: Memories
+    - generic [ref=e50]:
+      - heading "Sign In" [level=2] [ref=e51]
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - generic [ref=e54]: Email Address
+          - textbox "Enter your email" [ref=e56]
+        - generic [ref=e57]:
+          - generic [ref=e58]: Password
+          - generic [ref=e59]:
+            - textbox "Enter your password" [ref=e60]
+            - button "Show password" [ref=e61] [cursor=pointer]:
+              - img [ref=e62]
+        - link "Forgot password?" [ref=e66] [cursor=pointer]:
+          - /url: /login
+          - img [ref=e67]
+          - generic [ref=e70]: Forgot password?
+        - button "Log In" [ref=e71] [cursor=pointer]
+        - generic [ref=e76]: Or continue with
+        - generic [ref=e77]:
+          - button "Continue with Google" [ref=e78] [cursor=pointer]:
+            - img [ref=e79]
+            - generic [ref=e84]: Continue with Google
+          - button "Continue with Apple" [ref=e85] [cursor=pointer]:
+            - img [ref=e86]
+            - generic [ref=e88]: Continue with Apple
+      - paragraph [ref=e90]:
+        - text: Don't have an account?
+        - link "Sign Up" [ref=e91] [cursor=pointer]:
+          - /url: /register
+```

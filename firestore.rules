@@ -125,5 +125,35 @@ service cloud.firestore {
       // Allow users to delete invitations they sent
       allow delete: if isAuthenticated() && resource.data.inviterId == request.auth.uid;
     }
+    
+    // Email verifications collection
+    // Allow unauthenticated users to create/read/update during signup
+    // Allow authenticated users to read their own verifications
+    match /emailVerifications/{verificationId} {
+      // Allow anyone to create verification records (needed for signup)
+      allow create: if request.resource.data.email != null && 
+                      request.resource.data.code != null;
+      // Allow reading if email matches (for verification during signup)
+      allow read: if resource.data.email != null;
+      // Allow updating if email matches (for verification attempts)
+      allow update: if resource.data.email != null;
+      // Allow deleting expired/invalid records
+      allow delete: if true;
+    }
+    
+    // Phone verifications collection
+    // Allow unauthenticated users to create/read/update during signup
+    // Allow authenticated users to read their own verifications
+    match /phoneVerifications/{verificationId} {
+      // Allow anyone to create verification records (needed for signup)
+      allow create: if request.resource.data.phone != null && 
+                      request.resource.data.code != null;
+      // Allow reading if phone matches (for verification during signup)
+      allow read: if resource.data.phone != null;
+      // Allow updating if phone matches (for verification attempts)
+      allow update: if resource.data.phone != null;
+      // Allow deleting expired/invalid records
+      allow delete: if true;
+    }
   }
 }

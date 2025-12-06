@@ -25,7 +25,7 @@
           - generic [ref=e45]: Memories
     - generic [ref=e46]:
       - heading "Sign In" [level=2] [ref=e47]
-      - paragraph [ref=e49]: "Firebase: Error (auth/invalid-credential)."
+      - paragraph [ref=e49]: "Firebase: Error (auth/too-many-requests)."
       - generic [ref=e50]:
         - generic [ref=e51]:
           - generic [ref=e52]: Email Address

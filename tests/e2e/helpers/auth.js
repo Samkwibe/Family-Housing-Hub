@@ -15,8 +15,8 @@ export async function loginUser(page, email = 'test@example.com', password = 'Te
       return false;
     }
     
-    // Navigate to login page
-    await page.goto('/login', { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {
+    // Navigate to login page with shorter timeout
+    await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {
       // If navigation fails, page might be closed
       return false;
     });
@@ -81,9 +81,9 @@ export async function loginUser(page, email = 'test@example.com', password = 'Te
     
     if (submitButton && !page.isClosed() && await submitButton.isVisible().catch(() => false)) {
       await submitButton.click().catch(() => {});
-      // Wait for navigation or dashboard to appear
-      await page.waitForURL(/\/(dashboard|calendar|owner-dashboard|child-dashboard)/, { timeout: 20000 }).catch(() => {});
-      await page.waitForTimeout(2000); // Wait for redirect and profile load
+      // Wait for navigation or dashboard to appear (shorter timeout)
+      await page.waitForURL(/\/(dashboard|calendar|owner-dashboard|child-dashboard)/, { timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(1000); // Shorter wait for redirect
       return true;
     }
     
@@ -135,18 +135,30 @@ export async function ensureLoggedIn(page, email = 'test@example.com', password 
       return true;
     }
     
-    const loggedIn = await isLoggedIn(page);
+    // Quick check if already logged in (with shorter timeout)
+    const loggedIn = await Promise.race([
+      isLoggedIn(page),
+      new Promise(resolve => setTimeout(() => resolve(false), 3000)) // 3 second timeout
+    ]);
+    
     if (!loggedIn) {
-      const loginResult = await loginUser(page, email, password);
+      const loginResult = await Promise.race([
+        loginUser(page, email, password),
+        new Promise(resolve => setTimeout(() => resolve(false), 15000)) // 15 second timeout for login
+      ]);
+      
       if (!loginResult) {
         console.warn('Login may have failed - test user might not exist');
         return false;
       }
       
-      // Verify login succeeded
+      // Quick verify login succeeded (shorter wait)
       if (!page.isClosed()) {
-        await page.waitForTimeout(2000);
-        const stillNotLoggedIn = !(await isLoggedIn(page));
+        await page.waitForTimeout(1000);
+        const stillNotLoggedIn = !(await Promise.race([
+          isLoggedIn(page),
+          new Promise(resolve => setTimeout(() => resolve(false), 2000))
+        ]));
         if (stillNotLoggedIn) {
           console.warn('Login may have failed - test user might not exist');
           return false;

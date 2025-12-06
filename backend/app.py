@@ -1110,23 +1110,6 @@ def search_realtor_api(query, lat, lng, filters):
         traceback.print_exc()
     
     return properties
-                    'zipcode': prop.get('location', {}).get('address', {}).get('postal_code', ''),
-                    'price': prop.get('list_price'),
-                    'bedrooms': prop.get('description', {}).get('beds'),
-                    'bathrooms': prop.get('description', {}).get('baths'),
-                    'sqft': prop.get('description', {}).get('sqft'),
-                    'yearBuilt': prop.get('description', {}).get('year_built'),
-                    'lotSize': prop.get('description', {}).get('lot_sqft'),
-                    'lat': prop.get('location', {}).get('address', {}).get('coordinate', {}).get('lat'),
-                    'lng': prop.get('location', {}).get('address', {}).get('coordinate', {}).get('lon'),
-                    'type': prop.get('description', {}).get('type', 'house'),
-                    'images': [img.get('href', '') for img in prop.get('photos', [])[:5]],
-                    'zpid': prop.get('property_id'),
-                    'listingType': 'rent' if filters.get('listingType') == 'rent' else 'buy',
-                    'source': 'realtor'
-                })
-    
-    return properties
 
 def search_attom_api(query, lat, lng, filters):
     """Search ATTOM API - Fastest, enterprise-level"""

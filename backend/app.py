@@ -1225,6 +1225,10 @@ def send_verification_email():
         # Send email
         if SMTP_USER and SMTP_PASSWORD:
             try:
+                # Ensure EMAIL_FROM matches SMTP_USER for Gmail
+                if not EMAIL_FROM or EMAIL_FROM == 'noreply@family-housing-hub.com':
+                    EMAIL_FROM = SMTP_USER
+                
                 msg = MIMEMultipart('alternative')
                 msg['Subject'] = subject
                 msg['From'] = EMAIL_FROM
@@ -1232,18 +1236,32 @@ def send_verification_email():
 
                 msg.attach(MIMEText(body, 'html'))
 
+                print(f'Attempting to send email via {SMTP_HOST}:{SMTP_PORT} from {EMAIL_FROM} to {email}')
+                
                 server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
                 server.starttls()
                 server.login(SMTP_USER, SMTP_PASSWORD)
                 server.send_message(msg)
                 server.quit()
 
+                print(f'Email sent successfully to {email}')
                 return jsonify({
                     'success': True,
                     'message': 'Verification email sent successfully'
                 })
+            except smtplib.SMTPAuthenticationError as e:
+                error_msg = f'SMTP Authentication failed: {str(e)}. Check your SMTP_USER and SMTP_PASSWORD (use App Password, not regular password).'
+                print(error_msg)
+                return jsonify({'error': error_msg}), 500
+            except smtplib.SMTPException as e:
+                error_msg = f'SMTP error: {str(e)}'
+                print(error_msg)
+                return jsonify({'error': error_msg}), 500
             except Exception as e:
-                print(f'Error sending email via SMTP: {e}')
+                error_msg = f'Error sending email via SMTP: {str(e)}'
+                print(error_msg)
+                import traceback
+                traceback.print_exc()
                 # Fallback: log for development
                 if os.getenv('FLASK_ENV') == 'development':
                     print(f'[DEV] Email verification code for {email}: {code}')
@@ -1251,7 +1269,7 @@ def send_verification_email():
                         'success': True,
                         'message': 'Email sent (dev mode - check console)'
                     })
-                return jsonify({'error': 'Failed to send email'}), 500
+                return jsonify({'error': error_msg}), 500
         else:
             # Development mode - just log
             print(f'[DEV] Email verification code for {email}: {code}')

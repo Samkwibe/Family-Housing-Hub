@@ -127,32 +127,69 @@ service cloud.firestore {
     }
     
     // Email verifications collection
-    // Allow unauthenticated users to create/read/update during signup
-    // Allow authenticated users to read their own verifications
+    // Allow unauthenticated users for signup flow, but strictly validate shape/fields.
     match /emailVerifications/{verificationId} {
-      // Allow anyone to create verification records (needed for signup)
-      allow create: if request.resource.data.email != null && 
-                      request.resource.data.code != null;
-      // Allow reading if email matches (for verification during signup)
-      allow read: if resource.data.email != null;
-      // Allow updating if email matches (for verification attempts)
-      allow update: if resource.data.email != null;
-      // Allow deleting expired/invalid records
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          'email', 'code', 'expiresAt', 'attempts', 'verified', 'createdAt'
+        ]) &&
+        request.resource.data.email is string &&
+        request.resource.data.code is string &&
+        request.resource.data.code.size() == 6 &&
+        request.resource.data.expiresAt is timestamp &&
+        request.resource.data.attempts == 0 &&
+        request.resource.data.verified == false;
+
+      // Kept for current client-side verification flow.
+      allow read: if resource.data.email is string;
+
+      allow update: if
+        resource.data.email is string &&
+        resource.data.code is string &&
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.code == resource.data.code &&
+        (
+          // increment attempt by exactly 1
+          request.resource.data.attempts == resource.data.attempts + 1 ||
+          // mark verified
+          (request.resource.data.verified == true && request.resource.data.attempts == resource.data.attempts)
+        );
+
+      // Cleanup job / client cleanup.
       allow delete: if true;
     }
     
     // Phone verifications collection
-    // Allow unauthenticated users to create/read/update during signup
-    // Allow authenticated users to read their own verifications
+    // Allow unauthenticated users for signup flow, but strictly validate shape/fields.
     match /phoneVerifications/{verificationId} {
-      // Allow anyone to create verification records (needed for signup)
-      allow create: if request.resource.data.phone != null && 
-                      request.resource.data.code != null;
-      // Allow reading if phone matches (for verification during signup)
-      allow read: if resource.data.phone != null;
-      // Allow updating if phone matches (for verification attempts)
-      allow update: if resource.data.phone != null;
-      // Allow deleting expired/invalid records
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          'phone', 'code', 'expiresAt', 'attempts', 'verified', 'createdAt'
+        ]) &&
+        request.resource.data.phone is string &&
+        request.resource.data.phone.size() == 10 &&
+        request.resource.data.code is string &&
+        request.resource.data.code.size() == 6 &&
+        request.resource.data.expiresAt is timestamp &&
+        request.resource.data.attempts == 0 &&
+        request.resource.data.verified == false;
+
+      // Kept for current client-side verification flow.
+      allow read: if resource.data.phone is string;
+
+      allow update: if
+        resource.data.phone is string &&
+        resource.data.code is string &&
+        request.resource.data.phone == resource.data.phone &&
+        request.resource.data.code == resource.data.code &&
+        (
+          // increment attempt by exactly 1
+          request.resource.data.attempts == resource.data.attempts + 1 ||
+          // mark verified
+          (request.resource.data.verified == true && request.resource.data.attempts == resource.data.attempts)
+        );
+
+      // Cleanup job / client cleanup.
       allow delete: if true;
     }
   }

@@ -15,6 +15,7 @@ import {
   Settings,
   HelpCircle,
   Shield,
+  Activity,
   PiggyBank,
   Heart,
   Wallet,
@@ -55,6 +56,7 @@ const allNavigationItems = [
   { name: 'House Search', href: '/house-search', icon: Building2, showFor: ['renter'] }, // Only for renters
   { name: 'Landlord', href: '/landlord', icon: Building, showFor: ['renter'] }, // Only for renters
   { name: 'Profile', href: '/profile', icon: User },
+  { name: 'Verification Status', href: '/verification-status', icon: Activity },
 ];
 
 export default function Layout({ children }) {

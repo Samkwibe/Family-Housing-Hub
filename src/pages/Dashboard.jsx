@@ -48,7 +48,7 @@ export default function Dashboard({ dashboardData: onboardingData }) {
   const isOwner = userType === 'owner';
   const isRenter = userType === 'renter';
 
-  // Load renter data from Firestore if not provided via props
+  // Load renter data from Firestore if not provided via props - optimized with caching
   useEffect(() => {
     const loadRenterData = async () => {
       if (!currentUser || !isRenter) return;
@@ -59,11 +59,31 @@ export default function Dashboard({ dashboardData: onboardingData }) {
         return;
       }
 
+      // Check cache first to avoid unnecessary Firestore reads
+      const cacheKey = `renter_data_${currentUser.uid}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          // Use cached data if less than 5 minutes old
+          const cacheTime = parsed._cacheTime || 0;
+          if (Date.now() - cacheTime < 5 * 60 * 1000) {
+            setRenterData(parsed);
+            return;
+          }
+        } catch (e) {
+          // Invalid cache, continue to load
+        }
+      }
+
       // Otherwise, load from Firestore
       try {
         setLoadingRenterData(true);
         const data = await userDataService.getRenterData(currentUser.uid);
         if (data) {
+          // Cache the data with timestamp
+          const dataWithCache = { ...data, _cacheTime: Date.now() };
+          sessionStorage.setItem(cacheKey, JSON.stringify(dataWithCache));
           setRenterData(data);
           console.log('Renter data loaded:', data);
         }

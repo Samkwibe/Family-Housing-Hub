@@ -3,6 +3,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
+import { initObservability } from './lib/observability'
+import { initFeatureFlags } from './services/featureFlags'
 
 // Safe DOM access with null check
 const rootElement = document.getElementById('root');
@@ -15,3 +17,7 @@ ReactDOM.createRoot(rootElement).render(
     <App />
   </React.StrictMode>,
 )
+
+// Boot optional runtime services (non-blocking)
+initObservability();
+initFeatureFlags();

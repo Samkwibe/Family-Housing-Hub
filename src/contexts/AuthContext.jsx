@@ -7,6 +7,9 @@ import {
   onAuthStateChanged,
   updateProfile,
   sendPasswordResetEmail,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
   updateEmail,
   updatePassword,
   reauthenticateWithCredential,
@@ -16,7 +19,7 @@ import { auth } from '../firebase/config';
 import { userService, securityService } from '../services/firebaseService';
 import toast from 'react-hot-toast';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export function useAuth() {
   const context = useContext(AuthContext);
@@ -93,6 +96,10 @@ export function AuthProvider({ children }) {
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
         phone: userData.phone || '',
+        phoneDigits: (() => {
+          const d = String(userData.phone || '').replace(/\D/g, '');
+          return d.length >= 10 ? d.slice(-10) : '';
+        })(),
         role: 'family',
         userType: userData.userType || 'renter', // 'owner' or 'renter'
         emailVerified: userData.emailVerified || false,
@@ -188,30 +195,50 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Login
-  async function login(email, password) {
+  /** Resolve email from "user@domain.com" or a US phone number string */
+  async function resolveLoginEmail(identifier) {
+    const raw = String(identifier || '').trim();
+    if (!raw) throw new Error('Enter your email or phone number');
+    if (raw.includes('@')) {
+      return raw.toLowerCase();
+    }
+    const digits = raw.replace(/\D/g, '');
+    const ten = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
+    if (ten.length !== 10) {
+      throw new Error('Use a valid email or 10-digit US mobile number');
+    }
+    const email = await userService.findEmailByPhoneDigits(ten);
+    if (!email) {
+      throw new Error('No account found for this number. Sign in with your email or create an account.');
+    }
+    return String(email).trim().toLowerCase();
+  }
+
+  // Login — identifier may be email or US phone (matches profile phone on file)
+  async function login(identifier, password) {
     try {
+      const email = await resolveLoginEmail(identifier);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-      // Update last login timestamp
-      await userService.updateUserProfile(userCredential.user.uid, {
-        lastLogin: new Date()
-      });
-
-      // Log successful login
-      try {
-        const device = navigator.userAgent.includes('Mobile') ? 'Mobile Device' :
-          navigator.userAgent.includes('Tablet') ? 'Tablet' : 'Desktop';
-        await securityService.addLoginRecord(userCredential.user.uid, {
+      // Parallelize non-critical operations - don't block login on these
+      const device = navigator.userAgent.includes('Mobile') ? 'Mobile Device' :
+        navigator.userAgent.includes('Tablet') ? 'Tablet' : 'Desktop';
+      
+      // Run these in parallel and don't wait - they're not critical for login flow
+      Promise.all([
+        userService.updateUserProfile(userCredential.user.uid, {
+          lastLogin: new Date()
+        }).catch(err => console.warn('Failed to update last login:', err)),
+        securityService.addLoginRecord(userCredential.user.uid, {
           success: true,
           device: device,
           userAgent: navigator.userAgent,
-          ipAddress: 'Unknown', // Would need backend to get real IP
-          location: 'Unknown' // Would need geolocation service
-        });
-      } catch (logError) {
-        console.warn('Failed to log login history:', logError);
-      }
+          ipAddress: 'Unknown',
+          location: 'Unknown'
+        }).catch(err => console.warn('Failed to log login history:', err))
+      ]).catch(() => {
+        // Silently handle errors - don't block login
+      });
 
       toast.success('Welcome back!');
       return userCredential;
@@ -237,6 +264,43 @@ export function AuthProvider({ children }) {
       }
 
       toast.error(errorMessage);
+      throw error;
+    }
+  }
+
+  // Passwordless magic-link sign-in (optional feature)
+  async function sendMagicLink(email) {
+    try {
+      const actionCodeSettings = {
+        url: `${window.location.origin}/login`,
+        handleCodeInApp: true,
+      };
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      localStorage.setItem('magicLinkEmail', email);
+      toast.success('Magic link sent. Check your inbox.');
+      return true;
+    } catch (error) {
+      console.error('Magic link error:', error);
+      toast.error(error.message || 'Failed to send magic link');
+      throw error;
+    }
+  }
+
+  async function completeMagicLink(url = window.location.href, emailInput = null) {
+    try {
+      if (!isSignInWithEmailLink(auth, url)) return false;
+      const email =
+        emailInput ||
+        localStorage.getItem('magicLinkEmail') ||
+        window.prompt('Confirm your email to continue');
+      if (!email) throw new Error('Email is required to complete magic link sign-in.');
+      await signInWithEmailLink(auth, email, url);
+      localStorage.removeItem('magicLinkEmail');
+      toast.success('Signed in successfully.');
+      return true;
+    } catch (error) {
+      console.error('Complete magic link error:', error);
+      toast.error(error.message || 'Failed to complete magic link sign-in');
       throw error;
     }
   }
@@ -755,6 +819,8 @@ export function AuthProvider({ children }) {
     resetPassword,
     updateUserEmail,
     updateUserPassword,
+    sendMagicLink,
+    completeMagicLink,
     checkProfileComplete
   };
 

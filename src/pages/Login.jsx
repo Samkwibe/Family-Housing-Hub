@@ -4,52 +4,62 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Home, Eye, EyeOff, Mail, Lock, Users, Camera, User, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { isFeatureEnabled } from '../services/featureFlags';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState(null);
   const [rememberMe, setRememberMe] = useState(false);
-  const { login, signInWithGoogle, userProfile, currentUser } = useAuth();
+  const { login, signInWithGoogle, sendMagicLink, completeMagicLink, userProfile, currentUser } = useAuth();
+  const magicLinkEnabled = isFeatureEnabled('magic_link_login_enabled');
   const navigate = useNavigate();
 
   // Track if we just logged in to trigger redirect
   const [justLoggedIn, setJustLoggedIn] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
 
-  // Redirect after login based on user role
+  // Redirect after login based on user role - optimized without artificial delays
   useEffect(() => {
-    if (justLoggedIn && currentUser && userProfile && !loading && !hasRedirected) {
-      setHasRedirected(true);
-      if (userProfile.role === 'child') {
-        navigate('/child-dashboard', { replace: true });
-      } else if (userProfile.userType === 'owner') {
-        navigate('/owner-dashboard', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
+    if (justLoggedIn && currentUser && !hasRedirected) {
+      // If we have userProfile, redirect immediately
+      if (userProfile) {
+        setHasRedirected(true);
+        if (userProfile.role === 'child') {
+          navigate('/child-dashboard', { replace: true });
+        } else if (userProfile.userType === 'owner') {
+          navigate('/owner-dashboard', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+        setJustLoggedIn(false);
+        setLoading(false);
+      } else if (!loading) {
+        // If not loading and no profile, redirect to onboarding to let it handle routing
+        setHasRedirected(true);
+        navigate('/onboarding', { replace: true });
+        setJustLoggedIn(false);
+        setLoading(false);
       }
-      setJustLoggedIn(false);
-      setLoading(false);
     }
   }, [justLoggedIn, currentUser, userProfile, loading, navigate, hasRedirected]);
 
-  // Fallback: if profile takes too long, redirect to default dashboard
   useEffect(() => {
-    if (justLoggedIn && currentUser && !hasRedirected) {
-      const fallbackTimer = setTimeout(() => {
-        if (!userProfile) {
-          navigate('/', { replace: true });
-          setHasRedirected(true);
-          setJustLoggedIn(false);
-          setLoading(false);
+    const maybeCompleteMagicLink = async () => {
+      try {
+        const completed = await completeMagicLink(window.location.href);
+        if (completed) {
+          setJustLoggedIn(true);
         }
-      }, 2000);
-      return () => clearTimeout(fallbackTimer);
-    }
-  }, [justLoggedIn, currentUser, userProfile, hasRedirected, navigate]);
+      } catch {
+        // handled in auth context
+      }
+    };
+    maybeCompleteMagicLink();
+  }, [completeMagicLink]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -57,7 +67,7 @@ export default function Login() {
 
     try {
       setLoading(true);
-      await login(email, password);
+      await login(identifier, password);
       
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true');
@@ -88,6 +98,16 @@ export default function Login() {
       setJustLoggedIn(false);
       setHasRedirected(false);
     }
+  };
+
+  const handleMagicLink = async () => {
+    const email = String(identifier || '').trim().toLowerCase();
+    if (!email.includes('@')) {
+      setError('Enter your email to receive a magic link.');
+      return;
+    }
+    setError(null);
+    await sendMagicLink(email);
   };
 
   return (
@@ -170,19 +190,24 @@ export default function Login() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Email Input */}
+                {/* Email or phone */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Email Address
+                    Email or mobile number
                   </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Use the email on your account, or the same mobile number you verified at sign-up (US numbers).
+                  </p>
                   <div className="relative">
                     <input
-                      type="email"
+                      type="text"
+                      inputMode="email"
+                      autoComplete="username"
                       required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
                       className="w-full pl-4 pr-4 py-4 bg-white/70 backdrop-blur-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 placeholder-gray-500"
-                      placeholder="Enter your email"
+                      placeholder="you@example.com or (555) 555-0100"
                     />
                   </div>
                 </div>
@@ -249,6 +274,16 @@ export default function Login() {
                     <span className="px-4 bg-white/60 backdrop-blur-sm text-gray-600 font-medium">Or continue with</span>
                   </div>
                 </div>
+
+                {magicLinkEnabled && (
+                  <button
+                    type="button"
+                    onClick={handleMagicLink}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-xl font-semibold transition-all shadow-md"
+                  >
+                    Send Magic Link
+                  </button>
+                )}
 
                 {/* Social Login Buttons */}
                 <div className="space-y-3">

@@ -17,11 +17,13 @@
         "test:all": "npm run test && npm run test:e2e"
     },
     "dependencies": {
+        "@sentry/react": "^10.52.0",
         "@stripe/react-stripe-js": "^2.4.0",
         "@stripe/stripe-js": "^2.2.0",
         "dompurify": "^3.3.0",
         "firebase": "^10.14.1",
         "lucide-react": "^0.263.1",
+        "posthog-js": "^1.372.10",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-error-boundary": "^6.0.0",

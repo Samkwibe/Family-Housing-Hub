@@ -158,6 +158,29 @@ export const userService = {
     }
   },
 
+  /**
+   * Find account email by US mobile digits (10 digits) for phone-based login.
+   * Requires phoneDigits on the user document (set at signup / profile update).
+   */
+  async findEmailByPhoneDigits(digits10) {
+    try {
+      const d = String(digits10 || '').replace(/\D/g, '');
+      if (d.length !== 10) return null;
+      const q = query(
+        collection(db, 'users'),
+        where('phoneDigits', '==', d),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+      const data = snap.docs[0].data();
+      return data.email || null;
+    } catch (error) {
+      console.error('Error looking up email by phone:', error);
+      return null;
+    }
+  },
+
   // Update user profile
   async updateUserProfile(userId, updates) {
     try {
@@ -167,6 +190,14 @@ export const userService = {
         ...updates,
         updatedAt: serverTimestamp()
       };
+
+      // Keep phoneDigits in sync for phone-based login lookup
+      if (updates.phone !== undefined && updates.phone !== null) {
+        const digits = String(updates.phone).replace(/\D/g, '');
+        if (digits.length >= 10) {
+          updateData.phoneDigits = digits.slice(-10);
+        }
+      }
 
       // Use setDoc with merge:true instead of updateDoc
       // This creates the document if it doesn't exist, or updates it if it does

@@ -2,41 +2,29 @@
 // Component for phone verification during signup
 
 import React, { useState, useEffect } from 'react';
-import { Phone, CheckCircle, X, RefreshCw, ArrowRight, Clock } from 'lucide-react';
+import { Phone, RefreshCw, ArrowRight, Clock } from 'lucide-react';
 import { verificationService } from '../services/verificationService';
 import toast from 'react-hot-toast';
 
-const PhoneVerificationStep = ({ phone, onVerified, onSkip }) => {
+const PhoneVerificationStep = ({ phone, onVerified, onSkip, onBack }) => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
-  const [canResend, setCanResend] = useState(false);
-
-  useEffect(() => {
-    // Send verification code on mount
-    sendCode();
-
-    // Countdown timer
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
+  const [expiresIn, setExpiresIn] = useState(600);
+  const [resendIn, setResendIn] = useState(45);
+  const [fallbackCode, setFallbackCode] = useState(null);
 
   const sendCode = async () => {
     try {
       setSending(true);
-      await verificationService.sendPhoneVerificationCode(phone);
-      setTimeLeft(600); // Reset timer
-      setCanResend(false);
+      const r = await verificationService.sendPhoneVerificationCode(phone);
+      setExpiresIn(600);
+      setResendIn(45);
+      if (r.showCodeInUi && r.code) {
+        setFallbackCode(r.code);
+      } else {
+        setFallbackCode(null);
+      }
     } catch (error) {
       console.error('Error sending verification code:', error);
       toast.error(error.message || 'Failed to send verification code');
@@ -44,6 +32,15 @@ const PhoneVerificationStep = ({ phone, onVerified, onSkip }) => {
       setSending(false);
     }
   };
+
+  useEffect(() => {
+    sendCode();
+    const timer = setInterval(() => {
+      setExpiresIn((p) => (p <= 0 ? 0 : p - 1));
+      setResendIn((p) => (p <= 0 ? 0 : p - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -57,7 +54,6 @@ const PhoneVerificationStep = ({ phone, onVerified, onSkip }) => {
       setLoading(true);
       const result = await verificationService.verifyPhoneCode(phone, code);
       if (result.verified) {
-        toast.success('Phone number verified successfully!');
         onVerified();
       }
     } catch (error) {
@@ -92,6 +88,18 @@ const PhoneVerificationStep = ({ phone, onVerified, onSkip }) => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+        {fallbackCode && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/30 border-2 border-amber-300 dark:border-amber-700">
+            <p className="text-sm font-bold text-amber-900 dark:text-amber-100 mb-1">Your verification code</p>
+            <p className="text-3xl font-mono font-black tracking-widest text-amber-950 dark:text-amber-50 text-center py-2">
+              {fallbackCode}
+            </p>
+            <p className="text-xs text-amber-800 dark:text-amber-200">
+              SMS isn&apos;t available or failed — enter this code below to continue.
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleVerify} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -99,6 +107,8 @@ const PhoneVerificationStep = ({ phone, onVerified, onSkip }) => {
             </label>
             <input
               type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="000000"
@@ -114,7 +124,7 @@ const PhoneVerificationStep = ({ phone, onVerified, onSkip }) => {
           {/* Timer */}
           <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <Clock className="h-4 w-4" />
-            <span>Code expires in: {formatTime(timeLeft)}</span>
+            <span>Code expires in: {formatTime(expiresIn)}</span>
           </div>
 
           {/* Resend Code */}
@@ -122,11 +132,11 @@ const PhoneVerificationStep = ({ phone, onVerified, onSkip }) => {
             <button
               type="button"
               onClick={sendCode}
-              disabled={!canResend || sending}
+              disabled={resendIn > 0 || sending}
               className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <RefreshCw className={`h-4 w-4 ${sending ? 'animate-spin' : ''}`} />
-              {sending ? 'Sending...' : 'Resend Code'}
+              {sending ? 'Sending...' : resendIn > 0 ? `Resend (${resendIn}s)` : 'Resend code'}
             </button>
             {onSkip && (
               <button
@@ -170,6 +180,16 @@ const PhoneVerificationStep = ({ phone, onVerified, onSkip }) => {
             <li>Wait a few minutes and try resending</li>
           </ul>
         </div>
+
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-4 w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+          >
+            ← Choose email or phone again
+          </button>
+        )}
       </div>
     </div>
   );

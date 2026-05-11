@@ -120,153 +120,155 @@ export const validatePhoneNumber = (phone) => {
   };
 };
 
+/** Pick the newest pending verification doc (handles resends). */
+function pickLatestPendingDoc(docList) {
+  if (!docList || docList.length === 0) return null;
+  const rows = docList.map((d) => ({ ...d.data(), ref: d.ref }));
+  rows.sort((a, b) => {
+    const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+    const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+    return tb - ta;
+  });
+  return rows[0];
+}
+
+/** Extra: set VITE_SHOW_VERIFICATION_CODES=true to always show codes in UI (testing). */
+const forceShowCodesInUi = () => import.meta.env.VITE_SHOW_VERIFICATION_CODES === 'true';
+
 class VerificationService {
   /**
-   * Send email verification code
+   * Send email verification code.
+   * Returns { code, delivered } so the UI can show the code if email didn’t send.
    */
-  async sendEmailVerificationCode(email) {
+  async sendEmailVerificationCode(email, options = {}) {
+    const { suppressToast = false } = options;
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      throw new Error(emailValidation.message);
+    }
+
+    const code = generateVerificationCode();
+    const expiresAt = Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000));
+
+    const verificationRef = doc(collection(db, 'emailVerifications'));
+    await setDoc(verificationRef, {
+      email: email.toLowerCase(),
+      code,
+      expiresAt,
+      attempts: 0,
+      verified: false,
+      createdAt: serverTimestamp(),
+    });
+
+    const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
+    let delivered = false;
+
     try {
-      // Validate email first
-      const emailValidation = validateEmail(email);
-      if (!emailValidation.isValid) {
-        throw new Error(emailValidation.message);
-      }
-
-      // Generate code
-      const code = generateVerificationCode();
-      const expiresAt = Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)); // 10 minutes
-
-      // Store verification code in Firestore
-      const verificationRef = doc(collection(db, 'emailVerifications'));
-      await setDoc(verificationRef, {
-        email: email.toLowerCase(),
-        code,
-        expiresAt,
-        attempts: 0,
-        verified: false,
-        createdAt: serverTimestamp(),
+      const response = await fetch(`${backendUrl}/api/verification/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          code,
+          type: 'email_verification',
+          website: '' // honeypot field (must stay empty)
+        }),
       });
 
-      // Send email via backend API
+      let responseData = {};
       try {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-        console.log('Sending email verification to:', email, 'via backend:', backendUrl);
-        
-        const response = await fetch(`${backendUrl}/api/verification/send-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            code,
-            type: 'email_verification',
-          }),
-        });
-
-        const responseData = await response.json();
-        console.log('Backend response:', responseData);
-
-        if (!response.ok) {
-          console.error('Backend error:', responseData);
-          // If backend is not available or has errors, show code in dev mode
-          if (import.meta.env.DEV || !backendUrl.includes('localhost')) {
-            toast.success(`⚠️ Backend unavailable. Your verification code is: ${code}`, { 
-              duration: 30000,
-              icon: '📧'
-            });
-            return { success: true, verificationId: verificationRef.id, code };
-          }
-          throw new Error(responseData.error || 'Failed to send verification email');
-        }
-
-        // Check if backend is in dev mode (showing code in console)
-        if (responseData.message && responseData.message.includes('dev mode')) {
-          toast.success(`⚠️ Dev mode: Your verification code is: ${code}`, { 
-            duration: 30000,
-            icon: '📧'
-          });
-        } else {
-          toast.success('Verification code sent to your email! 📧');
-        }
-        
-        return { success: true, verificationId: verificationRef.id };
-      } catch (error) {
-        console.error('Error sending email:', error);
-        // Always show code if backend fails (for now, until backend is properly configured)
-        toast.success(`⚠️ Email service unavailable. Your verification code is: ${code}`, { 
-          duration: 30000,
-          icon: '📧'
-        });
-        return { success: true, verificationId: verificationRef.id, code };
+        responseData = await response.json();
+      } catch {
+        /* non-JSON */
       }
-    } catch (error) {
-      console.error('Error sending email verification:', error);
-      throw error;
+
+      delivered = response.ok === true;
+
+      if (delivered && !suppressToast) {
+        if (responseData.message && String(responseData.message).includes('dev mode')) {
+          toast.success(`Code sent (dev). Your code: ${code}`, { duration: 20000 });
+        } else {
+          toast.success('Verification code sent to your email.');
+        }
+      }
+    } catch (err) {
+      console.warn('Email delivery request failed:', err);
+      delivered = false;
     }
+
+    if (!delivered && !suppressToast) {
+      toast.error('Could not send email — use the code shown on screen.', { duration: 6000 });
+    }
+
+    const showCodeInUi = !delivered || forceShowCodesInUi();
+    return {
+      success: true,
+      verificationId: verificationRef.id,
+      code,
+      delivered,
+      showCodeInUi,
+    };
   }
 
   /**
-   * Send phone verification code (SMS)
+   * Send phone verification code (SMS).
+   * Never throws on delivery failure — returns { code, delivered, showCodeInUi }.
    */
-  async sendPhoneVerificationCode(phone) {
-    try {
-      // Validate phone first
-      const phoneValidation = validatePhoneNumber(phone);
-      if (!phoneValidation.isValid) {
-        throw new Error(phoneValidation.message);
-      }
-
-      // Generate code
-      const code = generateVerificationCode();
-      const expiresAt = Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)); // 10 minutes
-
-      // Store verification code in Firestore
-      const verificationRef = doc(collection(db, 'phoneVerifications'));
-      await setDoc(verificationRef, {
-        phone: phoneValidation.digitsOnly,
-        code,
-        expiresAt,
-        attempts: 0,
-        verified: false,
-        createdAt: serverTimestamp(),
-      });
-
-      // Send SMS via backend API
-      try {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-        const response = await fetch(`${backendUrl}/api/verification/send-sms`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            phone: phoneValidation.digitsOnly,
-            code,
-            type: 'phone_verification',
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to send verification SMS');
-        }
-
-        toast.success('Verification code sent to your phone!');
-        return { success: true, verificationId: verificationRef.id };
-      } catch (error) {
-        console.error('Error sending SMS:', error);
-        // For development, show the code
-        if (import.meta.env.DEV) {
-          toast.success(`Dev mode: Your code is ${code}`, { duration: 10000 });
-        } else {
-          throw new Error('Failed to send verification SMS. Please try again.');
-        }
-        return { success: true, verificationId: verificationRef.id, code }; // Dev only
-      }
-    } catch (error) {
-      console.error('Error sending phone verification:', error);
-      throw error;
+  async sendPhoneVerificationCode(phone, options = {}) {
+    const { suppressToast = false } = options;
+    const phoneValidation = validatePhoneNumber(phone);
+    if (!phoneValidation.isValid) {
+      throw new Error(phoneValidation.message);
     }
+
+    const code = generateVerificationCode();
+    const expiresAt = Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000));
+
+    const verificationRef = doc(collection(db, 'phoneVerifications'));
+    await setDoc(verificationRef, {
+      phone: phoneValidation.digitsOnly,
+      code,
+      expiresAt,
+      attempts: 0,
+      verified: false,
+      createdAt: serverTimestamp(),
+    });
+
+    const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
+    let delivered = false;
+
+    try {
+      const response = await fetch(`${backendUrl}/api/verification/send-sms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: phoneValidation.digitsOnly,
+          code,
+          type: 'phone_verification',
+          website: '' // honeypot field (must stay empty)
+        }),
+      });
+      delivered = response.ok === true;
+      if (delivered && !suppressToast) {
+        toast.success('Verification code sent to your phone.');
+      }
+    } catch (err) {
+      console.warn('SMS delivery request failed:', err);
+      delivered = false;
+    }
+
+    if (!delivered && !suppressToast) {
+      toast.error('Could not send SMS — use the code shown on screen.', { duration: 6000 });
+    }
+
+    const showCodeInUi = !delivered || forceShowCodesInUi();
+    return {
+      success: true,
+      verificationId: verificationRef.id,
+      code,
+      delivered,
+      showCodeInUi,
+    };
   }
 
   /**
@@ -276,7 +278,7 @@ class VerificationService {
     try {
       const emailLower = email.toLowerCase();
       
-      // Find verification record
+      // Find verification record(s) — use latest pending (handles resends)
       const q = query(
         collection(db, 'emailVerifications'),
         where('email', '==', emailLower),
@@ -288,8 +290,13 @@ class VerificationService {
         throw new Error('No verification code found. Please request a new code.');
       }
 
-      const verification = snapshot.docs[0].data();
-      const verificationRef = snapshot.docs[0].ref;
+      const latest = pickLatestPendingDoc(snapshot.docs);
+      if (!latest) {
+        throw new Error('No verification code found. Please request a new code.');
+      }
+
+      const verification = latest;
+      const verificationRef = latest.ref;
 
       // Check if expired
       if (verification.expiresAt.toDate() < new Date()) {
@@ -349,8 +356,13 @@ class VerificationService {
         throw new Error('No verification code found. Please request a new code.');
       }
 
-      const verification = snapshot.docs[0].data();
-      const verificationRef = snapshot.docs[0].ref;
+      const latest = pickLatestPendingDoc(snapshot.docs);
+      if (!latest) {
+        throw new Error('No verification code found. Please request a new code.');
+      }
+
+      const verification = latest;
+      const verificationRef = latest.ref;
 
       // Check if expired
       if (verification.expiresAt.toDate() < new Date()) {

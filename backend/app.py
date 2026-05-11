@@ -18,6 +18,7 @@ import time
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from collections import defaultdict, deque
 
 load_dotenv()
 
@@ -45,6 +46,119 @@ EMAIL_FROM = os.getenv('EMAIL_FROM', SMTP_USER or 'noreply@family-housing-hub.co
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
+TWILIO_WHATSAPP_FROM = os.getenv('TWILIO_WHATSAPP_FROM')  # e.g. whatsapp:+14155238886
+
+# Verification abuse protection
+VERIFICATION_WINDOW_SECONDS = int(os.getenv('VERIFICATION_WINDOW_SECONDS', 600))  # 10 min
+VERIFICATION_MAX_PER_IP = int(os.getenv('VERIFICATION_MAX_PER_IP', 20))
+VERIFICATION_MAX_PER_TARGET = int(os.getenv('VERIFICATION_MAX_PER_TARGET', 5))
+VERIFICATION_COOLDOWN_SECONDS = int(os.getenv('VERIFICATION_COOLDOWN_SECONDS', 45))
+VERIFICATION_ADMIN_TOKEN = os.getenv('VERIFICATION_ADMIN_TOKEN')
+_verification_rate_lock = threading.Lock()
+_verification_attempts = defaultdict(deque)  # key -> deque[timestamps]
+_verification_last_sent = {}  # key -> last timestamp
+_verification_events = deque(maxlen=300)  # recent verification ops/blocks for diagnostics
+
+
+def _get_client_ip():
+    """Resolve client IP behind proxies/load balancers."""
+    forwarded = request.headers.get('X-Forwarded-For', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.remote_addr or 'unknown'
+
+
+def _normalize_email(email):
+    return (email or '').strip().lower()
+
+
+def _normalize_phone(phone):
+    digits = re.sub(r'\D', '', phone or '')
+    if len(digits) == 11 and digits.startswith('1'):
+        digits = digits[1:]
+    return digits
+
+
+def _mask_email(email):
+    email = _normalize_email(email)
+    if '@' not in email:
+        return email
+    local, domain = email.split('@', 1)
+    if len(local) <= 2:
+        masked_local = local[0] + '*'
+    else:
+        masked_local = local[:2] + ('*' * max(1, len(local) - 2))
+    return f'{masked_local}@{domain}'
+
+
+def _mask_phone(phone_digits):
+    d = _normalize_phone(phone_digits)
+    if len(d) != 10:
+        return phone_digits
+    return f'***-***-{d[-4:]}'
+
+
+def _record_verification_event(channel, status, target=None, ip=None, reason=None):
+    evt = {
+        'ts': datetime.now().isoformat(),
+        'channel': channel,
+        'status': status,  # sent | blocked | failed | test
+        'target': target,
+        'ip': ip,
+        'reason': reason
+    }
+    with _verification_rate_lock:
+        _verification_events.appendleft(evt)
+
+
+def _check_and_track_rate_limit(rate_key, max_attempts, window_seconds):
+    """
+    Sliding-window rate limit.
+    Returns (allowed: bool, retry_after_seconds: int).
+    """
+    now = time.time()
+    with _verification_rate_lock:
+        bucket = _verification_attempts[rate_key]
+        while bucket and (now - bucket[0]) > window_seconds:
+            bucket.popleft()
+        if len(bucket) >= max_attempts:
+            retry_after = max(1, int(window_seconds - (now - bucket[0])))
+            return False, retry_after
+        bucket.append(now)
+    return True, 0
+
+
+def _check_and_track_cooldown(cooldown_key, cooldown_seconds):
+    """
+    Enforce minimum interval between sends to same destination.
+    Returns (allowed: bool, retry_after_seconds: int).
+    """
+    now = time.time()
+    with _verification_rate_lock:
+        last = _verification_last_sent.get(cooldown_key, 0)
+        elapsed = now - last
+        if elapsed < cooldown_seconds:
+            return False, max(1, int(cooldown_seconds - elapsed))
+        _verification_last_sent[cooldown_key] = now
+    return True, 0
+
+
+def _send_whatsapp_code(formatted_phone, code):
+    """Optional WhatsApp fallback using Twilio WhatsApp sender."""
+    if not (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM):
+        return None
+    try:
+        from twilio.rest import Client
+        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        message = client.messages.create(
+            body=f'Your Family Housing Hub verification code is: {code}. This code expires in 10 minutes.',
+            from_=TWILIO_WHATSAPP_FROM,
+            to=f'whatsapp:{formatted_phone}'
+        )
+        return message.sid
+    except Exception as err:
+        print(f'WhatsApp fallback failed: {err}')
+        return None
 
 # Initialize AI clients
 if OPENAI_API_KEY:
@@ -1194,12 +1308,50 @@ def send_verification_email():
     """Send email verification code"""
     try:
         data = request.json
-        email = data.get('email')
+        email = _normalize_email(data.get('email'))
         code = data.get('code')
         verification_type = data.get('type', 'email_verification')
+        honeypot = data.get('website')  # hidden field trap for bots
 
         if not email or not code:
             return jsonify({'error': 'Email and code are required'}), 400
+        if honeypot:
+            return jsonify({'error': 'Invalid request'}), 400
+
+        client_ip = _get_client_ip()
+        ip_key = f"email:ip:{client_ip}"
+        target_key = f"email:target:{email}"
+        cooldown_key = f"email:cooldown:{email}"
+
+        allowed, retry_after = _check_and_track_rate_limit(
+            ip_key, VERIFICATION_MAX_PER_IP, VERIFICATION_WINDOW_SECONDS
+        )
+        if not allowed:
+            _record_verification_event('email', 'blocked', _mask_email(email), client_ip, 'ip_rate_limit')
+            return jsonify({
+                'error': 'Too many verification attempts from this IP. Please try again later.',
+                'retry_after_seconds': retry_after
+            }), 429
+
+        allowed, retry_after = _check_and_track_rate_limit(
+            target_key, VERIFICATION_MAX_PER_TARGET, VERIFICATION_WINDOW_SECONDS
+        )
+        if not allowed:
+            _record_verification_event('email', 'blocked', _mask_email(email), client_ip, 'target_rate_limit')
+            return jsonify({
+                'error': 'Too many verification attempts for this email. Please try again later.',
+                'retry_after_seconds': retry_after
+            }), 429
+
+        allowed, retry_after = _check_and_track_cooldown(
+            cooldown_key, VERIFICATION_COOLDOWN_SECONDS
+        )
+        if not allowed:
+            _record_verification_event('email', 'blocked', _mask_email(email), client_ip, 'cooldown')
+            return jsonify({
+                'error': 'Please wait before requesting another code.',
+                'retry_after_seconds': retry_after
+            }), 429
 
         # Email template
         subject = 'Family Housing Hub - Email Verification Code'
@@ -1225,18 +1377,19 @@ def send_verification_email():
         # Send email
         if SMTP_USER and SMTP_PASSWORD:
             try:
-                # Ensure EMAIL_FROM matches SMTP_USER for Gmail
-                if not EMAIL_FROM or EMAIL_FROM == 'noreply@family-housing-hub.com':
-                    EMAIL_FROM = SMTP_USER
+                # Ensure sender matches SMTP account when using Gmail
+                sender_from = EMAIL_FROM
+                if not sender_from or sender_from == 'noreply@family-housing-hub.com':
+                    sender_from = SMTP_USER
                 
                 msg = MIMEMultipart('alternative')
                 msg['Subject'] = subject
-                msg['From'] = EMAIL_FROM
+                msg['From'] = sender_from
                 msg['To'] = email
 
                 msg.attach(MIMEText(body, 'html'))
 
-                print(f'Attempting to send email via {SMTP_HOST}:{SMTP_PORT} from {EMAIL_FROM} to {email}')
+                print(f'Attempting to send email via {SMTP_HOST}:{SMTP_PORT} from {sender_from} to {email}')
                 
                 server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
                 server.starttls()
@@ -1245,6 +1398,7 @@ def send_verification_email():
                 server.quit()
 
                 print(f'Email sent successfully to {email}')
+                _record_verification_event('email', 'sent', _mask_email(email), client_ip)
                 return jsonify({
                     'success': True,
                     'message': 'Verification email sent successfully'
@@ -1252,10 +1406,12 @@ def send_verification_email():
             except smtplib.SMTPAuthenticationError as e:
                 error_msg = f'SMTP Authentication failed: {str(e)}. Check your SMTP_USER and SMTP_PASSWORD (use App Password, not regular password).'
                 print(error_msg)
+                _record_verification_event('email', 'failed', _mask_email(email), client_ip, 'smtp_auth')
                 return jsonify({'error': error_msg}), 500
             except smtplib.SMTPException as e:
                 error_msg = f'SMTP error: {str(e)}'
                 print(error_msg)
+                _record_verification_event('email', 'failed', _mask_email(email), client_ip, 'smtp_exception')
                 return jsonify({'error': error_msg}), 500
             except Exception as e:
                 error_msg = f'Error sending email via SMTP: {str(e)}'
@@ -1265,14 +1421,17 @@ def send_verification_email():
                 # Fallback: log for development
                 if os.getenv('FLASK_ENV') == 'development':
                     print(f'[DEV] Email verification code for {email}: {code}')
+                    _record_verification_event('email', 'sent', _mask_email(email), client_ip, 'dev_mode')
                     return jsonify({
                         'success': True,
                         'message': 'Email sent (dev mode - check console)'
                     })
+                _record_verification_event('email', 'failed', _mask_email(email), client_ip, 'smtp_unknown')
                 return jsonify({'error': error_msg}), 500
         else:
             # Development mode - just log
             print(f'[DEV] Email verification code for {email}: {code}')
+            _record_verification_event('email', 'sent', _mask_email(email), client_ip, 'dev_mode_no_smtp')
             return jsonify({
                 'success': True,
                 'message': 'Email sent (dev mode - check console)'
@@ -1287,18 +1446,56 @@ def send_verification_sms():
     """Send SMS verification code"""
     try:
         data = request.json
-        phone = data.get('phone')
+        raw_phone = data.get('phone')
+        phone = _normalize_phone(raw_phone)
         code = data.get('code')
         verification_type = data.get('type', 'phone_verification')
+        honeypot = data.get('website')  # hidden field trap for bots
 
         if not phone or not code:
             return jsonify({'error': 'Phone and code are required'}), 400
+        if honeypot:
+            return jsonify({'error': 'Invalid request'}), 400
+        if len(phone) != 10:
+            return jsonify({'error': 'Phone must be a valid 10-digit US number'}), 400
+
+        client_ip = _get_client_ip()
+        ip_key = f"sms:ip:{client_ip}"
+        target_key = f"sms:target:{phone}"
+        cooldown_key = f"sms:cooldown:{phone}"
+
+        allowed, retry_after = _check_and_track_rate_limit(
+            ip_key, VERIFICATION_MAX_PER_IP, VERIFICATION_WINDOW_SECONDS
+        )
+        if not allowed:
+            _record_verification_event('sms', 'blocked', _mask_phone(phone), client_ip, 'ip_rate_limit')
+            return jsonify({
+                'error': 'Too many verification attempts from this IP. Please try again later.',
+                'retry_after_seconds': retry_after
+            }), 429
+
+        allowed, retry_after = _check_and_track_rate_limit(
+            target_key, VERIFICATION_MAX_PER_TARGET, VERIFICATION_WINDOW_SECONDS
+        )
+        if not allowed:
+            _record_verification_event('sms', 'blocked', _mask_phone(phone), client_ip, 'target_rate_limit')
+            return jsonify({
+                'error': 'Too many verification attempts for this phone. Please try again later.',
+                'retry_after_seconds': retry_after
+            }), 429
+
+        allowed, retry_after = _check_and_track_cooldown(
+            cooldown_key, VERIFICATION_COOLDOWN_SECONDS
+        )
+        if not allowed:
+            _record_verification_event('sms', 'blocked', _mask_phone(phone), client_ip, 'cooldown')
+            return jsonify({
+                'error': 'Please wait before requesting another code.',
+                'retry_after_seconds': retry_after
+            }), 429
 
         # Format phone number
-        if len(phone) == 10:
-            formatted_phone = f'+1{phone}'
-        else:
-            formatted_phone = phone
+        formatted_phone = f'+1{phone}'
 
         # Send SMS via Twilio
         if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER:
@@ -1312,6 +1509,7 @@ def send_verification_sms():
                     to=formatted_phone
                 )
 
+                _record_verification_event('sms', 'sent', _mask_phone(phone), client_ip)
                 return jsonify({
                     'success': True,
                     'message': 'Verification SMS sent successfully',
@@ -1321,17 +1519,30 @@ def send_verification_sms():
                 print('Twilio not installed. Install with: pip install twilio')
             except Exception as e:
                 print(f'Error sending SMS via Twilio: {e}')
+                # Optional WhatsApp fallback
+                whatsapp_sid = _send_whatsapp_code(formatted_phone, code)
+                if whatsapp_sid:
+                    _record_verification_event('whatsapp', 'sent', _mask_phone(phone), client_ip, 'sms_fallback')
+                    return jsonify({
+                        'success': True,
+                        'message': 'Verification sent via WhatsApp fallback',
+                        'channel': 'whatsapp',
+                        'message_id': whatsapp_sid
+                    })
                 # Fallback for development
                 if os.getenv('FLASK_ENV') == 'development':
                     print(f'[DEV] SMS verification code for {phone}: {code}')
+                    _record_verification_event('sms', 'sent', _mask_phone(phone), client_ip, 'dev_mode')
                     return jsonify({
                         'success': True,
                         'message': 'SMS sent (dev mode - check console)'
                     })
+                _record_verification_event('sms', 'failed', _mask_phone(phone), client_ip, 'twilio_send_failed')
                 return jsonify({'error': 'Failed to send SMS'}), 500
         else:
             # Development mode - just log
             print(f'[DEV] SMS verification code for {phone}: {code}')
+            _record_verification_event('sms', 'sent', _mask_phone(phone), client_ip, 'dev_mode_no_twilio')
             return jsonify({
                 'success': True,
                 'message': 'SMS sent (dev mode - check console)'
@@ -1354,9 +1565,136 @@ def index():
             'location': '/api/location/nearby-places',
             'automation': '/api/automation/reminders',
             'verification': '/api/verification/send-email, /api/verification/send-sms',
+            'verification_status': '/api/verification/status',
+            'verification_metrics': '/api/verification/metrics',
+            'verification_test_send': '/api/verification/test-send',
             'health': '/api/health'
         }
     })
+
+
+@app.route('/api/verification/status', methods=['GET'])
+def verification_status():
+    """Verification diagnostics endpoint for frontend/admin checks."""
+    return jsonify({
+        'status': 'ok',
+        'timestamp': datetime.now().isoformat(),
+        'channels': {
+            'email': bool(SMTP_USER and SMTP_PASSWORD),
+            'sms': bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER),
+            'whatsapp_fallback': bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM)
+        },
+        'rate_limits': {
+            'window_seconds': VERIFICATION_WINDOW_SECONDS,
+            'max_per_ip': VERIFICATION_MAX_PER_IP,
+            'max_per_target': VERIFICATION_MAX_PER_TARGET,
+            'cooldown_seconds': VERIFICATION_COOLDOWN_SECONDS
+        }
+    })
+
+
+@app.route('/api/verification/metrics', methods=['GET'])
+def verification_metrics():
+    """Recent verification events and block diagnostics."""
+    try:
+        with _verification_rate_lock:
+            recent = list(_verification_events)[:100]
+        blocked = [e for e in recent if e.get('status') == 'blocked']
+        by_reason = {}
+        for item in blocked:
+            reason = item.get('reason') or 'unknown'
+            by_reason[reason] = by_reason.get(reason, 0) + 1
+
+        return jsonify({
+            'status': 'ok',
+            'timestamp': datetime.now().isoformat(),
+            'recent_events': recent,
+            'summary': {
+                'total_events': len(recent),
+                'blocked_events': len(blocked),
+                'blocked_by_reason': by_reason
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/verification/test-send', methods=['POST'])
+def verification_test_send():
+    """
+    Admin diagnostics endpoint to test delivery channels.
+    Requires header x-admin-token when VERIFICATION_ADMIN_TOKEN is set.
+    Body: { channel: email|sms|whatsapp, destination: "...", code?: "123456" }
+    """
+    try:
+        if VERIFICATION_ADMIN_TOKEN:
+            header_token = request.headers.get('x-admin-token')
+            if header_token != VERIFICATION_ADMIN_TOKEN:
+                return jsonify({'error': 'Unauthorized'}), 401
+
+        data = request.json or {}
+        channel = str(data.get('channel', '')).strip().lower()
+        destination = str(data.get('destination', '')).strip()
+        code = str(data.get('code', '')).strip() or str(int(time.time()))[-6:]
+        client_ip = _get_client_ip()
+
+        if channel not in ['email', 'sms', 'whatsapp']:
+            return jsonify({'error': 'channel must be one of: email, sms, whatsapp'}), 400
+        if not destination:
+            return jsonify({'error': 'destination is required'}), 400
+        if not re.match(r'^\d{6}$', code):
+            return jsonify({'error': 'code must be 6 digits'}), 400
+
+        if channel == 'email':
+            email = _normalize_email(destination)
+            if not SMTP_USER or not SMTP_PASSWORD:
+                return jsonify({'error': 'SMTP not configured'}), 400
+
+            sender_from = EMAIL_FROM if EMAIL_FROM else SMTP_USER
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = 'Family Housing Hub - TEST verification email'
+            msg['From'] = sender_from
+            msg['To'] = email
+            msg.attach(MIMEText(
+                f'<p>Test verification code:</p><h1 style="letter-spacing:4px">{code}</h1>',
+                'html'
+            ))
+
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            _record_verification_event('email', 'test', _mask_email(email), client_ip)
+            return jsonify({'success': True, 'channel': 'email'})
+
+        phone = _normalize_phone(destination)
+        if len(phone) != 10:
+            return jsonify({'error': 'destination phone must be valid US 10-digit'}), 400
+        formatted_phone = f'+1{phone}'
+
+        if channel == 'sms':
+            if not (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER):
+                return jsonify({'error': 'Twilio SMS not configured'}), 400
+            from twilio.rest import Client
+            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            msg = client.messages.create(
+                body=f'[TEST] Family Housing Hub verification code: {code}',
+                from_=TWILIO_PHONE_NUMBER,
+                to=formatted_phone
+            )
+            _record_verification_event('sms', 'test', _mask_phone(phone), client_ip)
+            return jsonify({'success': True, 'channel': 'sms', 'message_id': msg.sid})
+
+        # whatsapp
+        sid = _send_whatsapp_code(formatted_phone, code)
+        if not sid:
+            return jsonify({'error': 'WhatsApp fallback not configured or failed'}), 400
+        _record_verification_event('whatsapp', 'test', _mask_phone(phone), client_ip)
+        return jsonify({'success': True, 'channel': 'whatsapp', 'message_id': sid})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))

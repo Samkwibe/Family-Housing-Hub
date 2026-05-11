@@ -8,6 +8,7 @@ import { familyInviteCodeService } from '../services/familyInviteCodeService';
 import { verificationService, validateEmail, validatePhoneNumber } from '../services/verificationService';
 import EmailVerificationStep from '../components/EmailVerificationStep';
 import PhoneVerificationStep from '../components/PhoneVerificationStep';
+import VerificationMethodChoice from '../components/VerificationMethodChoice';
 import toast from 'react-hot-toast';
 
 export default function Register() {
@@ -44,7 +45,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
-  const [verificationStep, setVerificationStep] = useState(null); // 'email', 'phone', null
+  const [verificationStep, setVerificationStep] = useState(null); // 'choose' | 'email' | 'phone' | null
   const [emailVerified, setEmailVerified] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const { signup, signInWithGoogle } = useAuth();
@@ -102,36 +103,24 @@ export default function Register() {
     return true;
   };
 
-  // Handle email verification
-  const handleEmailVerified = () => {
-    setEmailVerified(true);
-    setVerificationStep(null);
-    
-    // If phone is provided and not verified, move to phone verification
-    if (selectedRole !== 'child' && formData.phone && !phoneVerified) {
-      setVerificationStep('phone');
+  // Proceed with actual account creation (optional overrides avoid stale React state after verify)
+  const proceedWithSignup = async (override = {}) => {
+    const emailOk = override.emailVerified !== undefined ? override.emailVerified : emailVerified;
+    const phoneOk = override.phoneVerified !== undefined ? override.phoneVerified : phoneVerified;
+
+    // Child: must verify email. Adults: verify email OR phone (your choice).
+    if (selectedRole === 'child') {
+      if (!emailOk) {
+        toast.error('Please verify your email address first');
+        setVerificationStep('email');
+        return;
+      }
     } else {
-      // Email verified and phone either verified or not required, proceed with signup
-      proceedWithSignup();
-    }
-  };
-
-  // Handle phone verification
-  const handlePhoneVerified = () => {
-    setPhoneVerified(true);
-    setVerificationStep(null);
-    
-    // Both verified, proceed with signup
-    proceedWithSignup();
-  };
-
-  // Proceed with actual account creation
-  const proceedWithSignup = async () => {
-    // Safety check: Ensure email is verified before proceeding
-    if (!emailVerified) {
-      toast.error('Please verify your email address first');
-      setVerificationStep('email');
-      return;
+      if (!emailOk && !phoneOk) {
+        toast.error('Please verify with email or phone first');
+        setVerificationStep('choose');
+        return;
+      }
     }
 
     try {
@@ -154,8 +143,8 @@ export default function Register() {
         parentId: parentId,
         parentEmail: selectedRole === 'child' ? formData.parentEmail : null,
         familyMembers: selectedRole === 'child' ? undefined : [],
-        emailVerified: emailVerified,
-        phoneVerified: phoneVerified,
+        emailVerified: emailOk,
+        phoneVerified: phoneOk,
         // Children profiles are auto-complete - no onboarding needed
         profileComplete: selectedRole === 'child' ? true : false
       });
@@ -201,6 +190,18 @@ export default function Register() {
     }
   };
 
+  const handleEmailVerified = () => {
+    setEmailVerified(true);
+    setVerificationStep(null);
+    proceedWithSignup({ emailVerified: true, phoneVerified: false });
+  };
+
+  const handlePhoneVerified = () => {
+    setPhoneVerified(true);
+    setVerificationStep(null);
+    proceedWithSignup({ emailVerified: false, phoneVerified: true });
+  };
+
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -224,31 +225,43 @@ export default function Register() {
       return;
     }
 
-    // ALWAYS require email verification before signup
-    if (!emailVerified) {
-      // Start email verification - this is mandatory
-      setVerificationStep('email');
+    const hasChannelVerified =
+      selectedRole === 'child' ? emailVerified : emailVerified || phoneVerified;
+
+    if (!hasChannelVerified) {
+      if (selectedRole === 'child') {
+        setVerificationStep('email');
+      } else {
+        setVerificationStep('choose');
+      }
       return;
     }
 
-    // If phone is provided, require phone verification (for non-child roles)
-    if (selectedRole !== 'child' && formData.phone && !phoneVerified) {
-      setVerificationStep('phone');
-      return;
-    }
-
-    // Both verified (or phone not required), proceed with signup
     proceedWithSignup();
   }
 
-  // Show verification step if needed
+  if (verificationStep === 'choose') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
+        <VerificationMethodChoice
+          email={formData.email}
+          phone={formData.phone}
+          onChooseEmail={() => setVerificationStep('email')}
+          onChoosePhone={() => setVerificationStep('phone')}
+          onBack={() => setVerificationStep(null)}
+        />
+      </div>
+    );
+  }
+
   if (verificationStep === 'email') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 py-8">
         <EmailVerificationStep
           email={formData.email}
           onVerified={handleEmailVerified}
-          onSkip={null} // Don't allow skipping email verification
+          onSkip={null}
+          onBack={selectedRole !== 'child' ? () => setVerificationStep('choose') : undefined}
         />
       </div>
     );
@@ -256,11 +269,12 @@ export default function Register() {
 
   if (verificationStep === 'phone') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-50 py-8">
         <PhoneVerificationStep
           phone={formData.phone}
           onVerified={handlePhoneVerified}
-          onSkip={null} // Don't allow skipping phone verification
+          onSkip={null}
+          onBack={() => setVerificationStep('choose')}
         />
       </div>
     );

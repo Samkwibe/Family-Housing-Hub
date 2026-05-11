@@ -532,3 +532,42 @@ app.get('/api/health', (req, res) => {
 // Export Express app as Firebase Cloud Function
 exports.api = functions.https.onRequest(app);
 
+// ==================== VERIFICATION CLEANUP JOB ====================
+/**
+ * Deletes expired verification documents every hour.
+ * Keeps emailVerifications / phoneVerifications collections small and reduces abuse surface.
+ */
+exports.cleanupExpiredVerifications = functions.pubsub
+  .schedule('every 60 minutes')
+  .timeZone('UTC')
+  .onRun(async () => {
+    const now = admin.firestore.Timestamp.now();
+    const db = admin.firestore();
+
+    async function cleanupCollection(collectionName) {
+      const snapshot = await db
+        .collection(collectionName)
+        .where('expiresAt', '<=', now)
+        .limit(500)
+        .get();
+
+      if (snapshot.empty) return 0;
+
+      const batch = db.batch();
+      snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+      return snapshot.size;
+    }
+
+    const emailDeleted = await cleanupCollection('emailVerifications');
+    const phoneDeleted = await cleanupCollection('phoneVerifications');
+
+    console.log('Expired verification cleanup complete', {
+      emailDeleted,
+      phoneDeleted,
+      totalDeleted: emailDeleted + phoneDeleted,
+    });
+
+    return null;
+  });
+

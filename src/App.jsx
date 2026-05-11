@@ -46,6 +46,7 @@ const FamilySafety = lazy(() => import('./pages/FamilySafety'));
 const Security = lazy(() => import('./pages/Security'));
 const NearbyPlaces = lazy(() => import('./pages/NearbyPlaces'));
 const HouseSearch = lazy(() => import('./pages/HouseSearch'));
+const VerificationStatus = lazy(() => import('./pages/VerificationStatus'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Protected Route with Onboarding Check
@@ -391,6 +392,14 @@ const AppRouter = () => {
           <ProtectedRoute>
             <Layout>
               <HouseSearch />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/verification-status" element={
+          <ProtectedRoute>
+            <Layout>
+              <VerificationStatus />
             </Layout>
           </ProtectedRoute>
         } />

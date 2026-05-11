@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import FamilyCalendar from '../pages/FamilyCalendar';
 import { AuthContext } from '../contexts/AuthContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
 
 // Mock AuthContext
 const mockAuthContext = {
@@ -38,9 +39,11 @@ vi.mock('firebase/firestore', () => ({
 const renderWithRouter = (component) => {
   return render(
     <AuthContext.Provider value={mockAuthContext}>
-      <BrowserRouter>
-        {component}
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          {component}
+        </BrowserRouter>
+      </ThemeProvider>
     </AuthContext.Provider>
   );
 };
@@ -50,7 +53,7 @@ describe('FamilyCalendar', () => {
     renderWithRouter(<FamilyCalendar />);
     
     await waitFor(() => {
-      expect(screen.getByText(/calendar/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /calendar/i })).toBeInTheDocument();
     });
   });
 
@@ -58,7 +61,9 @@ describe('FamilyCalendar', () => {
     renderWithRouter(<FamilyCalendar />);
     
     await waitFor(() => {
-      expect(screen.getByText(/day|week|month|agenda/i)).toBeInTheDocument();
+      expect(screen.getByTitle(/day/i)).toBeInTheDocument();
+      expect(screen.getByTitle(/week/i)).toBeInTheDocument();
+      expect(screen.getByTitle(/month/i)).toBeInTheDocument();
     });
   });
 });

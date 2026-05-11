@@ -15,14 +15,14 @@ export default function Onboarding() {
     let isMounted = true;
 
     const checkAndRedirect = async () => {
-      // Safety timeout - if stuck for more than 10 seconds, force redirect
+      // Reduced timeout - 5 seconds is enough for Firestore queries
       timeoutId = setTimeout(() => {
         if (isMounted) {
           console.warn('Onboarding redirect timeout - forcing redirect to renter onboarding');
           navigate('/renter-onboarding', { replace: true });
           setChecking(false);
         }
-      }, 10000);
+      }, 5000);
 
       if (loading) {
         return; // Still loading, wait
@@ -36,25 +36,20 @@ export default function Onboarding() {
       }
 
       try {
-        // Wait a bit for userProfile to load if it's null
+        // If no userProfile, default to renter onboarding immediately (no artificial delay)
         if (!userProfile) {
-          console.log('Waiting for userProfile to load...');
-          // Give it 2 seconds to load
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          // If still no profile after waiting, proceed with default
-          if (!userProfile) {
-            console.log('No userProfile found, defaulting to renter onboarding');
-            clearTimeout(timeoutId);
-            navigate('/renter-onboarding', { replace: true });
-            return;
-          }
+          console.log('No userProfile found, defaulting to renter onboarding');
+          clearTimeout(timeoutId);
+          navigate('/renter-onboarding', { replace: true });
+          return;
         }
+
+        // Get userType from profile
+        const userType = userProfile?.userType || userProfile?.role;
 
         // First, check if onboarding is already complete
         if (userProfile?.onboardingComplete || userProfile?.profileComplete) {
           // User has completed onboarding - redirect to appropriate dashboard
-          const userType = userProfile?.userType || userProfile?.role;
-          
           if (userType === 'owner') {
             clearTimeout(timeoutId);
             navigate('/owner-dashboard', { replace: true });
@@ -69,29 +64,33 @@ export default function Onboarding() {
             return;
           }
           
-          // If userType not set but onboarding complete, try to get from data
-          try {
-            const ownerData = await userDataService.getOwnerData(currentUser.uid);
-            if (ownerData) {
-              clearTimeout(timeoutId);
-              navigate('/owner-dashboard', { replace: true });
-              return;
+          // If userType not set but onboarding complete, check data in parallel
+          if (!userType) {
+            try {
+              // Parallelize data checks for better performance
+              const [ownerData, renterData] = await Promise.all([
+                userDataService.getOwnerData(currentUser.uid).catch(() => null),
+                userDataService.getRenterData(currentUser.uid).catch(() => null)
+              ]);
+              
+              if (ownerData) {
+                clearTimeout(timeoutId);
+                navigate('/owner-dashboard', { replace: true });
+                return;
+              }
+              
+              if (renterData) {
+                clearTimeout(timeoutId);
+                navigate('/dashboard', { replace: true });
+                return;
+              }
+            } catch (dataError) {
+              console.log('Could not determine user type from data:', dataError);
             }
-            
-            const renterData = await userDataService.getRenterData(currentUser.uid);
-            if (renterData) {
-              clearTimeout(timeoutId);
-              navigate('/dashboard', { replace: true });
-              return;
-            }
-          } catch (dataError) {
-            console.log('Could not determine user type from data:', dataError);
           }
         }
 
         // If onboarding not complete, redirect to specific onboarding based on userType
-        const userType = userProfile?.userType || userProfile?.role;
-        
         if (userType === 'owner') {
           clearTimeout(timeoutId);
           navigate('/owner-onboarding', { replace: true });
@@ -106,10 +105,8 @@ export default function Onboarding() {
           return;
         }
         
-        // If no userType is set, check if user just registered
-        // Default new users to renter onboarding
-        if (!userProfile?.userType && !userProfile?.role) {
-          // New user without userType - default to renter onboarding
+        // If no userType is set, default new users to renter onboarding
+        if (!userType) {
           console.log('No userType set, defaulting to renter onboarding');
           clearTimeout(timeoutId);
           navigate('/renter-onboarding', { replace: true });

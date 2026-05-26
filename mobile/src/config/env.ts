@@ -14,7 +14,7 @@ function normalizeApiUrl(raw: string): string {
 export const API_BASE_URL = normalizeApiUrl(
   (process.env.EXPO_PUBLIC_API_URL as string) ||
     (extra.apiUrl as string) ||
-    'https://family-housing-hub-api.onrender.com'
+    'https://family-housing-hub-production.up.railway.app'
 );
 
 /** Treat example/placeholder values from .env.example as unset. */

@@ -68,7 +68,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "https://family-housing-hub-api.onrender.com"
+      "apiUrl": "https://family-housing-hub-production.up.railway.app"
     }
   }
 }

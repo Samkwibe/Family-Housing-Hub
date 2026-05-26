@@ -38,6 +38,8 @@ from automation_routes import get_document_expiry_alerts
 from maintenance_prediction_service import predict_maintenance
 from permission_graph_service import get_member_role, require_permission
 from document_expiry_risk_service import rank_documents_by_risk
+from health_routes import build_health_dashboard_summary
+from predictive_routes import build_purchase_readiness_summary
 from household_write_hooks import after_household_write
 from job_queue import enqueue
 from tasks import detect_spending_anomaly_task, generate_ai_tips_task, get_cached_ai_tips

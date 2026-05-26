@@ -2,7 +2,7 @@
 Family Housing Hub - Python Backend API
 Provides real, fully functional services including AI, automation, and data processing
 """
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
@@ -22,13 +22,80 @@ from collections import defaultdict, deque
 
 load_dotenv()
 
+from encryption_service import require_encryption_key
+
+require_encryption_key()
+
+from auth_routes import auth_bp, get_current_user_doc
+from verification_store import verification_bp
+from message_routes import messages_bp
+from household_routes import household_bp
+from storage_routes import storage_bp
+from financial_routes import financial_bp
+from automation_routes import automation_bp
+from safety_routes import safety_bp
+from health_routes import health_bp, build_health_dashboard_summary
+from predictive_routes import predictive_bp, build_purchase_readiness_summary
+from household_context_builder import build_rag_household_context
+from realtime_service import socketio
+from request_logging_middleware import register_request_logging
+from rate_limit_service import (
+    AUTH_LIMITS,
+    check_auth_rate_limit,
+    check_global_rate_limit,
+    rate_limit_response,
+)
+from conversational_memory_service import (
+    format_memory_for_prompt,
+    retrieve_relevant_sessions,
+    store_session,
+)
+from household_service import ensure_user_household
+from database import get_db
+
 app = Flask(__name__)
-CORS(app, origins=["https://family-housing-hub.web.app", "http://localhost:3001", "http://localhost:5173"])
+
+_cors_origins = os.getenv(
+    'CORS_ORIGINS',
+    'https://family-housing-hub.web.app,http://localhost:3001,http://localhost:5173,'
+    'http://localhost:8081,exp://localhost:8081,http://127.0.0.1:8081,exp://127.0.0.1:8081',
+)
+CORS(app, origins=[o.strip() for o in _cors_origins.split(',') if o.strip()])
+
+app.register_blueprint(auth_bp)
+app.register_blueprint(verification_bp)
+app.register_blueprint(messages_bp)
+app.register_blueprint(household_bp)
+app.register_blueprint(storage_bp)
+app.register_blueprint(financial_bp)
+app.register_blueprint(automation_bp)
+app.register_blueprint(safety_bp)
+app.register_blueprint(health_bp)
+app.register_blueprint(predictive_bp)
+
+_cors_origin_list = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+socketio.init_app(app, cors_allowed_origins=_cors_origin_list or '*')
+register_request_logging(app)
+
+
+@app.before_request
+def _enforce_rate_limits():
+    if request.path.startswith('/socket.io'):
+        return None
+    ok, info = check_global_rate_limit(request)
+    if not ok:
+        return rate_limit_response(info)
+    return None
 
 # API Keys
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('VITE_GEMINI_API_KEY')
+NVIDIA_API_KEY = os.getenv('NVIDIA_API_KEY') or os.getenv('INVidia_API_KEY')
+NVIDIA_API_MODEL = os.getenv('NVIDIA_API_MODEL', 'meta/llama-3.1-70b-instruct')
+NVIDIA_API_BASE = (os.getenv('NVIDIA_API_BASE') or 'https://integrate.api.nvidia.com/v1').rstrip('/')
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY') or os.getenv('VITE_GOOGLE_MAPS_API_KEY')
+MAPBOX_ACCESS_TOKEN = os.getenv('MAPBOX_ACCESS_TOKEN') or os.getenv('EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN')
+LOCATION_COUNTRY_CODE = (os.getenv('LOCATION_COUNTRY_CODE') or 'us').lower()
 RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY') or '4d9f4dec85msh34a2b4ff5648991p1dcfccjsn125f4440583c'  # For real estate APIs
 ZILLOW_API_KEY = RAPIDAPI_KEY  # Zillow scraper uses RapidAPI key
 REALTOR_API_KEY = RAPIDAPI_KEY  # Realtor.com API uses RapidAPI key
@@ -169,9 +236,106 @@ if GEMINI_API_KEY:
 
 # ==================== AI SERVICES ====================
 
+def _housing_tips_fallback(message: str, user_role: str = 'renter') -> str:
+    """Offline-friendly housing tips when AI API keys are not configured."""
+    q = (message or '').lower()
+    tips = {
+        'rent': (
+            'Track rent due dates in your calendar and set a reminder 3 days before. '
+            'Keep payment confirmations in Documents. If you are a renter, know your '
+            'lease end date and notice period for renewals.'
+        ),
+        'maintenance': (
+            'For maintenance: document the issue with photos, note when it started, '
+            'and contact your landlord in writing. Urgent issues (no heat, water leaks, '
+            'electrical hazards) should be reported immediately.'
+        ),
+        'budget': (
+            'A simple housing budget: 30% for rent, 10% utilities, 5% maintenance fund. '
+            'Review subscriptions and groceries monthly. Build a small emergency fund '
+            'for unexpected repairs.'
+        ),
+        'search': (
+            'When house hunting: list must-haves vs nice-to-haves, check commute times '
+            'on Maps, research schools and safety, and compare total monthly cost '
+            '(rent + utilities + parking).'
+        ),
+    }
+    for keyword, tip in tips.items():
+        if keyword in q:
+            return tip
+    role_note = 'property owner' if user_role == 'owner' else 'renter or family member'
+    return (
+        f'I am running in tips mode (no AI API key configured). As a {role_note}, '
+        'you can ask about rent, maintenance, budgeting, house search, or family planning. '
+        'Try: "How do I track rent payments?" or "Maintenance request tips."'
+    )
+
+
+def _call_nvidia_chat(messages, max_tokens=500):
+    """NVIDIA NIM — OpenAI-compatible chat completions (multiple models via NVIDIA_API_MODEL)."""
+    if not NVIDIA_API_KEY:
+        return None
+    timeout = 180 if max_tokens > 600 else 90
+    try:
+        resp = requests.post(
+            f'{NVIDIA_API_BASE}/chat/completions',
+            headers={
+                'Authorization': f'Bearer {NVIDIA_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'model': NVIDIA_API_MODEL,
+                'messages': messages,
+                'max_tokens': max_tokens,
+                'temperature': 0.7,
+            },
+            timeout=timeout,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data['choices'][0]['message']['content']
+    except Exception as e:
+        print(f'NVIDIA error: {e}')
+        return None
+
+
+def _generate_ai_text(prompt, system_hint='You are FamilyHub AI. Be helpful and concise.', max_tokens=800):
+    """NVIDIA first, then Gemini, then OpenAI — same order as /api/ai/chat."""
+    messages = [
+        {'role': 'system', 'content': system_hint},
+        {'role': 'user', 'content': prompt},
+    ]
+    text = _call_nvidia_chat(messages, max_tokens=max_tokens)
+    if text:
+        return text
+
+    if GEMINI_API_KEY:
+        try:
+            model = genai.GenerativeModel('gemini-pro')
+            response = model.generate_content(f"{system_hint}\n\n{prompt}")
+            return response.text
+        except Exception as e:
+            print(f'Gemini error: {e}')
+
+    if OPENAI_API_KEY:
+        try:
+            response = openai.ChatCompletion.create(
+                model='gpt-3.5-turbo',
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=0.7,
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f'OpenAI error: {e}')
+
+    return None
+
+
 @app.route('/api/ai/chat', methods=['POST'])
 def ai_chat():
-    """Enhanced AI chat with context awareness"""
+    """Enhanced AI chat with household context and persona awareness"""
     try:
         data = request.json
         message = data.get('message', '')
@@ -181,24 +345,105 @@ def ai_chat():
         if not message:
             return jsonify({'error': 'Message is required'}), 400
         
-        # Build context prompt
-        context_str = ""
+        user_role = context.get('user_role') or context.get('userType') or 'renter'
+        ai_persona = context.get('aiPersona') or context.get('ai_persona') or 'general'
+        household_context = context.get('householdContext') or context.get('household_context') or ''
+
+        # Server-side RAG: pull live MongoDB household data for authenticated users
+        user_doc = get_current_user_doc()
+        memory_block = ''
+        if user_doc:
+            try:
+                rag = build_rag_household_context(user_doc)
+                server_rag = rag.get('formatted', '')
+                if server_rag:
+                    if household_context:
+                        if isinstance(household_context, dict):
+                            household_context = json.dumps(household_context, indent=2)
+                        household_context = f"{server_rag}\n\n{household_context}"
+                    else:
+                        household_context = server_rag
+            except Exception as exc:
+                print(f'RAG context build failed: {exc}')
+            try:
+                household_id = ensure_user_household(user_doc)
+                past = retrieve_relevant_sessions(get_db(), household_id, message)
+                memory_block = format_memory_for_prompt(past)
+            except Exception as exc:
+                print(f'Conversational memory failed: {exc}')
+
+        persona_prompts = {
+            'general': (
+                'You are FamilyHub AI — the central brain for an entire household. '
+                'You understand groceries, food inventory, leases, bills, roommates, '
+                'maintenance, shopping, energy, routines, finances, packages, chores, '
+                'and calendar events. Be proactive, practical, and concise.'
+            ),
+            'chef': (
+                'You are Chef AI for FamilyHub. Focus on meals, recipes, ingredients, '
+                'expiration dates, waste reduction, and grocery planning. Suggest '
+                'actionable recipes using what the household already has.'
+            ),
+            'budget': (
+                'You are Budget AI for FamilyHub. Focus on rent splits, savings goals, '
+                'subscriptions, bill forecasting, and cost optimization. Give specific '
+                'numbers and savings opportunities when possible.'
+            ),
+            'maintenance': (
+                'You are Fix AI for FamilyHub. Focus on maintenance issues, landlord '
+                'communication, move-in/move-out checklists, and home repairs. Assess '
+                'urgency and suggest clear next steps.'
+            ),
+            'wellness': (
+                'You are Wellness AI for FamilyHub. Focus on nutrition, hydration, '
+                'medication reminders, and household wellness habits. Be supportive '
+                'and health-conscious without giving medical diagnoses.'
+            ),
+        }
+        system_hint = persona_prompts.get(ai_persona, persona_prompts['general'])
+        system_hint += (
+            '\n\nYou receive LIVE HOUSEHOLD DATA with each message. When that data exists, '
+            'your answer MUST reference specific items (food expiring, bills due, open maintenance, '
+            'health score, documents expiring). Items with days remaining > 0 are NOT expired — '
+            'say "expiring in N days" or "use soon", never "expired". Never respond with only generic '
+            'housing tips when specific data is available. Be concise and actionable.'
+        )
+
+        context_parts = []
         if context.get('location'):
-            context_str += f"User location: {context['location']}. "
-        if context.get('user_role'):
-            context_str += f"User role: {context['user_role']}. "
+            context_parts.append(f"User location: {context['location']}.")
+        context_parts.append(f"User role: {user_role}.")
+        if context.get('firstName'):
+            context_parts.append(f"User name: {context['firstName']}.")
         if context.get('family_info'):
-            context_str += f"Family info: {context['family_info']}. "
+            context_parts.append(f"Family info: {context['family_info']}.")
+        if household_context:
+            if isinstance(household_context, dict):
+                household_context = json.dumps(household_context, indent=2)
+            context_parts.append(f"Live household data:\n{household_context}")
+        if memory_block:
+            context_parts.append(memory_block)
+
+        context_str = ' '.join(context_parts)
+        full_prompt = (
+            f"{context_str}\n\nUser question: {message}\n\n"
+            'Use the household data when relevant. Give a helpful, actionable response.'
+        )
         
-        full_prompt = f"{context_str}User question: {message}\n\nProvide a helpful, detailed response."
-        
-        # Try Gemini first (free), then OpenAI
+        # Try NVIDIA NIM first, then Gemini, then OpenAI
         response_text = None
-        
-        if use_gemini and GEMINI_API_KEY:
+        chat_messages = [
+            {'role': 'system', 'content': system_hint},
+            {'role': 'user', 'content': full_prompt},
+        ]
+
+        if NVIDIA_API_KEY:
+            response_text = _call_nvidia_chat(chat_messages)
+
+        if use_gemini and GEMINI_API_KEY and not response_text:
             try:
                 model = genai.GenerativeModel('gemini-pro')
-                response = model.generate_content(full_prompt)
+                response = model.generate_content(f"{system_hint}\n\n{full_prompt}")
                 response_text = response.text
             except Exception as e:
                 print(f"Gemini error: {e}")
@@ -209,7 +454,7 @@ def ai_chat():
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "system", "content": "You are a helpful assistant for a family housing management app."},
+                        {"role": "system", "content": system_hint},
                         {"role": "user", "content": full_prompt}
                     ],
                     max_tokens=500,
@@ -220,7 +465,13 @@ def ai_chat():
                 print(f"OpenAI error: {e}")
         
         if not response_text:
-            response_text = "I'm having trouble connecting to AI services. Please try again later."
+            response_text = _housing_tips_fallback(message, user_role)
+
+        if user_doc and response_text:
+            try:
+                store_session(get_db(), ensure_user_household(user_doc), message, response_text)
+            except Exception as exc:
+                print(f'Session store failed: {exc}')
         
         return jsonify({
             'response': response_text,
@@ -229,6 +480,21 @@ def ai_chat():
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+def _extract_food_name(analysis_text: str) -> str:
+    """Best-effort parse of food name from Gemini vision output."""
+    if not analysis_text:
+        return ''
+    try:
+        cleaned = analysis_text.replace('```json', '').replace('```', '').strip()
+        data = json.loads(cleaned)
+        return str(data.get('foodName') or data.get('name') or '').strip()
+    except Exception:
+        pass
+    import re
+    match = re.search(r'foodName["\s:]+([^"\n,}]+)', analysis_text, re.I)
+    return match.group(1).strip() if match else ''
+
 
 @app.route('/api/ai/analyze-image', methods=['POST'])
 def analyze_image():
@@ -240,12 +506,9 @@ def analyze_image():
         if not image_base64:
             return jsonify({'error': 'Image is required'}), 400
         
-        if not GEMINI_API_KEY:
-            return jsonify({'error': 'Gemini API key not configured'}), 500
-        
-        # Use Gemini Vision
-        model = genai.GenerativeModel('gemini-pro-vision')
-        
+        if not GEMINI_API_KEY and not NVIDIA_API_KEY:
+            return jsonify({'error': 'AI vision service not configured'}), 503
+
         prompt = """Analyze this food image and provide:
         1. Food name
         2. Ingredients (if visible)
@@ -256,16 +519,24 @@ def analyze_image():
         7. Recipe suggestions
         
         Format as JSON with keys: foodName, ingredients, nutrition, freshness, allergens, portionSize, recipe"""
-        
-        response = model.generate_content([
-            prompt,
-            {"mime_type": "image/jpeg", "data": image_base64}
-        ])
-        
-        return jsonify({
-            'analysis': response.text,
-            'timestamp': datetime.now().isoformat()
-        })
+
+        # Use Gemini Vision when available; NVIDIA text models cannot analyze images yet.
+        if GEMINI_API_KEY:
+            try:
+                model = genai.GenerativeModel('gemini-pro-vision')
+                response = model.generate_content([
+                    prompt,
+                    {"mime_type": "image/jpeg", "data": image_base64}
+                ])
+                return jsonify({
+                    'analysis': response.text,
+                    'foodName': _extract_food_name(response.text),
+                    'timestamp': datetime.now().isoformat()
+                })
+            except Exception as e:
+                print(f'Gemini vision error: {e}')
+
+        return jsonify({'error': 'Food image analysis requires a working Gemini API key'}), 503
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -274,39 +545,48 @@ def analyze_image():
 
 @app.route('/api/meals/generate-plan', methods=['POST'])
 def generate_meal_plan():
-    """Generate smart meal plan based on preferences and pantry"""
+    """Generate smart meal plan — expiry-first fridge inventory + AI."""
     try:
-        data = request.json
-        preferences = data.get('preferences', {})
-        pantry_items = data.get('pantry', [])
-        days = data.get('days', 7)
-        budget = data.get('budget', None)
-        
-        # Build prompt for AI
-        pantry_str = ", ".join([item.get('name', '') for item in pantry_items[:20]])
-        preferences_str = json.dumps(preferences)
-        
-        prompt = f"""Generate a {days}-day meal plan with:
-        - Preferences: {preferences_str}
-        - Available pantry items: {pantry_str}
-        - Budget: ${budget if budget else 'flexible'}
-        
-        Return JSON format with daily meals including breakfast, lunch, dinner, and snacks.
-        Include ingredients, cooking time, and estimated cost per meal."""
-        
-        if GEMINI_API_KEY:
-            model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(prompt)
-            plan_text = response.text
+        from auth_routes import get_current_user_doc
+        from household_service import ensure_user_household
+        from database import get_db
+        from meal_plan_service import (
+            build_meal_plan_prompt,
+            fallback_meal_plan,
+            format_meal_plan_display,
+            parse_meal_plan_response,
+            sort_inventory_by_expiry,
+        )
+
+        data = request.json or {}
+        days = int(data.get('days', 7))
+        user = get_current_user_doc()
+        inventory = data.get('pantry', [])
+
+        if user:
+            db = get_db()
+            hid = ensure_user_household(user)
+            inventory = list(db.inventory.find({'householdId': hid}).sort('expiresAt', 1))
+
+        sorted_pantry = sort_inventory_by_expiry(inventory)
+        system_hint, prompt = build_meal_plan_prompt(inventory, days=days)
+        plan_text = _generate_ai_text(prompt, system_hint=system_hint, max_tokens=2000)
+        if not plan_text:
+            parsed = fallback_meal_plan(inventory, days=days)
         else:
-            plan_text = "AI service not available. Please configure API keys."
-        
+            parsed = parse_meal_plan_response(plan_text)
+            if not parsed.get('days'):
+                parsed = fallback_meal_plan(inventory, days=days)
+        display = format_meal_plan_display(parsed)
+
         return jsonify({
-            'meal_plan': plan_text,
+            'meal_plan': display,
+            'plan': parsed,
+            'pantryPriority': sorted_pantry[:10],
             'days': days,
-            'generated_at': datetime.now().isoformat()
+            'generated_at': datetime.now().isoformat(),
         })
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -333,13 +613,14 @@ def recipe_suggestions():
         - Serving size
         - Estimated cost
         - YouTube search query for video tutorial"""
-        
-        if GEMINI_API_KEY:
-            model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(prompt)
-            suggestions = response.text
-        else:
-            suggestions = "AI service not available."
+
+        system_hint = (
+            'You are Chef AI for FamilyHub. Suggest creative, practical recipes '
+            'using the ingredients provided.'
+        )
+        suggestions = _generate_ai_text(prompt, system_hint=system_hint, max_tokens=1200)
+        if not suggestions:
+            return jsonify({'error': 'AI service unavailable. Configure NVIDIA or Gemini API keys.'}), 503
         
         return jsonify({
             'suggestions': suggestions,
@@ -407,110 +688,309 @@ def analyze_budget():
 
 @app.route('/api/location/nearby-places', methods=['POST'])
 def get_nearby_places():
-    """Get real nearby places using Google Places API"""
+    """Nearby POIs — Google Places primary (photos/ratings), Mapbox/OSM fallbacks."""
     try:
-        data = request.json
+        from location_services import get_nearby_places as fetch_nearby
+
+        data = request.json or {}
         lat = data.get('lat')
         lng = data.get('lng')
         category = data.get('category', 'all')
-        radius = data.get('radius', 2000)
-        
-        if not lat or not lng:
+        categories = data.get('categories')
+        radius = int(data.get('radius', 2000))
+        country_code = (data.get('country_code') or LOCATION_COUNTRY_CODE).lower()
+
+        if lat is None or lng is None:
             return jsonify({'error': 'Latitude and longitude are required'}), 400
-        
-        if not GOOGLE_MAPS_API_KEY:
-            return jsonify({'error': 'Google Maps API key not configured'}), 500
-        
-        # Map category to Google Places type
-        type_map = {
-            'grocery': 'supermarket',
-            'restaurant': 'restaurant',
-            'gym': 'gym',
-            'hospital': 'hospital',
-            'school': 'school',
-            'cafe': 'cafe',
-            'gas': 'gas_station',
-            'shopping': 'shopping_mall'
-        }
-        
-        place_type = type_map.get(category, '')
-        
-        # Call Google Places API
-        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json"
-        params = {
-            'location': f"{lat},{lng}",
-            'radius': radius,
-            'key': GOOGLE_MAPS_API_KEY
-        }
-        
-        if place_type:
-            params['type'] = place_type
-        
-        response = requests.get(url, params=params)
-        data = response.json()
-        
-        if data.get('status') == 'OK':
-            places = []
-            for place in data.get('results', [])[:20]:
-                places.append({
-                    'id': place.get('place_id'),
-                    'name': place.get('name'),
-                    'address': place.get('vicinity') or place.get('formatted_address'),
-                    'rating': place.get('rating', 0),
-                    'lat': place.get('geometry', {}).get('location', {}).get('lat'),
-                    'lng': place.get('geometry', {}).get('location', {}).get('lng'),
-                    'types': place.get('types', []),
-                    'photo_reference': place.get('photos', [{}])[0].get('photo_reference') if place.get('photos') else None
-                })
-            
-            return jsonify({
-                'places': places,
-                'count': len(places),
-                'location': {'lat': lat, 'lng': lng}
-            })
-        else:
-            return jsonify({'error': data.get('error_message', 'Failed to fetch places')}), 500
-    
+
+        if categories is not None and not isinstance(categories, list):
+            return jsonify({'error': 'categories must be an array of category ids'}), 400
+
+        places, provider = fetch_nearby(
+            float(lat),
+            float(lng),
+            category=category,
+            categories=categories,
+            radius=radius,
+            mapbox_access_token=MAPBOX_ACCESS_TOKEN,
+            google_api_key=GOOGLE_MAPS_API_KEY,
+            country_code=country_code,
+        )
+        return jsonify({
+            'places': places,
+            'count': len(places),
+            'location': {'lat': float(lat), 'lng': float(lng)},
+            'provider': provider,
+            'categories': categories if categories else [category],
+        })
+    except requests.RequestException as e:
+        return jsonify({'error': f'Location service unreachable: {e}'}), 502
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/location/geocode', methods=['POST'])
-def geocode_address():
-    """Geocode address to coordinates"""
+
+@app.route('/api/location/search', methods=['GET', 'POST'])
+def search_locations():
+    """Place/address search — Mapbox Geocoding primary, Nominatim backup."""
     try:
-        data = request.json
-        address = data.get('address')
-        
-        if not address:
-            return jsonify({'error': 'Address is required'}), 400
-        
-        # Use OpenStreetMap Nominatim (free, no API key needed)
-        url = "https://nominatim.openstreetmap.org/search"
-        params = {
-            'q': address,
-            'format': 'json',
-            'limit': 1
-        }
-        headers = {
-            'User-Agent': 'Family-Housing-Hub/1.0'
-        }
-        
-        response = requests.get(url, params=params, headers=headers)
-        results = response.json()
-        
-        if results:
-            result = results[0]
-            return jsonify({
-                'lat': float(result['lat']),
-                'lng': float(result['lon']),
-                'display_name': result.get('display_name'),
-                'address': result.get('address', {})
-            })
+        from location_services import autocomplete_suggestions, search_places
+
+        if request.method == 'GET':
+            query = request.args.get('q', '')
+            lat = request.args.get('lat')
+            lng = request.args.get('lng')
+            limit = int(request.args.get('limit', 10))
+            suggest_only = request.args.get('suggest', '').lower() in ('1', 'true', 'yes')
+            country_code = (request.args.get('country_code') or LOCATION_COUNTRY_CODE).lower()
         else:
-            return jsonify({'error': 'Address not found'}), 404
-    
+            body = request.json or {}
+            query = body.get('q') or body.get('query', '')
+            lat = body.get('lat')
+            lng = body.get('lng')
+            limit = int(body.get('limit', 10))
+            suggest_only = bool(body.get('suggest'))
+            country_code = (body.get('country_code') or LOCATION_COUNTRY_CODE).lower()
+
+        if not (query or '').strip():
+            return jsonify({'error': 'Search query is required'}), 400
+
+        origin_lat = float(lat) if lat is not None else None
+        origin_lng = float(lng) if lng is not None else None
+
+        if suggest_only:
+            suggestions = autocomplete_suggestions(
+                query,
+                limit=min(limit, 8),
+                mapbox_access_token=MAPBOX_ACCESS_TOKEN,
+                lat=origin_lat,
+                lng=origin_lng,
+                country_code=country_code,
+            )
+            return jsonify({
+                'suggestions': suggestions,
+                'count': len(suggestions),
+                'query': query.strip(),
+            })
+
+        results, provider = search_places(
+            query,
+            mapbox_access_token=MAPBOX_ACCESS_TOKEN,
+            google_api_key=GOOGLE_MAPS_API_KEY,
+            lat=origin_lat,
+            lng=origin_lng,
+            limit=min(limit, 20),
+            country_code=country_code,
+        )
+        return jsonify({
+            'results': results,
+            'count': len(results),
+            'provider': provider,
+            'query': query.strip(),
+        })
+    except requests.RequestException as e:
+        return jsonify({'error': f'Search service unreachable: {e}'}), 502
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/location/place-photo', methods=['GET'])
+def place_photo():
+    """Proxy Google Place Photos so mobile clients load images without exposing API keys."""
+    try:
+        from location_services import build_google_photo_url
+
+        photo_ref = (request.args.get('ref') or request.args.get('photoreference') or '').strip()
+        if not photo_ref:
+            return jsonify({'error': 'Photo reference is required'}), 400
+        if not GOOGLE_MAPS_API_KEY:
+            return jsonify({'error': 'Google Maps API key not configured'}), 503
+
+        maxwidth = min(max(int(request.args.get('maxwidth', 600)), 100), 1200)
+        google_url = build_google_photo_url(photo_ref, GOOGLE_MAPS_API_KEY, maxwidth)
+        upstream = requests.get(google_url, timeout=12, allow_redirects=True)
+        if upstream.status_code != 200:
+            return jsonify({'error': 'Photo unavailable'}), upstream.status_code
+
+        content_type = upstream.headers.get('Content-Type', 'image/jpeg')
+        return Response(upstream.content, mimetype=content_type)
+    except requests.RequestException as e:
+        return jsonify({'error': f'Photo service unreachable: {e}'}), 502
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/weather', methods=['GET', 'POST'])
+def weather_summary():
+    """Current conditions, daily/hourly forecast, and alerts via Google Weather API."""
+    try:
+        from weather_service import get_weather_summary
+
+        if request.method == 'GET':
+            lat = request.args.get('lat')
+            lng = request.args.get('lng')
+            units = (request.args.get('units') or request.args.get('unitsSystem') or 'IMPERIAL').upper()
+            days = int(request.args.get('days', 5))
+            hours = int(request.args.get('hours', 12))
+            include_alerts = request.args.get('alerts', 'true').lower() not in ('0', 'false', 'no')
+        else:
+            body = request.json or {}
+            lat = body.get('lat')
+            lng = body.get('lng')
+            units = (body.get('units') or body.get('unitsSystem') or 'IMPERIAL').upper()
+            days = int(body.get('days', 5))
+            hours = int(body.get('hours', 12))
+            include_alerts = body.get('alerts', True) is not False
+
+        if lat is None or lng is None:
+            return jsonify({'error': 'Latitude and longitude are required'}), 400
+        if not GOOGLE_MAPS_API_KEY:
+            return jsonify({'error': 'Google Maps API key not configured (enable Weather API in Cloud Console)'}), 503
+
+        summary = get_weather_summary(
+            float(lat),
+            float(lng),
+            api_key=GOOGLE_MAPS_API_KEY,
+            units_system='IMPERIAL' if units.startswith('IMP') else 'METRIC',
+            days=days,
+            hours=hours,
+            include_alerts=include_alerts,
+        )
+        return jsonify(summary)
+    except requests.RequestException as e:
+        return jsonify({'error': f'Weather service unreachable: {e}'}), 502
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/location/geocode', methods=['POST'])
+def geocode_address():
+    """Geocode address — Google Geocoding primary, Nominatim fallback."""
+    try:
+        from google_platform_service import geocode_google
+        from location_services import geocode_nominatim
+
+        data = request.json or {}
+        address = data.get('address')
+
+        if not address:
+            return jsonify({'error': 'Address is required'}), 400
+
+        if GOOGLE_MAPS_API_KEY:
+            try:
+                result = geocode_google(address, GOOGLE_MAPS_API_KEY)
+                if result:
+                    return jsonify(result)
+            except Exception:
+                pass
+
+        result = geocode_nominatim(address)
+        if result:
+            return jsonify(result)
+        return jsonify({'error': 'Address not found'}), 404
+    except requests.RequestException as e:
+        return jsonify({'error': f'Geocoding service unreachable: {e}'}), 502
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/location/place-insights', methods=['GET', 'POST'])
+def place_insights_route():
+    """Travel times (Routes API), Street View availability, timezone, optional solar."""
+    try:
+        from google_platform_service import place_insights
+
+        if request.method == 'GET':
+            dest_lat = request.args.get('lat')
+            dest_lng = request.args.get('lng')
+            origin_lat = request.args.get('origin_lat')
+            origin_lng = request.args.get('origin_lng')
+            include_solar = request.args.get('solar', '').lower() in ('1', 'true', 'yes')
+        else:
+            body = request.json or {}
+            dest_lat = body.get('lat')
+            dest_lng = body.get('lng')
+            origin_lat = body.get('origin_lat')
+            origin_lng = body.get('origin_lng')
+            include_solar = bool(body.get('solar'))
+
+        if dest_lat is None or dest_lng is None:
+            return jsonify({'error': 'Destination lat and lng are required'}), 400
+        if not GOOGLE_MAPS_API_KEY:
+            return jsonify({'error': 'Google Maps API key not configured'}), 503
+
+        insights = place_insights(
+            float(dest_lat),
+            float(dest_lng),
+            GOOGLE_MAPS_API_KEY,
+            origin_lat=float(origin_lat) if origin_lat is not None else None,
+            origin_lng=float(origin_lng) if origin_lng is not None else None,
+            include_solar=include_solar,
+        )
+        return jsonify(insights)
+    except requests.RequestException as e:
+        return jsonify({'error': f'Insights service unreachable: {e}'}), 502
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/location/street-view', methods=['GET'])
+def street_view_image():
+    """Proxy Street View Static images for a location."""
+    try:
+        from google_platform_service import fetch_street_view_image
+
+        lat = request.args.get('lat')
+        lng = request.args.get('lng')
+        width = min(max(int(request.args.get('width', 640)), 200), 1200)
+        height = min(max(int(request.args.get('height', 400)), 150), 800)
+
+        if lat is None or lng is None:
+            return jsonify({'error': 'Latitude and longitude are required'}), 400
+        if not GOOGLE_MAPS_API_KEY:
+            return jsonify({'error': 'Google Maps API key not configured'}), 503
+
+        result = fetch_street_view_image(float(lat), float(lng), GOOGLE_MAPS_API_KEY, width, height)
+        if not result:
+            return jsonify({'error': 'Street View not available for this location'}), 404
+
+        content, content_type = result
+        return Response(content, mimetype=content_type)
+    except requests.RequestException as e:
+        return jsonify({'error': f'Street View unreachable: {e}'}), 502
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/location/solar', methods=['GET', 'POST'])
+def solar_insights_route():
+    """Solar API — roof sunshine and panel potential (great for property owners)."""
+    try:
+        from google_platform_service import solar_insights
+
+        if request.method == 'GET':
+            lat = request.args.get('lat')
+            lng = request.args.get('lng')
+        else:
+            body = request.json or {}
+            lat = body.get('lat')
+            lng = body.get('lng')
+
+        if lat is None or lng is None:
+            return jsonify({'error': 'Latitude and longitude are required'}), 400
+        if not GOOGLE_MAPS_API_KEY:
+            return jsonify({'error': 'Google Maps API key not configured'}), 503
+
+        data = solar_insights(float(lat), float(lng), GOOGLE_MAPS_API_KEY)
+        if not data:
+            return jsonify({'error': 'Solar data not available for this location'}), 404
+        return jsonify(data)
+    except requests.RequestException as e:
+        return jsonify({'error': f'Solar service unreachable: {e}'}), 502
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 # ==================== AUTOMATION SERVICES ====================
 
@@ -704,7 +1184,24 @@ def search_properties():
             except Exception as e:
                 print(f"ATTOM API error: {e}")
         
-        # If no properties found, provide helpful message
+        max_rent = filters.get('maxRent')
+        if max_rent is not None:
+            try:
+                from rent_affordability_service import filter_properties_by_affordability
+                before = len(properties)
+                properties = filter_properties_by_affordability(properties, float(max_rent))
+                if before and not properties:
+                    return jsonify({
+                        'properties': [],
+                        'count': 0,
+                        'query': query,
+                        'message': f'No listings at or below your affordable max of ${float(max_rent):,.0f}/mo. Try adjusting the filter.',
+                        'affordabilityFiltered': True,
+                        'maxRent': float(max_rent),
+                    })
+            except (TypeError, ValueError):
+                pass
+        
         if not properties:
             # Check if it's a city/area search (not a specific address)
             is_area_search = not any(char.isdigit() for char in query) and (',' in query or len(query.split()) <= 3)
@@ -722,7 +1219,9 @@ def search_properties():
         return jsonify({
             'properties': properties[:20],  # Limit to 20 results
             'count': len(properties),
-            'query': query
+            'query': query,
+            'affordabilityFiltered': bool(filters.get('maxRent')),
+            'maxRent': filters.get('maxRent'),
         })
     
     except Exception as e:
@@ -1289,13 +1788,32 @@ def build_zillow_url():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+    from database import ping_db
+
+    if MAPBOX_ACCESS_TOKEN:
+        nearby_provider = 'mapbox'
+        search_provider = 'mapbox'
+    elif GOOGLE_MAPS_API_KEY:
+        nearby_provider = 'google'
+        search_provider = 'google'
+    else:
+        nearby_provider = 'openstreetmap'
+        search_provider = 'nominatim'
+
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'services': {
+            'mongodb': 'connected' if ping_db() else 'not connected',
             'openai': 'configured' if OPENAI_API_KEY else 'not configured',
             'gemini': 'configured' if GEMINI_API_KEY else 'not configured',
+            'nvidia': 'configured' if NVIDIA_API_KEY else 'not configured',
+            'nvidia_model': NVIDIA_API_MODEL if NVIDIA_API_KEY else None,
+            'mapbox': 'configured' if MAPBOX_ACCESS_TOKEN else 'not configured',
             'google_maps': 'configured' if GOOGLE_MAPS_API_KEY else 'not configured',
+            'google_weather': 'configured' if GOOGLE_MAPS_API_KEY else 'not configured',
+            'nearby_places': nearby_provider,
+            'place_search': search_provider,
             'email': 'configured' if (SMTP_USER and SMTP_PASSWORD) else 'not configured',
             'sms': 'configured' if (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER) else 'not configured'
         }
@@ -1379,8 +1897,10 @@ def send_verification_email():
             try:
                 # Ensure sender matches SMTP account when using Gmail
                 sender_from = EMAIL_FROM
-                if not sender_from or sender_from == 'noreply@family-housing-hub.com':
+                if (not sender_from or sender_from == 'noreply@family-housing-hub.com') and SMTP_USER != 'apikey':
                     sender_from = SMTP_USER
+                if not sender_from:
+                    sender_from = SMTP_USER if SMTP_USER != 'apikey' else 'noreply@family-housing-hub.com'
                 
                 msg = MIMEMultipart('alternative')
                 msg['Subject'] = subject
@@ -1559,12 +2079,13 @@ def index():
         'message': 'Family Housing Hub API',
         'version': '1.0.0',
         'endpoints': {
+            'auth': '/api/auth/register, /api/auth/login, /api/auth/me, /api/auth/logout',
             'ai': '/api/ai/chat',
             'meals': '/api/meals/generate-plan',
             'budget': '/api/budget/analyze',
             'location': '/api/location/nearby-places',
             'automation': '/api/automation/reminders',
-            'verification': '/api/verification/send-email, /api/verification/send-sms',
+            'verification': '/api/verification/send-email, /api/verification/send-sms, /api/verification/confirm',
             'verification_status': '/api/verification/status',
             'verification_metrics': '/api/verification/metrics',
             'verification_test_send': '/api/verification/test-send',
@@ -1697,6 +2218,17 @@ def verification_test_send():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    def _hourly_automation_loop():
+        from job_queue import enqueue
+        from tasks import run_hourly_automation_task
+        while True:
+            time.sleep(3600)
+            try:
+                enqueue(run_hourly_automation_task)
+            except Exception as exc:
+                print(f'Automation scheduler error: {exc}')
+
+    threading.Thread(target=_hourly_automation_loop, daemon=True).start()
+    port = int(os.getenv('PORT', 8000))
+    socketio.run(app, host='0.0.0.0', port=port, debug=True, allow_unsafe_werkzeug=True)
 

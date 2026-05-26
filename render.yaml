@@ -1,34 +1,120 @@
+# Family Housing Hub — Render Blueprint
+# Deploy: connect repo in Render → New Blueprint → select this file
+# Set secret values (sync: false) in the Render dashboard before first deploy.
+
+envVarGroups:
+  - name: fhh-backend-shared
+    envVars:
+      # ── Required ──────────────────────────────────────────────────────────
+      - key: FLASK_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: family_housing_hub
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_HOURS
+        value: "168"
+      - key: FIELD_ENCRYPTION_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+      # ── Email (SendGrid) ────────────────────────────────────────────────────
+      - key: SMTP_HOST
+        value: smtp.sendgrid.net
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        value: apikey
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: EMAIL_FROM
+        value: sraymo377@gmail.com
+
+      # ── File storage (Cloudflare R2) ────────────────────────────────────────
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_BUCKET_NAME
+        value: familyhub-files
+      - key: S3_REGION
+        value: auto
+
+      # ── AI (at least one required) ──────────────────────────────────────────
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: NVIDIA_API_MODEL
+        value: meta/llama-3.1-70b-instruct
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # ── Maps & location ─────────────────────────────────────────────────────
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: MAPBOX_ACCESS_TOKEN
+        sync: false
+      - key: LOCATION_COUNTRY_CODE
+        value: us
+
+      # ── Auth & deep links ───────────────────────────────────────────────────
+      - key: GOOGLE_OAUTH_CLIENT_IDS
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://family-housing-hub.web.app,https://family-housing-hub-api.onrender.com
+      - key: INVITE_LINK_BASE
+        value: familyhousinghub://invite
+      - key: RESET_LINK_BASE
+        value: familyhousinghub://reset-password
+      - key: RESET_TOKEN_HOURS
+        value: "1"
+
+      # ── SMS (Twilio) ────────────────────────────────────────────────────────
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+
+      # ── Optional tuning ─────────────────────────────────────────────────────
+      - key: RATE_LIMIT_GLOBAL
+        value: "200"
+      - key: HOUSEHOLD_INVITE_EXPIRES_DAYS
+        value: "7"
+
 services:
+  # ── Web API (Flask + Socket.IO via eventlet) ────────────────────────────────
   - type: web
     name: family-housing-hub-api
     runtime: python
+    plan: starter
+    region: virginia
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
-    envVars:
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: GOOGLE_MAPS_API_KEY
-        sync: false
-      - key: PORT
-        value: 10000
-      # Email Configuration (Gmail SMTP)
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: 587
-      - key: SMTP_USER
-        sync: false  # Set in Render dashboard
-      - key: SMTP_PASSWORD
-        sync: false  # Set in Render dashboard
-      - key: EMAIL_FROM
-        value: noreply@family-housing-hub.com
-      # SMS Configuration (Twilio)
-      - key: TWILIO_ACCOUNT_SID
-        sync: false  # Set in Render dashboard
-      - key: TWILIO_AUTH_TOKEN
-        sync: false  # Set in Render dashboard
-      - key: TWILIO_PHONE_NUMBER
-        sync: false  # Set in Render dashboard
+    startCommand: >-
+      cd backend &&
+      gunicorn --worker-class eventlet -w 1
+      --bind 0.0.0.0:$PORT
+      --timeout 120
+      --access-logfile -
+      app:app
+    healthCheckPath: /api/health
+    envVarGroups:
+      - name: fhh-backend-shared
 
+  # ── Celery background worker (email, AI tips, forecasting, automation) ────
+  - type: worker
+    name: family-housing-hub-worker
+    runtime: python
+    plan: starter
+    region: virginia
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && celery -A celery_app worker --loglevel=info --concurrency=2
+    envVarGroups:
+      - name: fhh-backend-shared

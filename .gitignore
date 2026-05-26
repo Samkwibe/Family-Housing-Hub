@@ -3,12 +3,14 @@ backend/__pycache__/
 backend/*.pyc
 backend/.env
 backend/venv/
+backend/.venv/
 backend/env/
 *.pyc
 __pycache__/
 
 # Node.js
 node_modules/
+functions/node_modules/
 .env.local
 .env*.local
 dist/
@@ -18,5 +20,21 @@ firebase-debug.log
 
 # Firebase service account keys
 *-firebase-adminsdk-*.json
-node_modules/
+
+# Environment (keep .env.example)
 .env
+
+# Test & build artifacts
+playwright-report/
+test-results/
+coverage/
+
+# OS & editor
+.DS_Store
+*.zip
+
+# Mobile
+mobile/.env
+mobile/.expo/
+mobile/dist/
+mobile/node_modules/

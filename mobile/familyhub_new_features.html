@@ -1,0 +1,739 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+.wrap{padding:20px 8px 48px;max-width:720px;margin:0 auto}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;align-items:flex-start;margin-bottom:10px}
+.sec{text-align:center;padding:26px 0 12px}
+.slbl{font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--color-text-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:40px;padding:5px 16px;display:inline-block}
+.pn{font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--color-text-tertiary);text-align:center;margin-bottom:6px}
+.ph{width:308px;background:#06041A;border-radius:46px;border:7px solid #12103A;overflow:hidden;flex-shrink:0;position:relative}
+.sc{background:#07051E;overflow:hidden;position:relative;font-family:'DM Sans',sans-serif}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:82px;height:24px;background:#06041A;border-radius:0 0 13px 13px;z-index:30;pointer-events:none}
+.sb{display:flex;align-items:center;justify-content:space-between;padding:42px 18px 6px}
+.sbt{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#EDE9FE}
+.sbi{display:flex;gap:5px;align-items:center}
+.sbi i{font-size:12px;color:#EDE9FE}
+.bnav{background:#0C0A26;border-top:0.5px solid rgba(167,139,250,.12);display:flex;padding:9px 4px 22px}
+.bt{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bt i{font-size:21px}
+.bt span{font-size:9px;font-weight:700;font-family:'DM Sans',sans-serif;letter-spacing:.04em}
+.bt.on i,.bt.on span{color:#F59E0B}
+.bt:not(.on) i,.bt:not(.on) span{color:#3D3270}
+.bk{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:rgba(237,233,254,.55);margin-bottom:12px}
+.bk i{font-size:19px}
+.hdr{background:#0E0B2E;padding:44px 20px 18px;position:relative;overflow:hidden}
+.hdr-circle{position:absolute;border-radius:50%;pointer-events:none}
+.ftitle{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;color:#EDE9FE;margin-bottom:4px}
+.fsub{font-size:12px;color:#6D5FA8;line-height:1.5}
+.card{background:#0E0B2E;border-radius:16px;overflow:hidden;border:1px solid rgba(167,139,250,.08);margin-bottom:10px}
+.card-hdr{padding:10px 14px 6px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#4A3E7A;border-bottom:0.5px solid rgba(167,139,250,.06)}
+.row-item{display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:0.5px solid rgba(167,139,250,.05)}
+.row-item:last-child{border-bottom:none}
+.ico{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ico i{font-size:17px}
+.lbl{font-size:13px;font-weight:700;color:#EDE9FE}
+.sub{font-size:11px;color:#6D5FA8}
+.chevron i{font-size:15px;color:#3D3270}
+.tag{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700}
+.pill-v{background:rgba(124,58,237,.18);border:1px solid rgba(167,139,250,.25);color:#A78BFA}
+.pill-g{background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.25);color:#14B8A6}
+.pill-a{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:#F59E0B}
+.pill-r{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#EF4444}
+.cta{background:#7C3AED;border-radius:13px;height:48px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+.cta span{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff}
+.cta i{font-size:18px;color:#FDE68A}
+.cta-ai{background:#160F35;border:1px solid rgba(124,58,237,.35);border-radius:13px;height:44px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+.cta-ai span{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#A78BFA}
+.cta-ai i{font-size:17px;color:#A78BFA}
+.input-f{background:#0E0B2E;border:1px solid rgba(167,139,250,.2);border-radius:12px;height:46px;display:flex;align-items:center;padding:0 14px;gap:10px}
+.input-f.focus{border-color:#7C3AED}
+.input-f span{font-size:14px;color:#EDE9FE}
+.input-f .ph-txt{font-size:14px;color:#4A3E7A}
+.flbl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6D5FA8;margin-bottom:6px}
+h2.sr-only{position:absolute;left:-9999px}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.stat-box{background:#0E0B2E;border-radius:14px;padding:12px;border:1px solid rgba(167,139,250,.1)}
+.stat-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:2px}
+.stat-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6D5FA8}
+.progress-bar{height:7px;background:#160F35;border-radius:4px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;border-radius:4px}
+.body{padding:14px 16px;background:#07051E}
+.toggle-on{width:40px;height:22px;border-radius:11px;background:#7C3AED;position:relative;flex-shrink:0}
+.toggle-on::after{content:'';position:absolute;right:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.toggle-off{width:40px;height:22px;border-radius:11px;background:rgba(167,139,250,.15);position:relative;flex-shrink:0}
+.toggle-off::after{content:'';position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#4A3E7A}
+</style>
+
+<h2 class="sr-only">FamilyHub — new features added: updated register with password confirm, forgot password, rent split, credit builder, energy tracker, lease AI, package tracker, maintenance rating, document signing, financial goals, community board, house search, resources, health, owner portal, neighborhood insights, move-in checklist</h2>
+
+<div class="wrap">
+
+<div class="sec"><span class="slbl">Auth — Updated &amp; New Screens</span></div>
+<div class="row">
+
+<div>
+<div class="pn">Register — confirm password</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:720px">
+  <div class="hdr">
+    <div class="hdr-circle" style="right:-20px;top:-20px;width:110px;height:110px;background:rgba(245,158,11,.09)"></div>
+    <div class="sb" style="padding:36px 0 14px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div style="width:40px;height:40px;border-radius:13px;background:rgba(124,58,237,.25);border:1.5px solid rgba(167,139,250,.3);display:flex;align-items:center;justify-content:center"><i class="ti ti-building-community" style="font-size:20px;color:#A78BFA" aria-hidden="true"></i></div>
+      <span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#EDE9FE">FamilyHub</span>
+    </div>
+    <div class="ftitle">Create account</div>
+    <div class="fsub">Choose your role to get started</div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <div style="flex:1;background:rgba(124,58,237,.22);border:1.5px solid #7C3AED;border-radius:11px;padding:10px;text-align:center"><i class="ti ti-home" style="font-size:17px;color:#A78BFA;display:block;margin-bottom:3px" aria-hidden="true"></i><div style="font-size:10px;font-weight:700;color:#A78BFA">Renter</div></div>
+      <div style="flex:1;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:11px;padding:10px;text-align:center"><i class="ti ti-key" style="font-size:17px;color:#4A3E7A;display:block;margin-bottom:3px" aria-hidden="true"></i><div style="font-size:10px;font-weight:700;color:#4A3E7A">Owner</div></div>
+      <div style="flex:1;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:11px;padding:10px;text-align:center"><i class="ti ti-users" style="font-size:17px;color:#4A3E7A;display:block;margin-bottom:3px" aria-hidden="true"></i><div style="font-size:10px;font-weight:700;color:#4A3E7A">Family</div></div>
+    </div>
+  </div>
+  <div class="body">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1"><div class="flbl">First</div><div class="input-f"><span>Sarah</span></div></div>
+      <div style="flex:1"><div class="flbl">Last</div><div class="input-f"><span>Johnson</span></div></div>
+    </div>
+    <div style="margin-bottom:10px"><div class="flbl">Email</div><div class="input-f focus"><i class="ti ti-mail" style="font-size:15px;color:#7C3AED" aria-hidden="true"></i><span>sarah@email.com</span></div></div>
+    <div style="margin-bottom:10px"><div class="flbl">Phone (optional)</div><div class="input-f"><i class="ti ti-phone" style="font-size:15px;color:#4A3E7A" aria-hidden="true"></i><span class="ph-txt">+1 (555) 000-0000</span></div></div>
+    <div style="margin-bottom:10px">
+      <div class="flbl">Password</div>
+      <div class="input-f"><i class="ti ti-lock" style="font-size:15px;color:#7C3AED" aria-hidden="true"></i><span style="flex:1;font-size:14px;color:#EDE9FE">••••••••</span><i class="ti ti-eye" style="font-size:15px;color:#6D5FA8" aria-hidden="true"></i></div>
+      <div style="display:flex;gap:4px;margin-top:6px">
+        <div style="flex:1;height:3px;border-radius:2px;background:#7C3AED"></div>
+        <div style="flex:1;height:3px;border-radius:2px;background:#7C3AED"></div>
+        <div style="flex:1;height:3px;border-radius:2px;background:#F59E0B"></div>
+        <div style="flex:1;height:3px;border-radius:2px;background:#160F35"></div>
+      </div>
+      <div style="font-size:10px;font-weight:600;color:#F59E0B;margin-top:4px">Strength: Fair — add symbols to strengthen</div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="flbl">Confirm password</div>
+      <div class="input-f" style="border-color:rgba(20,184,166,.45)"><i class="ti ti-lock" style="font-size:15px;color:#14B8A6" aria-hidden="true"></i><span style="flex:1;font-size:14px;color:#EDE9FE">••••••••</span><div style="width:20px;height:20px;border-radius:50%;background:#14B8A6;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-check" style="font-size:11px;color:#fff" aria-hidden="true"></i></div></div>
+      <div style="font-size:10px;font-weight:600;color:#14B8A6;margin-top:5px;display:flex;align-items:center;gap:4px"><i class="ti ti-circle-check" style="font-size:12px" aria-hidden="true"></i>Passwords match</div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:14px">
+      <div style="width:18px;height:18px;border-radius:5px;background:#7C3AED;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px"><i class="ti ti-check" style="font-size:11px;color:#fff" aria-hidden="true"></i></div>
+      <div style="font-size:11px;color:#6D5FA8;line-height:1.5">I agree to the <span style="color:#A78BFA;font-weight:700">Terms of Service</span> and <span style="color:#A78BFA;font-weight:700">Privacy Policy</span></div>
+    </div>
+    <div class="cta"><span>Create Account</span><i class="ti ti-arrow-right" aria-hidden="true"></i></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="flex:1;height:0.5px;background:rgba(167,139,250,.12)"></div><span style="font-size:10px;color:#4A3E7A;font-weight:600">or sign up with</span><div style="flex:1;height:0.5px;background:rgba(167,139,250,.12)"></div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+      <div style="background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:10px;height:40px;display:flex;align-items:center;justify-content:center"><i class="ti ti-brand-google" style="font-size:17px;color:#EDE9FE" aria-hidden="true"></i></div>
+      <div style="background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:10px;height:40px;display:flex;align-items:center;justify-content:center"><i class="ti ti-brand-apple" style="font-size:17px;color:#EDE9FE" aria-hidden="true"></i></div>
+      <div style="background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:10px;height:40px;display:flex;align-items:center;justify-content:center"><i class="ti ti-brand-facebook" style="font-size:17px;color:#EDE9FE" aria-hidden="true"></i></div>
+      <div style="background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:10px;height:40px;display:flex;align-items:center;justify-content:center"><i class="ti ti-brand-microsoft" style="font-size:17px;color:#EDE9FE" aria-hidden="true"></i></div>
+      <div style="background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:10px;height:40px;display:flex;align-items:center;justify-content:center"><i class="ti ti-brand-github" style="font-size:17px;color:#EDE9FE" aria-hidden="true"></i></div>
+      <div style="background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:10px;height:40px;display:flex;align-items:center;justify-content:center"><i class="ti ti-brand-x" style="font-size:17px;color:#EDE9FE" aria-hidden="true"></i></div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<div>
+<div class="pn">Forgot Password</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:600px">
+  <div class="hdr">
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back to login</div>
+    <div style="width:66px;height:66px;border-radius:22px;background:rgba(245,158,11,.12);border:1.5px solid rgba(245,158,11,.28);display:flex;align-items:center;justify-content:center;margin-bottom:14px"><i class="ti ti-key" style="font-size:30px;color:#F59E0B" aria-hidden="true"></i></div>
+    <div class="ftitle">Reset password</div>
+    <div class="fsub">We'll send a reset link to your email or a code to your phone.</div>
+  </div>
+  <div class="body">
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <div style="flex:1;background:#160F35;border:1.5px solid #7C3AED;border-radius:11px;padding:10px;text-align:center"><i class="ti ti-mail" style="font-size:17px;color:#A78BFA;display:block;margin-bottom:3px" aria-hidden="true"></i><div style="font-size:11px;font-weight:700;color:#A78BFA">Email link</div></div>
+      <div style="flex:1;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:11px;padding:10px;text-align:center"><i class="ti ti-device-mobile" style="font-size:17px;color:#4A3E7A;display:block;margin-bottom:3px" aria-hidden="true"></i><div style="font-size:11px;font-weight:700;color:#4A3E7A">SMS code</div></div>
+    </div>
+    <div style="margin-bottom:14px"><div class="flbl">Email address</div><div class="input-f focus"><i class="ti ti-mail" style="font-size:15px;color:#7C3AED" aria-hidden="true"></i><span>sarah@email.com</span></div></div>
+    <div class="cta" style="margin-bottom:16px"><i class="ti ti-send" aria-hidden="true"></i><span>Send Reset Link</span></div>
+    <div style="background:#0E0B2E;border-radius:14px;padding:16px;border:1px solid rgba(167,139,250,.1);margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:#EDE9FE;margin-bottom:12px">Check your email</div>
+      <div style="display:flex;gap:7px;margin-bottom:10px">
+        <div style="flex:1;background:#160F35;border:1.5px solid #7C3AED;border-radius:9px;height:46px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:#EDE9FE">8</div>
+        <div style="flex:1;background:#160F35;border:1.5px solid #7C3AED;border-radius:9px;height:46px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:#EDE9FE">3</div>
+        <div style="flex:1;background:#160F35;border:1.5px solid rgba(167,139,250,.3);border-radius:9px;height:46px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#4A3E7A">_</div>
+        <div style="flex:1;background:#0E0B2E;border:1px solid rgba(167,139,250,.1);border-radius:9px;height:46px"></div>
+        <div style="flex:1;background:#0E0B2E;border:1px solid rgba(167,139,250,.1);border-radius:9px;height:46px"></div>
+        <div style="flex:1;background:#0E0B2E;border:1px solid rgba(167,139,250,.1);border-radius:9px;height:46px"></div>
+      </div>
+      <div style="font-size:11px;color:#6D5FA8;text-align:center">Resend code in <span style="color:#A78BFA;font-weight:700">1:24</span></div>
+    </div>
+    <div style="margin-bottom:12px"><div class="flbl">New password</div><div class="input-f"><i class="ti ti-lock" style="font-size:15px;color:#7C3AED" aria-hidden="true"></i><span class="ph-txt">Enter new password</span><i class="ti ti-eye" style="font-size:15px;color:#6D5FA8" aria-hidden="true"></i></div></div>
+    <div style="margin-bottom:14px"><div class="flbl">Confirm new password</div><div class="input-f"><i class="ti ti-lock" style="font-size:15px;color:#4A3E7A" aria-hidden="true"></i><span class="ph-txt">Re-enter new password</span></div></div>
+    <div class="cta"><i class="ti ti-check" aria-hidden="true"></i><span>Reset Password</span></div>
+  </div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="sec"><span class="slbl">New — Rent Split &amp; Financial Tools</span></div>
+<div class="row">
+
+<div>
+<div class="pn">Rent Split &amp; Roommates</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:720px">
+  <div class="hdr">
+    <div class="hdr-circle" style="right:-20px;top:-20px;width:100px;height:100px;background:rgba(124,58,237,.15)"></div>
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="width:56px;height:56px;border-radius:18px;background:rgba(124,58,237,.18);border:1.5px solid rgba(167,139,250,.28);display:flex;align-items:center;justify-content:center;margin-bottom:12px"><i class="ti ti-users-group" style="font-size:26px;color:#A78BFA" aria-hidden="true"></i></div>
+    <div class="ftitle">Rent Split</div>
+    <div class="fsub">Split rent and bills fairly among all household members.</div>
+  </div>
+  <div class="body">
+    <div class="stat-grid">
+      <div class="stat-box" style="border-color:rgba(124,58,237,.2)"><div class="stat-lbl">Total rent</div><div class="stat-val" style="color:#A78BFA">$2,400</div></div>
+      <div class="stat-box" style="border-color:rgba(20,184,166,.2)"><div class="stat-lbl">Your share</div><div class="stat-val" style="color:#14B8A6">$800</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Household members (3)</div>
+      <div class="row-item"><div style="width:36px;height:36px;border-radius:11px;background:rgba(124,58,237,.2);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#A78BFA;flex-shrink:0">SJ</div><div style="flex:1"><div class="lbl">Sarah Johnson <span style="font-size:10px;background:rgba(245,158,11,.12);color:#F59E0B;padding:2px 7px;border-radius:6px;font-weight:700">You</span></div><div class="sub">1/3 share · $800/mo</div></div><div><div class="tag pill-g"><i class="ti ti-check" style="font-size:10px" aria-hidden="true"></i> Paid</div></div></div>
+      <div class="row-item"><div style="width:36px;height:36px;border-radius:11px;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#F59E0B;flex-shrink:0">MJ</div><div style="flex:1"><div class="lbl">Mike Johnson</div><div class="sub">1/3 share · $800/mo</div></div><div><div class="tag pill-g"><i class="ti ti-check" style="font-size:10px" aria-hidden="true"></i> Paid</div></div></div>
+      <div class="row-item"><div style="width:36px;height:36px;border-radius:11px;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#EF4444;flex-shrink:0">AT</div><div style="flex:1"><div class="lbl">Alex Torres</div><div class="sub">1/3 share · $800/mo</div></div><div><div class="tag pill-r"><i class="ti ti-clock" style="font-size:10px" aria-hidden="true"></i> Pending</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Shared bills this month</div>
+      <div class="row-item"><div class="ico" style="background:rgba(20,184,166,.1)"><i class="ti ti-bolt" style="color:#14B8A6" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Electricity</div><div class="sub">Each pays $42</div></div><div class="tag pill-a">$126 total</div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(124,58,237,.12)"><i class="ti ti-droplet" style="color:#A78BFA" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Water</div><div class="sub">Each pays $22</div></div><div class="tag pill-a">$66 total</div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(245,158,11,.1)"><i class="ti ti-wifi" style="color:#F59E0B" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Internet</div><div class="sub">Each pays $25</div></div><div class="tag pill-a">$75 total</div></div>
+    </div>
+    <div style="background:#160F35;border:1.5px dashed rgba(124,58,237,.28);border-radius:12px;height:42px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px"><i class="ti ti-user-plus" style="font-size:17px;color:#7C3AED" aria-hidden="true"></i><span style="font-size:13px;font-weight:700;color:#A78BFA">Invite a roommate</span></div>
+    <div class="cta"><i class="ti ti-send" aria-hidden="true"></i><span>Send Payment Reminders</span></div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt on"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+<div>
+<div class="pn">Credit Building Tracker</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:720px">
+  <div class="hdr" style="background:#0C0826">
+    <div class="hdr-circle" style="right:-24px;bottom:-24px;width:120px;height:120px;background:rgba(245,158,11,.08)"></div>
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="width:56px;height:56px;border-radius:18px;background:rgba(245,158,11,.12);border:1.5px solid rgba(245,158,11,.28);display:flex;align-items:center;justify-content:center;margin-bottom:12px"><i class="ti ti-award" style="font-size:26px;color:#F59E0B" aria-hidden="true"></i></div>
+    <div class="ftitle">Credit Builder</div>
+    <div class="fsub">Your on-time rent payments are building your credit score.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:14px">
+      <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6D5FA8;margin-bottom:4px">Est. credit score</div><div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:#F59E0B">724</div><div style="font-size:11px;font-weight:700;color:#14B8A6;margin-top:2px">+18 pts this year</div></div>
+      <div style="text-align:right"><div style="font-size:10px;color:#6D5FA8;margin-bottom:6px">Good</div><svg width="80" height="46" viewBox="0 0 80 46"><path d="M4 42 Q20 8 40 14 Q60 20 76 4" fill="none" stroke="rgba(245,158,11,0.25)" stroke-width="6" stroke-linecap="round"/><path d="M4 42 Q20 8 40 14 Q60 20 76 4" fill="none" stroke="#F59E0B" stroke-width="3" stroke-linecap="round" stroke-dasharray="120" stroke-dashoffset="30"/><circle cx="76" cy="4" r="5" fill="#F59E0B"/></svg></div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-hdr">Payment reporting</div>
+      <div class="row-item"><div class="ico" style="background:rgba(20,184,166,.1)"><i class="ti ti-building-bank" style="color:#14B8A6" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Experian</div><div class="sub">Reporting since Jan 2025</div></div><div class="toggle-on"></div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(124,58,237,.12)"><i class="ti ti-building-bank" style="color:#A78BFA" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">TransUnion</div><div class="sub">Reporting since Mar 2025</div></div><div class="toggle-on"></div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(245,158,11,.1)"><i class="ti ti-building-bank" style="color:#F59E0B" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Equifax</div><div class="sub">Not connected</div></div><div class="toggle-off"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">On-time payments (12 months)</div>
+      <div style="padding:12px 14px">
+        <div style="display:flex;gap:4px;margin-bottom:8px">
+          <div style="flex:1;height:28px;background:#14B8A6;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">J</div>
+          <div style="flex:1;height:28px;background:#14B8A6;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">F</div>
+          <div style="flex:1;height:28px;background:#14B8A6;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">M</div>
+          <div style="flex:1;height:28px;background:#14B8A6;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">A</div>
+          <div style="flex:1;height:28px;background:#14B8A6;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">M</div>
+          <div style="flex:1;height:28px;background:#7C3AED;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">J</div>
+          <div style="flex:1;height:28px;background:#160F35;border-radius:4px;border:1px solid rgba(167,139,250,.15)"></div>
+          <div style="flex:1;height:28px;background:#160F35;border-radius:4px;border:1px solid rgba(167,139,250,.15)"></div>
+          <div style="flex:1;height:28px;background:#160F35;border-radius:4px;border:1px solid rgba(167,139,250,.15)"></div>
+          <div style="flex:1;height:28px;background:#160F35;border-radius:4px;border:1px solid rgba(167,139,250,.15)"></div>
+          <div style="flex:1;height:28px;background:#160F35;border-radius:4px;border:1px solid rgba(167,139,250,.15)"></div>
+          <div style="flex:1;height:28px;background:#160F35;border-radius:4px;border:1px solid rgba(167,139,250,.15)"></div>
+        </div>
+        <div style="font-size:11px;color:#6D5FA8">6/12 months reported · <span style="color:#14B8A6;font-weight:700">6 on-time</span> · <span style="color:#EF4444;font-weight:700">0 missed</span></div>
+      </div>
+    </div>
+    <div class="cta-ai"><i class="ti ti-sparkles" aria-hidden="true"></i><span>AI credit improvement tips</span></div>
+    <div class="cta"><i class="ti ti-chart-line" aria-hidden="true"></i><span>View Full Credit Report</span></div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt on"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="row">
+
+<div>
+<div class="pn">Financial Goal Planner</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:680px">
+  <div class="hdr">
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="width:56px;height:56px;border-radius:18px;background:rgba(20,184,166,.12);border:1.5px solid rgba(20,184,166,.28);display:flex;align-items:center;justify-content:center;margin-bottom:12px"><i class="ti ti-target" style="font-size:26px;color:#14B8A6" aria-hidden="true"></i></div>
+    <div class="ftitle">Financial Goals</div>
+    <div class="fsub">Save for a deposit, moving costs, or your first home.</div>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-hdr">Active goals</div>
+      <div style="padding:14px">
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:8px;background:rgba(124,58,237,.18);display:flex;align-items:center;justify-content:center"><i class="ti ti-home" style="font-size:14px;color:#A78BFA" aria-hidden="true"></i></div><div><div class="lbl" style="font-size:12px">Security deposit</div><div class="sub" style="font-size:10px">Goal: $3,500</div></div></div>
+            <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#A78BFA">$2,380</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:68%;background:#7C3AED"></div></div>
+          <div style="font-size:10px;color:#6D5FA8;margin-top:4px">68% · Est. Aug 2026</div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:8px;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center"><i class="ti ti-truck" style="font-size:14px;color:#F59E0B" aria-hidden="true"></i></div><div><div class="lbl" style="font-size:12px">Moving costs</div><div class="sub" style="font-size:10px">Goal: $1,200</div></div></div>
+            <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#F59E0B">$520</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:43%;background:#F59E0B"></div></div>
+          <div style="font-size:10px;color:#6D5FA8;margin-top:4px">43% · Est. Dec 2026</div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:8px;background:rgba(20,184,166,.12);display:flex;align-items:center;justify-content:center"><i class="ti ti-building-estate" style="font-size:14px;color:#14B8A6" aria-hidden="true"></i></div><div><div class="lbl" style="font-size:12px">First home down payment</div><div class="sub" style="font-size:10px">Goal: $40,000</div></div></div>
+            <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#14B8A6">$4,200</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:10%;background:#14B8A6"></div></div>
+          <div style="font-size:10px;color:#6D5FA8;margin-top:4px">10% · Long term goal</div>
+        </div>
+      </div>
+    </div>
+    <div style="background:#160F35;border:1.5px dashed rgba(20,184,166,.25);border-radius:12px;height:42px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px"><i class="ti ti-plus" style="font-size:17px;color:#14B8A6" aria-hidden="true"></i><span style="font-size:13px;font-weight:700;color:#14B8A6">Add a new goal</span></div>
+    <div class="cta-ai"><i class="ti ti-sparkles" aria-hidden="true"></i><span>AI savings strategy for my goals</span></div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt on"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+<div>
+<div class="pn">Energy &amp; Utilities</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:680px">
+  <div class="hdr" style="background:#0A0C22">
+    <div class="hdr-circle" style="left:-20px;bottom:-20px;width:110px;height:110px;background:rgba(20,184,166,.1)"></div>
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="width:56px;height:56px;border-radius:18px;background:rgba(20,184,166,.12);border:1.5px solid rgba(20,184,166,.28);display:flex;align-items:center;justify-content:center;margin-bottom:12px"><i class="ti ti-bolt" style="font-size:26px;color:#14B8A6" aria-hidden="true"></i></div>
+    <div class="ftitle">Energy &amp; Utilities</div>
+    <div class="fsub">Track usage, compare bills, and cut costs with AI tips.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px">
+      <div style="background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.2);border-radius:12px;padding:10px;text-align:center"><i class="ti ti-bolt" style="font-size:18px;color:#14B8A6;display:block;margin-bottom:4px" aria-hidden="true"></i><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#14B8A6">$88</div><div style="font-size:9px;font-weight:700;color:#6D5FA8;text-transform:uppercase;letter-spacing:.07em">Electric</div></div>
+      <div style="background:rgba(124,58,237,.12);border:1px solid rgba(167,139,250,.2);border-radius:12px;padding:10px;text-align:center"><i class="ti ti-droplet" style="font-size:18px;color:#A78BFA;display:block;margin-bottom:4px" aria-hidden="true"></i><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#A78BFA">$44</div><div style="font-size:9px;font-weight:700;color:#6D5FA8;text-transform:uppercase;letter-spacing:.07em">Water</div></div>
+      <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:10px;text-align:center"><i class="ti ti-flame" style="font-size:18px;color:#F59E0B;display:block;margin-bottom:4px" aria-hidden="true"></i><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#F59E0B">$62</div><div style="font-size:9px;font-weight:700;color:#6D5FA8;text-transform:uppercase;letter-spacing:.07em">Gas</div></div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-hdr">Electricity — 6 month trend (kWh)</div>
+      <div style="padding:12px 14px">
+        <div style="display:flex;align-items:flex-end;gap:6px;height:60px;margin-bottom:6px">
+          <div style="flex:1;background:#160F35;border-radius:4px 4px 0 0;height:70%;position:relative"><div style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:8px;color:#6D5FA8;white-space:nowrap;padding-bottom:2px">340</div></div>
+          <div style="flex:1;background:#160F35;border-radius:4px 4px 0 0;height:80%"></div>
+          <div style="flex:1;background:#160F35;border-radius:4px 4px 0 0;height:90%"></div>
+          <div style="flex:1;background:#160F35;border-radius:4px 4px 0 0;height:75%"></div>
+          <div style="flex:1;background:#160F35;border-radius:4px 4px 0 0;height:60%"></div>
+          <div style="flex:1;background:#14B8A6;border-radius:4px 4px 0 0;height:50%;position:relative"><div style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:8px;color:#14B8A6;font-weight:700;white-space:nowrap;padding-bottom:2px">248</div></div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <div style="flex:1;font-size:9px;color:#4A3E7A;text-align:center">Jan</div>
+          <div style="flex:1;font-size:9px;color:#4A3E7A;text-align:center">Feb</div>
+          <div style="flex:1;font-size:9px;color:#4A3E7A;text-align:center">Mar</div>
+          <div style="flex:1;font-size:9px;color:#4A3E7A;text-align:center">Apr</div>
+          <div style="flex:1;font-size:9px;color:#4A3E7A;text-align:center">May</div>
+          <div style="flex:1;font-size:9px;color:#14B8A6;text-align:center;font-weight:700">Jun</div>
+        </div>
+        <div style="margin-top:8px;background:#0C2820;border-radius:8px;padding:8px 10px;border:1px solid rgba(20,184,166,.18)"><span style="font-size:11px;color:#14B8A6;font-weight:700">Down 27%</span><span style="font-size:11px;color:#6D5FA8"> vs this time last year</span></div>
+      </div>
+    </div>
+    <div class="cta-ai"><i class="ti ti-sparkles" aria-hidden="true"></i><span>Get AI energy-saving tips</span></div>
+    <div class="card" style="margin-top:8px">
+      <div class="card-hdr">AI tips for you</div>
+      <div class="row-item"><div class="ico" style="background:rgba(20,184,166,.1)"><i class="ti ti-temperature" style="color:#14B8A6" aria-hidden="true"></i></div><div><div class="lbl">Set thermostat to 68°F at night</div><div class="sub">Could save ~$12/mo</div></div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(245,158,11,.1)"><i class="ti ti-sun" style="color:#F59E0B" aria-hidden="true"></i></div><div><div class="lbl">Run dishwasher in off-peak hours</div><div class="sub">Could save ~$8/mo</div></div></div>
+    </div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt on"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="sec"><span class="slbl">New — Home Management</span></div>
+<div class="row">
+
+<div>
+<div class="pn">Move-in / Move-out Checklist</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:720px">
+  <div class="hdr">
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="width:56px;height:56px;border-radius:18px;background:rgba(236,72,153,.1);border:1.5px solid rgba(236,72,153,.25);display:flex;align-items:center;justify-content:center;margin-bottom:12px"><i class="ti ti-checklist" style="font-size:26px;color:#EC4899" aria-hidden="true"></i></div>
+    <div class="ftitle">Move-in Checklist</div>
+    <div class="fsub">Photo-documented condition report timestamped and tied to your lease.</div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <div style="flex:1;background:rgba(236,72,153,.18);border:1.5px solid #EC4899;border-radius:11px;padding:8px;text-align:center;font-size:11px;font-weight:700;color:#EC4899">Move-in</div>
+      <div style="flex:1;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:11px;padding:8px;text-align:center;font-size:11px;font-weight:700;color:#4A3E7A">Move-out</div>
+    </div>
+  </div>
+  <div class="body">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:11px;font-weight:700;color:#6D5FA8">14 of 20 items complete</span><span class="tag pill-a">70%</span></div>
+    <div class="card">
+      <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">Living Room <span class="tag pill-g">Done</span></div>
+      <div class="row-item"><div style="width:22px;height:22px;border-radius:6px;background:#7C3AED;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-check" style="font-size:12px;color:#fff" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl" style="font-size:12px">Walls — no damage</div><div class="sub">Photo added · May 20</div></div><div style="width:32px;height:32px;border-radius:8px;background:#160F35;display:flex;align-items:center;justify-content:center"><i class="ti ti-camera" style="font-size:14px;color:#6D5FA8" aria-hidden="true"></i></div></div>
+      <div class="row-item"><div style="width:22px;height:22px;border-radius:6px;background:#7C3AED;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-check" style="font-size:12px;color:#fff" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl" style="font-size:12px">Flooring — condition noted</div><div class="sub">Photo added · May 20</div></div><div style="width:32px;height:32px;border-radius:8px;background:#160F35;display:flex;align-items:center;justify-content:center"><i class="ti ti-camera" style="font-size:14px;color:#6D5FA8" aria-hidden="true"></i></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">Kitchen <span class="tag pill-a">In progress</span></div>
+      <div class="row-item"><div style="width:22px;height:22px;border-radius:6px;background:#7C3AED;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-check" style="font-size:12px;color:#fff" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl" style="font-size:12px">Appliances working</div><div class="sub">Verified</div></div></div>
+      <div class="row-item"><div style="width:22px;height:22px;border-radius:6px;border:1.5px solid rgba(167,139,250,.25);flex-shrink:0"></div><div style="flex:1"><div class="lbl" style="font-size:12px">Cabinets — take photo</div><div class="sub">Not done yet</div></div><div style="width:32px;height:32px;border-radius:8px;background:rgba(124,58,237,.18);display:flex;align-items:center;justify-content:center"><i class="ti ti-camera-plus" style="font-size:14px;color:#A78BFA" aria-hidden="true"></i></div></div>
+      <div class="row-item"><div style="width:22px;height:22px;border-radius:6px;border:1.5px solid rgba(167,139,250,.25);flex-shrink:0"></div><div style="flex:1"><div class="lbl" style="font-size:12px">Counters — scratch check</div><div class="sub">Not done yet</div></div></div>
+    </div>
+    <div class="cta"><i class="ti ti-file-check" aria-hidden="true"></i><span>Submit &amp; Sign Report</span></div>
+    <div class="cta-ai"><i class="ti ti-sparkles" aria-hidden="true"></i><span>AI checklist guidance</span></div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt on"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+<div>
+<div class="pn">Package Tracker</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:680px">
+  <div class="hdr">
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="width:56px;height:56px;border-radius:18px;background:rgba(245,158,11,.12);border:1.5px solid rgba(245,158,11,.28);display:flex;align-items:center;justify-content:center;margin-bottom:12px"><i class="ti ti-package" style="font-size:26px;color:#F59E0B" aria-hidden="true"></i></div>
+    <div class="ftitle">Package Tracker</div>
+    <div class="fsub">Log deliveries, mark received, and flag missing packages to your landlord.</div>
+  </div>
+  <div class="body">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1;background:#0E0B2E;border-radius:12px;padding:11px;text-align:center;border:1px solid rgba(245,158,11,.18)"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:#F59E0B">3</div><div style="font-size:10px;font-weight:700;color:#6D5FA8;text-transform:uppercase;letter-spacing:.07em">Expected</div></div>
+      <div style="flex:1;background:#0E0B2E;border-radius:12px;padding:11px;text-align:center;border:1px solid rgba(20,184,166,.18)"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:#14B8A6">12</div><div style="font-size:10px;font-weight:700;color:#6D5FA8;text-transform:uppercase;letter-spacing:.07em">Received</div></div>
+      <div style="flex:1;background:#0E0B2E;border-radius:12px;padding:11px;text-align:center;border:1px solid rgba(239,68,68,.15)"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:#EF4444">1</div><div style="font-size:10px;font-weight:700;color:#6D5FA8;text-transform:uppercase;letter-spacing:.07em">Missing</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Active deliveries</div>
+      <div class="row-item"><div class="ico" style="background:rgba(245,158,11,.1)"><i class="ti ti-package" style="color:#F59E0B" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Amazon order #4921</div><div class="sub">Arriving today by 8pm · UPS</div></div><div class="tag pill-a">Today</div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(124,58,237,.12)"><i class="ti ti-package" style="color:#A78BFA" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Target delivery</div><div class="sub">May 27 · FedEx</div></div><div class="tag pill-v">2 days</div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(239,68,68,.1)"><i class="ti ti-package-off" style="color:#EF4444" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Chewy order #7043</div><div class="sub" style="color:#EF4444">Marked delivered — not found</div></div><div class="tag pill-r">Missing</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Recently received</div>
+      <div class="row-item"><div class="ico" style="background:rgba(20,184,166,.1)"><i class="ti ti-circle-check" style="color:#14B8A6" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">IKEA furniture</div><div class="sub">Received May 22 · Signed</div></div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(20,184,166,.1)"><i class="ti ti-circle-check" style="color:#14B8A6" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Instacart grocery box</div><div class="sub">Received May 21 · Left at door</div></div></div>
+    </div>
+    <div style="background:#160F35;border:1.5px dashed rgba(167,139,250,.2);border-radius:12px;height:42px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px"><i class="ti ti-plus" style="font-size:17px;color:#7C3AED" aria-hidden="true"></i><span style="font-size:13px;font-weight:700;color:#A78BFA">Add tracking number</span></div>
+    <div style="background:#160F35;border:1px solid rgba(239,68,68,.25);border-radius:12px;height:42px;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ti ti-alert-triangle" style="font-size:17px;color:#EF4444" aria-hidden="true"></i><span style="font-size:13px;font-weight:700;color:#EF4444">Report missing to landlord</span></div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt on"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="sec"><span class="slbl">New — Smart Features &amp; Community</span></div>
+<div class="row">
+
+<div>
+<div class="pn">Lease Renewal Assistant</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:700px">
+  <div class="hdr">
+    <div class="hdr-circle" style="right:-16px;top:-16px;width:100px;height:100px;background:rgba(124,58,237,.12)"></div>
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="width:56px;height:56px;border-radius:18px;background:rgba(124,58,237,.18);border:1.5px solid rgba(167,139,250,.28);display:flex;align-items:center;justify-content:center;margin-bottom:12px"><i class="ti ti-file-text" style="font-size:26px;color:#A78BFA" aria-hidden="true"></i></div>
+    <div class="ftitle">Lease Renewal AI</div>
+    <div class="fsub">AI-guided negotiation prep with market data, talking points, and a draft email.</div>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-hdr">Your lease details</div>
+      <div class="row-item"><i class="ti ti-calendar" style="font-size:17px;color:#A78BFA;flex-shrink:0" aria-hidden="true"></i><div style="flex:1"><div class="sub">Lease expires</div><div class="lbl">December 31, 2026</div></div><div class="tag pill-v">224 days</div></div>
+      <div class="row-item"><i class="ti ti-receipt" style="font-size:17px;color:#F59E0B;flex-shrink:0" aria-hidden="true"></i><div style="flex:1"><div class="sub">Current rent</div><div class="lbl">$1,850 / month</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Market comparison — Springfield, IL</div>
+      <div style="padding:12px 14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="flex:1"><div class="sub" style="font-size:10px;margin-bottom:4px">Your rent</div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#EDE9FE">$1,850</div></div>
+          <div style="flex:1"><div class="sub" style="font-size:10px;margin-bottom:4px">Avg nearby (3-bed)</div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#14B8A6">$1,780</div></div>
+          <div style="flex:1"><div class="sub" style="font-size:10px;margin-bottom:4px">You pay above</div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#F59E0B">+$70</div></div>
+        </div>
+        <div style="background:#0C2820;border-radius:8px;padding:8px 10px;border:1px solid rgba(20,184,166,.18)"><span style="font-size:11px;color:#14B8A6;font-weight:700">Good leverage:</span><span style="font-size:11px;color:#6D5FA8"> You're paying above market. Use this in negotiation.</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">AI talking points</div>
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <div style="background:#160F35;border-radius:10px;padding:10px;border-left:3px solid #7C3AED;border-radius:0 10px 10px 0"><div style="font-size:12px;font-weight:700;color:#EDE9FE;margin-bottom:2px">Comparable units</div><div style="font-size:11px;color:#6D5FA8">3 nearby units rent for $1,780 avg. Request a match.</div></div>
+        <div style="background:#160F35;border-radius:10px;padding:10px;border-left:3px solid #14B8A6;border-radius:0 10px 10px 0"><div style="font-size:12px;font-weight:700;color:#EDE9FE;margin-bottom:2px">Payment history</div><div style="font-size:11px;color:#6D5FA8">Perfect on-time record for 18 months — valuable to highlight.</div></div>
+        <div style="background:#160F35;border-radius:10px;padding:10px;border-left:3px solid #F59E0B;border-radius:0 10px 10px 0"><div style="font-size:12px;font-weight:700;color:#EDE9FE;margin-bottom:2px">Vacancy cost</div><div style="font-size:11px;color:#6D5FA8">Landlord faces 1–2 months vacancy. Retention saves them ~$3,700.</div></div>
+      </div>
+    </div>
+    <div class="cta"><i class="ti ti-mail" aria-hidden="true"></i><span>Draft Negotiation Email</span></div>
+    <div class="cta-ai" style="margin-bottom:4px"><i class="ti ti-sparkles" aria-hidden="true"></i><span>AI full renewal strategy</span></div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt on"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+<div>
+<div class="pn">Community Board</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:700px">
+  <div class="hdr">
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div><div style="font-family:'Syne',sans-serif;font-size:21px;font-weight:800;color:#EDE9FE;margin-bottom:3px">Community Board</div><div style="font-size:12px;color:#6D5FA8">Springfield, IL · 0.5 mi radius</div></div>
+      <div style="width:36px;height:36px;border-radius:11px;background:#7C3AED;display:flex;align-items:center;justify-content:center"><i class="ti ti-edit" style="font-size:18px;color:#FDE68A" aria-hidden="true"></i></div>
+    </div>
+    <div style="display:flex;gap:7px;margin-top:12px;overflow-x:auto;padding-bottom:2px">
+      <div style="flex-shrink:0;background:#7C3AED;border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;color:#fff">All</div>
+      <div style="flex-shrink:0;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;color:#6D5FA8">Events</div>
+      <div style="flex-shrink:0;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;color:#6D5FA8">Lost &amp; Found</div>
+      <div style="flex-shrink:0;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;color:#6D5FA8">Recs</div>
+    </div>
+  </div>
+  <div class="body">
+    <div style="background:#0E0B2E;border-radius:16px;padding:14px;margin-bottom:10px;border:1px solid rgba(245,158,11,.18)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:30px;height:30px;border-radius:9px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#F59E0B">LK</div><div><div style="font-size:12px;font-weight:700;color:#EDE9FE">Lisa K.</div><div style="font-size:10px;color:#6D5FA8">2 hours ago · 0.2 mi away</div></div><div class="tag pill-a" style="margin-left:auto">Event</div></div>
+      <div style="font-size:13px;color:#EDE9FE;margin-bottom:6px;line-height:1.5">Block party this Saturday at Riverside Park! Bring food to share. All families welcome.</div>
+      <div style="display:flex;gap:12px"><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#6D5FA8"><i class="ti ti-heart" style="font-size:14px;color:#EC4899" aria-hidden="true"></i> 24 likes</div><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#6D5FA8"><i class="ti ti-message" style="font-size:14px" aria-hidden="true"></i> 8 replies</div></div>
+    </div>
+    <div style="background:#0E0B2E;border-radius:16px;padding:14px;margin-bottom:10px;border:1px solid rgba(239,68,68,.15)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:30px;height:30px;border-radius:9px;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#EF4444">TM</div><div><div style="font-size:12px;font-weight:700;color:#EDE9FE">Tom M.</div><div style="font-size:10px;color:#6D5FA8">5 hours ago · 0.1 mi away</div></div><div class="tag pill-r" style="margin-left:auto">Lost pet</div></div>
+      <div style="font-size:13px;color:#EDE9FE;margin-bottom:6px;line-height:1.5">Lost our golden retriever "Biscuit" near Oak Ave. Brown collar, very friendly. Please call if found!</div>
+      <div style="display:flex;gap:12px"><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#6D5FA8"><i class="ti ti-heart" style="font-size:14px" aria-hidden="true"></i> 31 likes</div><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#6D5FA8"><i class="ti ti-message" style="font-size:14px" aria-hidden="true"></i> 12 replies</div></div>
+    </div>
+    <div style="background:#0E0B2E;border-radius:16px;padding:14px;margin-bottom:10px;border:1px solid rgba(124,58,237,.15)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:30px;height:30px;border-radius:9px;background:rgba(124,58,237,.15);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#A78BFA">AR</div><div><div style="font-size:12px;font-weight:700;color:#EDE9FE">Ana R.</div><div style="font-size:10px;color:#6D5FA8">1 day ago · 0.4 mi away</div></div><div class="tag pill-v" style="margin-left:auto">Rec</div></div>
+      <div style="font-size:13px;color:#EDE9FE;margin-bottom:6px;line-height:1.5">Best plumber in the area — Mike's Plumbing on 5th St. Fixed our leak in under an hour, very fair pricing.</div>
+      <div style="display:flex;gap:12px"><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#6D5FA8"><i class="ti ti-heart" style="font-size:14px;color:#EC4899" aria-hidden="true"></i> 17 likes</div><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#6D5FA8"><i class="ti ti-message" style="font-size:14px" aria-hidden="true"></i> 4 replies</div></div>
+    </div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt on"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="sec"><span class="slbl">New — Document Signing &amp; Neighborhood</span></div>
+<div class="row">
+
+<div>
+<div class="pn">In-App Document Signing</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:680px">
+  <div class="hdr">
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="width:56px;height:56px;border-radius:18px;background:rgba(20,184,166,.12);border:1.5px solid rgba(20,184,166,.25);display:flex;align-items:center;justify-content:center;margin-bottom:12px"><i class="ti ti-signature" style="font-size:26px;color:#14B8A6" aria-hidden="true"></i></div>
+    <div class="ftitle">Sign Document</div>
+    <div class="fsub">Sign lease renewals, addenda, and inspection reports without leaving the app.</div>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-hdr">Document ready to sign</div>
+      <div style="padding:14px">
+        <div style="background:#160F35;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid rgba(167,139,250,.12)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><i class="ti ti-file-text" style="font-size:22px;color:#A78BFA" aria-hidden="true"></i><div><div class="lbl">Lease Renewal 2027</div><div class="sub">Landlord: R. Thompson · 4 pages</div></div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div class="tag pill-a"><i class="ti ti-clock" style="font-size:10px" aria-hidden="true"></i> Awaiting your sign</div>
+            <div class="tag pill-g"><i class="ti ti-check" style="font-size:10px" aria-hidden="true"></i> Landlord signed</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:6px;background:#7C3AED;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-check" style="font-size:11px;color:#fff" aria-hidden="true"></i></div><div style="font-size:12px;color:#EDE9FE">I have read all pages</div></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:6px;background:#7C3AED;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-check" style="font-size:11px;color:#fff" aria-hidden="true"></i></div><div style="font-size:12px;color:#EDE9FE">I agree to the terms</div></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:6px;border:1.5px solid rgba(167,139,250,.25);flex-shrink:0"></div><div style="font-size:12px;color:#6D5FA8">I want AI to review first</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="background:#0E0B2E;border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid rgba(167,139,250,.1)">
+      <div style="font-size:11px;font-weight:700;color:#EDE9FE;margin-bottom:10px">Draw your signature</div>
+      <div style="background:#160F35;border-radius:10px;height:70px;border:1.5px dashed rgba(167,139,250,.2);display:flex;align-items:center;justify-content:center;margin-bottom:8px">
+        <svg width="140" height="40" viewBox="0 0 140 40"><path d="M10 30 Q25 8 40 22 Q55 36 70 18 Q85 4 100 20 Q115 36 130 14" fill="none" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="display:flex;gap:8px"><div style="flex:1;background:#0E0B2E;border:1px solid rgba(239,68,68,.2);border-radius:9px;height:34px;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-trash" style="font-size:14px;color:#EF4444" aria-hidden="true"></i><span style="font-size:11px;font-weight:700;color:#EF4444">Clear</span></div><div style="font-size:11px;color:#6D5FA8;display:flex;align-items:center;padding:0 8px">or use</div><div style="flex:1;background:#0E0B2E;border:1px solid rgba(167,139,250,.18);border-radius:9px;height:34px;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-fingerprint" style="font-size:14px;color:#A78BFA" aria-hidden="true"></i><span style="font-size:11px;font-weight:700;color:#A78BFA">Biometric</span></div></div>
+    </div>
+    <div class="cta"><i class="ti ti-signature" aria-hidden="true"></i><span>Sign &amp; Submit Document</span></div>
+    <div class="cta-ai"><i class="ti ti-sparkles" aria-hidden="true"></i><span>AI — review this lease first</span></div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt on"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+<div>
+<div class="pn">Neighborhood Insights</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:680px">
+  <div class="hdr">
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div><div class="ftitle">Neighborhood</div><div class="fsub">Springfield, IL · 62701</div></div>
+      <div style="width:36px;height:36px;border-radius:11px;background:rgba(124,58,237,.18);display:flex;align-items:center;justify-content:center"><i class="ti ti-map-pin" style="font-size:18px;color:#A78BFA" aria-hidden="true"></i></div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="stat-grid" style="gap:8px">
+      <div class="stat-box" style="border-color:rgba(20,184,166,.2)"><div class="stat-lbl">Walk score</div><div class="stat-val" style="color:#14B8A6">82</div><div style="font-size:10px;color:#6D5FA8;margin-top:1px">Very walkable</div></div>
+      <div class="stat-box" style="border-color:rgba(124,58,237,.2)"><div class="stat-lbl">Transit score</div><div class="stat-val" style="color:#A78BFA">74</div><div style="font-size:10px;color:#6D5FA8;margin-top:1px">Excellent transit</div></div>
+      <div class="stat-box" style="border-color:rgba(245,158,11,.18)"><div class="stat-lbl">School rating</div><div class="stat-val" style="color:#F59E0B">4.6</div><div style="font-size:10px;color:#6D5FA8;margin-top:1px">Above average</div></div>
+      <div class="stat-box" style="border-color:rgba(20,184,166,.2)"><div class="stat-lbl">Safety index</div><div class="stat-val" style="color:#14B8A6">B+</div><div style="font-size:10px;color:#6D5FA8;margin-top:1px">Generally safe</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Noise levels by time</div>
+      <div style="padding:12px 14px">
+        <div style="display:flex;align-items:flex-end;gap:5px;height:50px;margin-bottom:6px">
+          <div style="flex:1;border-radius:3px 3px 0 0;background:#14B8A6" style="height:30%"></div>
+          <div style="flex:1;border-radius:3px 3px 0 0;background:#14B8A6;height:20%"></div>
+          <div style="flex:1;border-radius:3px 3px 0 0;background:#F59E0B;height:70%"></div>
+          <div style="flex:1;border-radius:3px 3px 0 0;background:#F59E0B;height:90%"></div>
+          <div style="flex:1;border-radius:3px 3px 0 0;background:#EF4444;height:100%"></div>
+          <div style="flex:1;border-radius:3px 3px 0 0;background:#F59E0B;height:80%"></div>
+          <div style="flex:1;border-radius:3px 3px 0 0;background:#F59E0B;height:60%"></div>
+          <div style="flex:1;border-radius:3px 3px 0 0;background:#14B8A6;height:30%"></div>
+        </div>
+        <div style="display:flex;gap:5px"><div style="flex:1;font-size:8px;color:#4A3E7A;text-align:center">6am</div><div style="flex:1;font-size:8px;color:#4A3E7A;text-align:center">9am</div><div style="flex:1;font-size:8px;color:#4A3E7A;text-align:center">12pm</div><div style="flex:1;font-size:8px;color:#4A3E7A;text-align:center">3pm</div><div style="flex:1;font-size:8px;color:#4A3E7A;text-align:center">6pm</div><div style="flex:1;font-size:8px;color:#4A3E7A;text-align:center">8pm</div><div style="flex:1;font-size:8px;color:#4A3E7A;text-align:center">10pm</div><div style="flex:1;font-size:8px;color:#4A3E7A;text-align:center">12am</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Local highlights</div>
+      <div class="row-item"><div class="ico" style="background:rgba(20,184,166,.1)"><i class="ti ti-school" style="color:#14B8A6" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Washington Elementary</div><div class="sub">Top-rated · 0.8 mi away</div></div><div class="tag pill-g">A+</div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(124,58,237,.12)"><i class="ti ti-trees" style="color:#A78BFA" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Riverside Park</div><div class="sub">0.3 mi · Family-friendly</div></div><div class="tag pill-v">Near</div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(239,68,68,.1)"><i class="ti ti-shield" style="color:#EF4444" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Crime incidents</div><div class="sub">Below city avg · Low risk</div></div><div class="tag pill-g">Low</div></div>
+    </div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt on"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="sec"><span class="slbl">Improved Existing — House Search &amp; Owner Portal</span></div>
+<div class="row">
+
+<div>
+<div class="pn">House Search — Improved</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:700px">
+  <div class="hdr">
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="display:flex;align-items:center;gap:8px;background:#160F35;border-radius:12px;height:44px;padding:0 12px;border:1.5px solid rgba(124,58,237,.3);margin-bottom:10px"><i class="ti ti-search" style="font-size:16px;color:#A78BFA" aria-hidden="true"></i><span style="font-size:13px;color:#EDE9FE;flex:1">Springfield, IL</span><i class="ti ti-map" style="font-size:16px;color:#6D5FA8" aria-hidden="true"></i></div>
+    <div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:2px">
+      <div style="flex-shrink:0;background:#7C3AED;border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;color:#fff">All</div>
+      <div style="flex-shrink:0;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;color:#6D5FA8">For rent</div>
+      <div style="flex-shrink:0;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;color:#6D5FA8">For sale</div>
+      <div style="flex-shrink:0;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;color:#6D5FA8">1–2 bed</div>
+      <div style="flex-shrink:0;background:#0E0B2E;border:1px solid rgba(167,139,250,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;color:#6D5FA8;display:flex;align-items:center;gap:4px"><i class="ti ti-sliders-horizontal" style="font-size:11px" aria-hidden="true"></i>Filters</div>
+    </div>
+  </div>
+  <div class="body">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:12px;font-weight:700;color:#6D5FA8">24 results</span><div style="display:flex;gap:8px"><div style="width:32px;height:32px;border-radius:9px;background:#160F35;border:1px solid rgba(167,139,250,.15);display:flex;align-items:center;justify-content:center"><i class="ti ti-list" style="font-size:16px;color:#A78BFA" aria-hidden="true"></i></div><div style="width:32px;height:32px;border-radius:9px;background:#7C3AED;display:flex;align-items:center;justify-content:center"><i class="ti ti-map" style="font-size:16px;color:#fff" aria-hidden="true"></i></div></div></div>
+    <div style="background:#0E0B2E;border-radius:18px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(167,139,250,.1)">
+      <div style="height:150px;background:#131826;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">
+        <svg width="100%" height="100%" viewBox="0 0 294 150" style="position:absolute;inset:0"><rect fill="#131826" width="294" height="150"/><rect x="60" y="50" width="80" height="70" fill="#1A2235" rx="4"/><rect x="80" y="30" width="40" height="25" fill="#1A2235" rx="2"/><rect x="164" y="60" width="70" height="60" fill="#172030" rx="4"/><rect x="10" y="70" width="50" height="50" fill="#1A2235" rx="3"/><rect x="230" y="50" width="55" height="70" fill="#172030" rx="3"/></svg>
+        <div style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:9px;background:rgba(14,11,46,.85);display:flex;align-items:center;justify-content:center"><i class="ti ti-heart" style="font-size:16px;color:#EC4899" aria-hidden="true"></i></div>
+        <div style="position:absolute;top:10px;left:10px;background:#7C3AED;border-radius:7px;padding:3px 9px;font-size:10px;font-weight:700;color:#fff">For rent</div>
+        <div style="position:absolute;bottom:10px;left:10px;display:flex;gap:5px"><span class="tag pill-g">Pet-friendly</span><span class="tag pill-v">Parking</span></div>
+      </div>
+      <div style="padding:14px">
+        <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#A78BFA;margin-bottom:2px">$1,850<span style="font-size:13px;font-weight:500;color:#6D5FA8">/mo</span></div>
+        <div style="font-size:12px;color:#6D5FA8;margin-bottom:10px">47 Elm Street, Springfield, IL 62701</div>
+        <div style="display:flex;gap:14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#EDE9FE"><i class="ti ti-bed" style="font-size:15px;color:#6D5FA8" aria-hidden="true"></i>3 bed</div><div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#EDE9FE"><i class="ti ti-bath" style="font-size:15px;color:#6D5FA8" aria-hidden="true"></i>2 bath</div><div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#EDE9FE"><i class="ti ti-ruler-2" style="font-size:15px;color:#6D5FA8" aria-hidden="true"></i>1,200 sqft</div></div>
+        <div style="display:flex;gap:6px"><div class="stat-box" style="flex:1;padding:8px;border-color:rgba(20,184,166,.15)"><div class="sub" style="font-size:9px;margin-bottom:2px">Walk score</div><div style="font-size:13px;font-weight:700;color:#14B8A6">82</div></div><div class="stat-box" style="flex:1;padding:8px;border-color:rgba(245,158,11,.15)"><div class="sub" style="font-size:9px;margin-bottom:2px">Schools</div><div style="font-size:13px;font-weight:700;color:#F59E0B">A+</div></div><div class="stat-box" style="flex:1;padding:8px;border-color:rgba(167,139,250,.15)"><div class="sub" style="font-size:9px;margin-bottom:2px">Safety</div><div style="font-size:13px;font-weight:700;color:#A78BFA">B+</div></div></div>
+      </div>
+    </div>
+    <div class="cta-ai"><i class="ti ti-sparkles" aria-hidden="true"></i><span>AI — analyze this property for me</span></div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt on"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+<div>
+<div class="pn">Owner Portal</div>
+<div class="ph">
+<div class="notch"></div>
+<div class="sc" style="min-height:700px">
+  <div class="hdr">
+    <div class="hdr-circle" style="right:-20px;top:-20px;width:100px;height:100px;background:rgba(20,184,166,.08)"></div>
+    <div class="sb" style="padding:36px 0 12px"><span class="sbt">9:41</span><div class="sbi"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery-2" aria-hidden="true"></i></div></div>
+    <div class="bk"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+      <div><div class="ftitle">Owner Portal</div><div class="fsub">Manage properties, tenants, and rent collection.</div></div>
+      <div style="width:36px;height:36px;border-radius:11px;background:#7C3AED;display:flex;align-items:center;justify-content:center"><i class="ti ti-plus" style="font-size:18px;color:#FDE68A" aria-hidden="true"></i></div>
+    </div>
+    <div class="stat-grid" style="margin:0;gap:8px">
+      <div class="stat-box" style="border-color:rgba(20,184,166,.2)"><div class="stat-lbl">Properties</div><div class="stat-val" style="color:#14B8A6">3</div></div>
+      <div class="stat-box" style="border-color:rgba(124,58,237,.2)"><div class="stat-lbl">Tenants</div><div class="stat-val" style="color:#A78BFA">7</div></div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-hdr">Rent collection — May 2026</div>
+      <div style="padding:12px 14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:#6D5FA8">Collected</span><span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#14B8A6">$7,200</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:80%;background:#14B8A6"></div></div>
+        <div style="font-size:10px;color:#6D5FA8;margin-top:4px">5 of 7 paid · $1,800 outstanding</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Properties</div>
+      <div class="row-item"><div class="ico" style="background:rgba(124,58,237,.12)"><i class="ti ti-home" style="color:#A78BFA" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">47 Elm Street</div><div class="sub">3 units · 3 occupied</div></div><div class="tag pill-g">Full</div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(245,158,11,.1)"><i class="ti ti-building" style="color:#F59E0B" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">12 Oak Avenue</div><div class="sub">2 units · 2 occupied</div></div><div class="tag pill-g">Full</div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(239,68,68,.1)"><i class="ti ti-home" style="color:#EF4444" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">88 Birch Lane</div><div class="sub">2 units · 1 occupied</div></div><div class="tag pill-a">Vacancy</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Pending actions</div>
+      <div class="row-item"><div class="ico" style="background:rgba(245,158,11,.1)"><i class="ti ti-tool" style="color:#F59E0B" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Maintenance request</div><div class="sub">47 Elm #2 · Leaky faucet</div></div><div class="tag pill-a">Urgent</div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(239,68,68,.1)"><i class="ti ti-receipt" style="color:#EF4444" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Overdue rent</div><div class="sub">Tenant: J. Torres · $900</div></div><div class="tag pill-r">Overdue</div></div>
+      <div class="row-item"><div class="ico" style="background:rgba(124,58,237,.12)"><i class="ti ti-file-text" style="color:#A78BFA" aria-hidden="true"></i></div><div style="flex:1"><div class="lbl">Lease renewal due</div><div class="sub">88 Birch #1 · Jul 1</div></div><div class="tag pill-v">Review</div></div>
+    </div>
+  </div>
+  <div class="bnav"><div class="bt"><i class="ti ti-home" aria-hidden="true"></i><span>Home</span></div><div class="bt"><i class="ti ti-map" aria-hidden="true"></i><span>Maps</span></div><div class="bt"><i class="ti ti-messages" aria-hidden="true"></i><span>Messages</span></div><div class="bt"><i class="ti ti-robot" aria-hidden="true"></i><span>AI</span></div><div class="bt on"><i class="ti ti-dots" aria-hidden="true"></i><span>More</span></div></div>
+</div>
+</div>
+</div>
+
+</div>
+
+</div>

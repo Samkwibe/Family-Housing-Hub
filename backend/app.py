@@ -1,7 +1,7 @@
 """
 Family Housing Hub - Python Backend API
 Provides real, fully functional services including AI, automation, and data processing
-# Last Deploy Trigger: push token registration & child portal fixes
+# Last Deploy Trigger: root endpoints update & final check
 """
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS

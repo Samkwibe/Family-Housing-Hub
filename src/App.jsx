@@ -33,7 +33,7 @@ const Messages = lazy(() => import('./pages/Messages'));
 const Landlord = lazy(() => import('./pages/Landlord'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
-const HelpCenter = lazy(() => import('./pages/HelpCenter'));
+const HelpCenter = lazy(() => import('./pages/Help'));
 const ChildrenSavings = lazy(() => import('./pages/ChildrenSavings'));
 const ParentChildrenManagement = lazy(() => import('./pages/ParentChildrenManagement'));
 const FamilyHealth = lazy(() => import('./pages/FamilyHealth'));

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 import { useToast } from '@/src/contexts/ToastContext';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type Field = {
   key: string;
@@ -18,7 +20,11 @@ type Props = {
   onSubmit: (values: Record<string, string>) => Promise<void>;
 };
 
-export function QuickAddForm({ title, fields, submitLabel = 'Save', successMessage, onSubmit }: Props) {
+export function QuickAddForm({
+  title, fields, submitLabel = 'Save', successMessage, onSubmit }: Props) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const [values, setValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +74,8 @@ export function QuickAddForm({ title, fields, submitLabel = 'Save', successMessa
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   wrap: {
     backgroundColor: theme.colors.surfaceElevated,
     borderRadius: theme.radius.lg,
@@ -112,3 +119,4 @@ const styles = StyleSheet.create({
   },
   btnText: { color: '#fff', fontFamily: theme.fonts.bodyBold, fontSize: theme.fontSize.md },
 });
+}

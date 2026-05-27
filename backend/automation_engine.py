@@ -176,6 +176,14 @@ def run_rules_for_household(db, household_id: str, *, force: bool = False) -> li
                 message = f"{name} expires {day_label} — added to your shopping list"
                 _add_shopping(db, household_id, name, inventory_item_id=entity)
                 _record_firing(db, household_id, key, entity, message)
+                if days <= 1:
+                    try:
+                        from household_service import get_household_member_user_ids
+                        from push_service import send_push_to_user
+                        for uid in get_household_member_user_ids(household_id):
+                            send_push_to_user(uid, "Fridge Alert 🍉", message)
+                    except Exception as e:
+                        print(f"[push] Error sending fridge push: {e}")
                 fired.append({'ruleKey': key, 'message': message})
 
         elif key == 'stale_maintenance_landlord':
@@ -217,6 +225,13 @@ def run_rules_for_household(db, household_id: str, *, force: bool = False) -> li
                 due = exp.get('dueDate', '')
                 message = f"Rent of ${amount:.0f} is due in {days} days on {due}. Tap to pay."
                 _record_firing(db, household_id, key, fire_key, message)
+                try:
+                    from household_service import get_household_member_user_ids
+                    from push_service import send_push_to_user
+                    for uid in get_household_member_user_ids(household_id):
+                        send_push_to_user(uid, "Rent Reminder 🏠", message)
+                except Exception as e:
+                    print(f"[push] Error sending rent push: {e}")
                 fired.append({'ruleKey': key, 'message': message})
 
         elif key == 'document_expiry_30_days':

@@ -12,7 +12,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppLogo } from '@/src/components/AppLogo';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type AuthScreenProps = {
   children: ReactNode;
@@ -21,6 +23,7 @@ type AuthScreenProps = {
 };
 
 export function AuthScreen({ children, footer, centerContent }: AuthScreenProps) {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.root}>
       <View style={styles.glowTop} />
@@ -61,6 +64,7 @@ export function AuthHeader({
   iconColor = '#A78BFA',
   headerExtra,
 }: AuthHeaderProps) {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.header}>
       {showBrand ? <AppLogo size="sm" style={styles.brandLogo} /> : null}
@@ -72,10 +76,14 @@ export function AuthHeader({
 }
 
 export function AuthCard({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+  const styles = useAppStyles(createStyles);
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
 export function FormErrorBanner({ message }: { message: string | null }) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   if (!message) return null;
   return (
     <View style={styles.errorBanner} accessibilityRole="alert">
@@ -93,6 +101,7 @@ type AuthFooterLinkProps = {
 };
 
 export function AuthFooterLink({ text, linkText, onPress, disabled }: AuthFooterLinkProps) {
+  const styles = useAppStyles(createStyles);
   return (
     <Pressable
       style={({ pressed }) => [styles.footerLink, pressed && styles.footerPressed]}
@@ -117,15 +126,14 @@ const ROLES: { id: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap
   { id: 'family', label: 'Family', icon: 'people' },
 ];
 
-export function RolePicker({
-  value,
-  onChange,
-  disabled,
-}: {
+export function RolePicker({ value, onChange, disabled }: {
   value: UserRole;
   onChange: (role: UserRole) => void;
   disabled?: boolean;
 }) {
+  const styles = useAppStyles(createStyles);
+  const theme = useTheme();
+
   return (
     <View style={styles.roleRow}>
       {ROLES.map((role) => {
@@ -147,6 +155,9 @@ export function RolePicker({
 }
 
 export function PasswordStrength({ password }: { password: string }) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   if (!password) return null;
   const score =
     (password.length >= 8 ? 1 : 0) +
@@ -175,6 +186,7 @@ export function PasswordStrength({ password }: { password: string }) {
 }
 
 export function PasswordMatchHint({ match }: { match: boolean | null }) {
+  const styles = useAppStyles(createStyles);
   if (match === null) return null;
   return (
     <Text style={[styles.matchHint, { color: match ? '#14B8A6' : '#EF4444' }]}>
@@ -183,15 +195,13 @@ export function PasswordMatchHint({ match }: { match: boolean | null }) {
   );
 }
 
-export function TermsCheckbox({
-  checked,
-  onToggle,
-  disabled,
-}: {
+export function TermsCheckbox({ checked, onToggle, disabled }: {
   checked: boolean;
   onToggle: () => void;
   disabled?: boolean;
 }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <Pressable style={styles.termsRow} onPress={onToggle} disabled={disabled}>
       <View style={[styles.termsBox, checked && styles.termsBoxChecked]}>
@@ -205,7 +215,8 @@ export function TermsCheckbox({
   );
 }
 
-export function AuthDivider({ label = 'or sign up with' }: { label?: string }) {
+export function AuthDivider({ label='or sign up with' }: { label?: string }) {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.dividerRow}>
       <View style={styles.dividerLine} />
@@ -220,7 +231,11 @@ type StepProgressProps = {
   currentIndex: number;
 };
 
-export function StepProgress({ steps, currentIndex }: StepProgressProps) {
+export function StepProgress({
+  steps, currentIndex }: StepProgressProps) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.progressWrap}>
       <View style={styles.progressTrack}>
@@ -259,7 +274,8 @@ export function StepProgress({ steps, currentIndex }: StepProgressProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.authBg },
   glowTop: {
     position: 'absolute',
@@ -413,3 +429,4 @@ const styles = StyleSheet.create({
   },
   stepLabelActive: { color: theme.colors.text },
 });
+}

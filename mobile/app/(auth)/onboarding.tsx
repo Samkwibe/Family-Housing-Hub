@@ -12,11 +12,15 @@ import {
   FormErrorBanner,
   StepProgress,
 } from '@/src/components/auth/AuthScreen';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 const STEPS = ['Contact', 'Address'];
 
 export default function OnboardingScreen() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const { completeOnboarding, userProfile } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -191,7 +195,8 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   safe: { flex: 1 },
   flex: { flex: 1 },
@@ -218,3 +223,4 @@ const styles = StyleSheet.create({
   zipField: { flex: 0.6 },
   cta: { marginTop: theme.spacing.xs },
 });
+}

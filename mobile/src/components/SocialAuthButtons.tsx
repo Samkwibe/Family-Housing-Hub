@@ -18,7 +18,8 @@ import {
   MICROSOFT_DISCOVERY,
   OAUTH_REDIRECT_URI,
 } from '@/src/config/oauth';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -54,14 +55,7 @@ type OAuthFinish = (
   tokens: { idToken?: string; accessToken?: string }
 ) => Promise<void>;
 
-function ProviderButton({
-  meta,
-  loading,
-  disabled,
-  onPress,
-  compact,
-  fullWidth,
-}: {
+function ProviderButton({ meta, loading, disabled, onPress, compact, fullWidth }: {
   meta: ProviderMeta;
   loading: boolean;
   disabled: boolean;
@@ -69,6 +63,8 @@ function ProviderButton({
   compact?: boolean;
   fullWidth?: boolean;
 }) {
+  const styles = useAppStyles(createStyles);
+
   if (fullWidth) {
     return (
       <Pressable
@@ -124,15 +120,7 @@ function ProviderButton({
   );
 }
 
-function GoogleAuthButton({
-  meta,
-  busy,
-  disabled,
-  finishOAuth,
-  setBusy,
-  compact,
-  fullWidth,
-}: {
+function GoogleAuthButton({ meta, busy, disabled, finishOAuth, setBusy, compact, fullWidth }: {
   meta: ProviderMeta;
   busy: string | null;
   disabled?: boolean;
@@ -188,15 +176,7 @@ function GoogleAuthButton({
   );
 }
 
-function MicrosoftAuthButton({
-  meta,
-  busy,
-  disabled,
-  finishOAuth,
-  setBusy,
-  compact,
-  fullWidth,
-}: {
+function MicrosoftAuthButton({ meta, busy, disabled, finishOAuth, setBusy, compact, fullWidth }: {
   meta: ProviderMeta;
   busy: string | null;
   disabled?: boolean;
@@ -254,15 +234,7 @@ function MicrosoftAuthButton({
   );
 }
 
-function GitHubAuthButton({
-  meta,
-  busy,
-  disabled,
-  finishOAuth,
-  setBusy,
-  compact,
-  fullWidth,
-}: {
+function GitHubAuthButton({ meta, busy, disabled, finishOAuth, setBusy, compact, fullWidth }: {
   meta: ProviderMeta;
   busy: string | null;
   disabled?: boolean;
@@ -317,15 +289,7 @@ function GitHubAuthButton({
   );
 }
 
-function AppleAuthButton({
-  meta,
-  busy,
-  disabled,
-  finishOAuth,
-  setBusy,
-  compact,
-  fullWidth,
-}: {
+function AppleAuthButton({ meta, busy, disabled, finishOAuth, setBusy, compact, fullWidth }: {
   meta: ProviderMeta;
   busy: string | null;
   disabled?: boolean;
@@ -369,15 +333,7 @@ function AppleAuthButton({
   );
 }
 
-function StubProviderButton({
-  meta,
-  busy,
-  disabled,
-  setBusy,
-  compact,
-  fullWidth,
-  message,
-}: {
+function StubProviderButton({ meta, busy, disabled, setBusy, compact, fullWidth, message }: {
   meta: ProviderMeta;
   busy: string | null;
   disabled?: boolean;
@@ -412,6 +368,7 @@ export function SocialAuthButtons({
   dividerLabel = 'or continue with Google',
   layout = 'full',
 }: Props) {
+  const styles = useAppStyles(createStyles);
   const { oauthLogin } = useAuth();
   const [busy, setBusy] = useState<string | null>(null);
   const compact = layout === 'compact';
@@ -495,7 +452,8 @@ export async function saveRememberedIdentifier(identifier: string | null): Promi
   }
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   wrap: { marginTop: theme.spacing.lg },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.md, gap: 8 },
   dividerLine: { flex: 1, height: 0.5, backgroundColor: theme.colors.borderLight },
@@ -561,6 +519,7 @@ const styles = StyleSheet.create({
   },
   disabled: { opacity: 0.5 },
 });
+}
 
 /** @deprecated use isOAuthConfigured per provider */
 export { isOAuthConfigured };

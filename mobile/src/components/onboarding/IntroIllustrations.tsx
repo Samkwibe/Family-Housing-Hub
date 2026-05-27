@@ -1,7 +1,8 @@
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 
 type IllustrationKind = 'home' | 'finance' | 'food' | 'maps' | 'family' | 'personalize';
 
@@ -9,15 +10,13 @@ type Props = {
   kind: IllustrationKind;
 };
 
-function FloatBadge({
-  icon,
-  color,
-  style,
-}: {
+function FloatBadge({ icon, color, style }: {
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   style?: object;
 }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={[styles.floatBadge, style]}>
       <Ionicons name={icon} size={16} color={color} />
@@ -26,6 +25,7 @@ function FloatBadge({
 }
 
 export function IntroIllustration({ kind }: Props) {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.wrap}>
       <LinearGradient
@@ -146,7 +146,8 @@ export function IntroIllustration({ kind }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   wrap: {
     height: 260,
     alignItems: 'center',
@@ -380,3 +381,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+}

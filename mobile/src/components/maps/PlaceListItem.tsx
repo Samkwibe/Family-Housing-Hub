@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import {
   getCategoryDef,
   resolvePlacePhotoUrl,
@@ -15,7 +17,11 @@ type Props = {
   onDirections?: () => void;
 };
 
-export default function PlaceListItem({ place, selected, onPress, onDirections }: Props) {
+export default function PlaceListItem({
+  place, selected, onPress, onDirections }: Props) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const [photoFailed, setPhotoFailed] = useState(false);
   const cat = getCategoryDef(place.category);
   const photoUrl = resolvePlacePhotoUrl(place);
@@ -76,7 +82,8 @@ export default function PlaceListItem({ place, selected, onPress, onDirections }
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -150,3 +157,4 @@ const styles = StyleSheet.create({
   },
   goBtn: { padding: 6 },
 });
+}

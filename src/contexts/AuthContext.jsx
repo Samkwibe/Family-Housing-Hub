@@ -3,6 +3,10 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  OAuthProvider,
   signOut,
   onAuthStateChanged,
   updateProfile,
@@ -17,6 +21,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { userService, securityService } from '../services/firebaseService';
+import { normalizeUSPhone } from '../../shared/utils/phone.js';
 import toast from 'react-hot-toast';
 
 export const AuthContext = createContext();
@@ -96,14 +101,11 @@ export function AuthProvider({ children }) {
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
         phone: userData.phone || '',
-        phoneDigits: (() => {
-          const d = String(userData.phone || '').replace(/\D/g, '');
-          return d.length >= 10 ? d.slice(-10) : '';
-        })(),
+        phoneDigits: normalizeUSPhone(userData.phone || ''),
         role: 'family',
         userType: userData.userType || 'renter', // 'owner' or 'renter'
-        emailVerified: userData.emailVerified || false,
-        phoneVerified: userData.phoneVerified || false,
+        emailVerified: userData.emailVerified !== false,
+        phoneVerified: userData.phoneVerified !== false,
         createdAt: new Date().toISOString(),
 
         // Address information (empty for new users)
@@ -202,9 +204,8 @@ export function AuthProvider({ children }) {
     if (raw.includes('@')) {
       return raw.toLowerCase();
     }
-    const digits = raw.replace(/\D/g, '');
-    const ten = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
-    if (ten.length !== 10) {
+    const ten = normalizeUSPhone(raw);
+    if (!ten) {
       throw new Error('Use a valid email or 10-digit US mobile number');
     }
     const email = await userService.findEmailByPhoneDigits(ten);
@@ -284,6 +285,124 @@ export function AuthProvider({ children }) {
       toast.error(error.message || 'Failed to send magic link');
       throw error;
     }
+  }
+
+  async function ensureOAuthUserProfile(firebaseUser, extra = {}) {
+    const existing = await userService.getUserProfile(firebaseUser.uid).catch(() => null);
+    if (existing) {
+      await userService.updateUserProfile(firebaseUser.uid, {
+        lastLogin: new Date(),
+        emailVerified: true,
+      }).catch(() => {});
+      return existing;
+    }
+
+    const display = firebaseUser.displayName || '';
+    const [firstName = '', ...rest] = display.split(' ');
+    const lastName = rest.join(' ');
+    const userDoc = {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      firstName: extra.firstName || firstName || 'User',
+      lastName: extra.lastName || lastName || '',
+      phone: '',
+      phoneDigits: '',
+      role: 'family',
+      userType: extra.userType || 'renter',
+      emailVerified: true,
+      phoneVerified: false,
+      createdAt: new Date().toISOString(),
+      address: {
+        street: '',
+        unit: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'USA',
+      },
+      familyMembers: [],
+      lease: {
+        startDate: null,
+        endDate: null,
+        monthlyRent: 0,
+        securityDeposit: 0,
+        landlordId: null,
+      },
+      property: {
+        address: null,
+        purchaseDate: null,
+        purchasePrice: 0,
+        currentValue: 0,
+        mortgage: {
+          hasMortgage: false,
+          lender: '',
+          loanAmount: 0,
+          monthlyPayment: 0,
+          interestRate: 0,
+          loanStartDate: null,
+          loanEndDate: null,
+        },
+      },
+      preferences: {
+        language: 'en',
+        notifications: {
+          email: true,
+          sms: false,
+          push: true,
+          rentReminders: true,
+          maintenanceUpdates: true,
+        },
+        theme: 'light',
+        currency: 'USD',
+      },
+      profileComplete: false,
+      onboardingComplete: false,
+      updatedAt: new Date(),
+      lastLogin: new Date(),
+      photoURL: firebaseUser.photoURL || null,
+      oauthProvider: extra.oauthProvider || null,
+    };
+
+    await userService.createUserProfile(firebaseUser.uid, userDoc);
+    return userDoc;
+  }
+
+  async function signInWithOAuthProvider(provider) {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      if (user.displayName && !user.displayName.includes('@')) {
+        await updateProfile(user, {
+          displayName: user.displayName,
+          photoURL: user.photoURL || null,
+        }).catch(() => {});
+      }
+      await ensureOAuthUserProfile(user, {
+        oauthProvider: provider.providerId,
+      });
+      toast.success('Signed in successfully!');
+      return result;
+    } catch (error) {
+      console.error('OAuth sign-in error:', error);
+      if (error.code !== 'auth/popup-closed-by-user') {
+        toast.error(error.message || 'OAuth sign-in failed');
+      }
+      throw error;
+    }
+  }
+
+  async function signInWithGoogle() {
+    return signInWithOAuthProvider(new GoogleAuthProvider());
+  }
+
+  async function signInWithGitHub() {
+    return signInWithOAuthProvider(new GithubAuthProvider());
+  }
+
+  async function signInWithMicrosoft() {
+    const provider = new OAuthProvider('microsoft.com');
+    provider.setCustomParameters({ prompt: 'select_account' });
+    return signInWithOAuthProvider(provider);
   }
 
   async function completeMagicLink(url = window.location.href, emailInput = null) {
@@ -821,6 +940,9 @@ export function AuthProvider({ children }) {
     updateUserPassword,
     sendMagicLink,
     completeMagicLink,
+    signInWithGoogle,
+    signInWithGitHub,
+    signInWithMicrosoft,
     checkProfileComplete
   };
 

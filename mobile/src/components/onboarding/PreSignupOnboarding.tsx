@@ -22,7 +22,9 @@ import {
   type OnboardingPriority,
   type PreSignupAnswers,
 } from '@/src/services/onboardingStorage';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -152,6 +154,8 @@ const PRIORITY_OPTIONS: { id: OnboardingPriority; label: string; icon: keyof typ
 ];
 
 function SlideTitle({ slide }: { slide: SlideData }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <Text style={styles.title}>
       {slide.titleBefore}
@@ -168,6 +172,8 @@ type AnswersState = {
 };
 
 export function PreSignupOnboarding() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const listRef = useRef<FlatList<SlideData>>(null);
   const [index, setIndex] = useState(0);
@@ -391,7 +397,8 @@ export function PreSignupOnboarding() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -566,3 +573,4 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
 });
+}

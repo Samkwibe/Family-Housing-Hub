@@ -8,7 +8,9 @@ import { normalizeUserType, getRoleExperience, type UserType } from '@/src/confi
 import { RolePicker, UserRole } from '@/src/components/auth/AuthScreen';
 import { Button, Input } from '@/src/components/ui';
 import { updateProfile } from '@/src/services/authService';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type AddressForm = {
   street: string;
@@ -18,6 +20,8 @@ type AddressForm = {
 };
 
 export default function ProfileScreen() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { userProfile, currentUser, refreshProfile } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -145,7 +149,8 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { paddingBottom: 32 },
   hero: {
@@ -207,3 +212,4 @@ const styles = StyleSheet.create({
   rowValue: { fontSize: 15, color: theme.colors.text, marginTop: 4, lineHeight: 22 },
   actions: { paddingHorizontal: 16, gap: 8 },
 });
+}

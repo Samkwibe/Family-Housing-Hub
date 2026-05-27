@@ -1,6 +1,6 @@
 # Family Housing Hub — Mobile (Expo)
 
-Native **iOS** and **Android** app for [Family Housing Hub](../README.md), sharing Firebase (`family-housing-hub`) and the production Flask API on Render.
+Native **iOS** and **Android** app for [Family Housing Hub](../README.md), sharing Firebase (`family-housing-hub`) and the production Flask API on Railway (`https://family-housing-hub-production.up.railway.app`).
 
 ## Why Expo (not Capacitor)
 

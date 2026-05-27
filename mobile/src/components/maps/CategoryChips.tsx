@@ -5,7 +5,9 @@ import {
   EXPLORE_CATEGORIES,
   type CategoryDef,
 } from '@/src/services/placesService';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { useAppStyles } from '@/src/hooks/useStyles';
 
 type Props = {
   selected: string[];
@@ -15,15 +17,13 @@ type Props = {
   onSelectAll: () => void;
 };
 
-function Chip({
-  def,
-  active,
-  onPress,
-}: {
+function Chip({ def, active, onPress }: {
   def: Pick<CategoryDef, 'id' | 'label' | 'icon'>;
   active: boolean;
   onPress: () => void;
 }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <Pressable
       style={[styles.chip, active && styles.chipActive]}
@@ -44,6 +44,9 @@ export default function CategoryChips({
   onToggleCategory,
   onSelectAll,
 }: Props) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const allActive = selected.length === 0;
 
   return (
@@ -97,7 +100,8 @@ export default function CategoryChips({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   wrap: {
     backgroundColor: 'transparent',
   },
@@ -155,3 +159,4 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
   },
 });
+}

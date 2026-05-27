@@ -1,7 +1,9 @@
 import { ReactNode } from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type TagVariant = 'violet' | 'green' | 'amber' | 'red';
 
@@ -12,7 +14,8 @@ const TAG: Record<TagVariant, { bg: string; border: string; color: string }> = {
   red: { bg: 'rgba(239,68,68,.1)', border: 'rgba(239,68,68,.25)', color: '#EF4444' },
 };
 
-export function FHTag({ label, variant = 'violet' }: { label: string; variant?: TagVariant }) {
+export function FHTag({ label, variant='violet' }: { label: string; variant?: TagVariant }) {
+  const styles = useAppStyles(createStyles);
   const t = TAG[variant];
   return (
     <View style={[styles.tag, { backgroundColor: t.bg, borderColor: t.border }]}>
@@ -22,6 +25,7 @@ export function FHTag({ label, variant = 'violet' }: { label: string; variant?: 
 }
 
 export function FHCard({ title, children, style }: { title?: string; children: ReactNode; style?: ViewStyle }) {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={[styles.card, style]}>
       {title ? <Text style={styles.cardHdr}>{title}</Text> : null}
@@ -30,15 +34,7 @@ export function FHCard({ title, children, style }: { title?: string; children: R
   );
 }
 
-export function FHRowItem({
-  icon,
-  iconColor,
-  iconBg,
-  title,
-  subtitle,
-  right,
-  onPress,
-}: {
+export function FHRowItem({ icon, iconColor, iconBg, title, subtitle, right, onPress }: {
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   iconBg: string;
@@ -47,6 +43,8 @@ export function FHRowItem({
   right?: ReactNode;
   onPress?: () => void;
 }) {
+  const styles = useAppStyles(createStyles);
+
   const inner = (
     <>
       <View style={[styles.rowIcon, { backgroundColor: iconBg }]}>
@@ -69,17 +67,15 @@ export function FHRowItem({
   return <View style={styles.rowItem}>{inner}</View>;
 }
 
-export function FHCta({
-  label,
-  onPress,
-  icon = 'arrow-forward',
-  variant = 'primary',
-}: {
+export function FHCta({ label, onPress, icon='arrow-forward', variant='primary' }: {
   label: string;
   onPress?: () => void;
   icon?: keyof typeof Ionicons.glyphMap;
   variant?: 'primary' | 'ai' | 'danger';
 }) {
+  const styles = useAppStyles(createStyles);
+  const theme = useTheme();
+
   const isAi = variant === 'ai';
   const isDanger = variant === 'danger';
   return (
@@ -103,12 +99,14 @@ export function FHCta({
   );
 }
 
-export function FHDashedBtn({ label, icon, onPress, color = '#A78BFA' }: {
+export function FHDashedBtn({ label, icon, onPress, color='#A78BFA' }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress?: () => void;
   color?: string;
 }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <Pressable style={[styles.dashedBtn, { borderColor: `${color}44` }]} onPress={onPress}>
       <Ionicons name={icon} size={17} color={color} />
@@ -118,6 +116,7 @@ export function FHDashedBtn({ label, icon, onPress, color = '#A78BFA' }: {
 }
 
 export function FHStatGrid({ items }: { items: { label: string; value: string; color: string; hint?: string }[] }) {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.statGrid}>
       {items.map((s) => (
@@ -131,15 +130,22 @@ export function FHStatGrid({ items }: { items: { label: string; value: string; c
   );
 }
 
-export function FHProgress({ pct, color = theme.colors.primary }: { pct: number; color?: string }) {
+export function FHProgress({ pct, color }: { pct: number; color?: string }) {
+  const theme = useTheme();
+  const resolvedColor = color ?? theme.colors.primary;
+
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.progressBar}>
-      <View style={[styles.progressFill, { width: `${Math.min(100, pct)}%`, backgroundColor: color }]} />
+      <View style={[styles.progressFill, { width: `${Math.min(100, pct)}%`, backgroundColor: resolvedColor }]} />
     </View>
   );
 }
 
 export function FHBackLink({ label, onPress }: { label: string; onPress: () => void }) {
+  const styles = useAppStyles(createStyles);
+  const theme = useTheme();
+
   return (
     <Pressable
       style={({ pressed }) => [styles.backLink, pressed && styles.backLinkPressed]}
@@ -156,7 +162,8 @@ export function FHBackLink({ label, onPress }: { label: string; onPress: () => v
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   tag: {
     alignSelf: 'flex-start',
     borderRadius: 20,
@@ -297,3 +304,4 @@ const styles = StyleSheet.create({
   },
   backText: { fontSize: theme.fontSize.md, fontWeight: '700', color: theme.colors.text },
 });
+}

@@ -17,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '@/src/services/api';
 import { isGoogleMapsApiKeyConfigured } from '@/src/config/env';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 import { useTabScreenInsets } from '@/src/hooks/useTabScreenInsets';
 import CategoryChips from '@/src/components/maps/CategoryChips';
 import SearchAutocomplete from '@/src/components/maps/SearchAutocomplete';
@@ -27,6 +28,7 @@ import CategoryMarker from '@/src/components/maps/CategoryMarker';
 import MapsAiSheet from '@/src/components/maps/MapsAiSheet';
 import WeatherWidget from '@/src/components/weather/WeatherWidget';
 import { useWeather } from '@/src/hooks/useWeather';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import {
   DEFAULT_CATEGORIES,
   emptyMessageForCategories,
@@ -53,6 +55,8 @@ function regionFor(lat: number, lng: number, delta = 0.04): Region {
 }
 
 export default function MapsScreen() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const mapRef = useRef<MapView>(null);
   const { scrollBottomPadding } = useTabScreenInsets();
   const panTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -617,7 +621,8 @@ export default function MapsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   root: { flex: 1 },
   mapStage: {
@@ -864,3 +869,4 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 });
+}

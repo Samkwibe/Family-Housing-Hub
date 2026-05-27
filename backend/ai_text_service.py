@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import time
 
 import google.generativeai as genai
 import openai
@@ -40,19 +41,25 @@ def generate_ai_text(
     prompt: str,
     system_hint: str = 'You are FamilyHub AI. Be helpful and concise.',
     max_tokens: int = 800,
+    *,
+    observability_path: str = 'generic',
+    household_id: str | None = None,
 ) -> str | None:
+    start = time.perf_counter()
     messages = [
         {'role': 'system', 'content': system_hint},
         {'role': 'user', 'content': prompt},
     ]
     text = _call_nvidia_chat(messages, max_tokens=max_tokens)
     if text:
+        _trace_ai(observability_path, time.perf_counter() - start, True, 'nvidia', household_id)
         return text
 
     if GEMINI_API_KEY:
         try:
             model = genai.GenerativeModel('gemini-pro')
             response = model.generate_content(f'{system_hint}\n\n{prompt}')
+            _trace_ai(observability_path, time.perf_counter() - start, True, 'gemini', household_id)
             return response.text
         except Exception as exc:
             print(f'Gemini error: {exc}')
@@ -65,8 +72,25 @@ def generate_ai_text(
                 max_tokens=max_tokens,
                 temperature=0.7,
             )
+            _trace_ai(observability_path, time.perf_counter() - start, True, 'openai', household_id)
             return response.choices[0].message.content
         except Exception as exc:
             print(f'OpenAI error: {exc}')
 
+    _trace_ai(observability_path, time.perf_counter() - start, False, None, household_id, fallback=True)
     return None
+
+
+def _trace_ai(path, elapsed_s, success, provider, household_id, fallback=False):
+    try:
+        from observability_service import trace_ai
+        trace_ai(
+            path,
+            duration_ms=elapsed_s * 1000,
+            success=success,
+            provider=provider,
+            fallback=fallback,
+            household_id=household_id,
+        )
+    except Exception:
+        pass

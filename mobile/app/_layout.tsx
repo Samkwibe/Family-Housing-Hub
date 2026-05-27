@@ -12,8 +12,10 @@ import {
   DMSans_500Medium,
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
-import { AuthProvider } from '@/src/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import { HouseholdProvider, useHousehold } from '@/src/contexts/HouseholdContext';
+import { ThemeProvider, useStatusBarStyle, useTheme } from '@/src/contexts/ThemeContext';
+import { resolveActivePortal } from '@/src/portals/resolvePortal';
 import { ToastProvider } from '@/src/contexts/ToastContext';
 import { OfflineBanner } from '@/src/components/OfflineBanner';
 import { View, StyleSheet } from 'react-native';
@@ -21,12 +23,19 @@ import { View, StyleSheet } from 'react-native';
 SplashScreen.preventAutoHideAsync();
 
 function AppShell() {
+  const theme = useTheme();
+  const statusBarStyle = useStatusBarStyle();
+  const { userProfile } = useAuth();
   const { isOffline, isSyncing } = useHousehold();
+  const portal = resolveActivePortal(userProfile);
+  const showOfflineBanner = portal !== 'child' && (isOffline || isSyncing);
+  const childPortal = portal === 'child';
+
   return (
-    <View style={styles.root}>
-      {(isOffline || isSyncing) ? <OfflineBanner syncing={isSyncing} /> : null}
+    <View style={[styles.root, { backgroundColor: childPortal ? '#FFF7ED' : theme.colors.background }]}>
+      {showOfflineBanner ? <OfflineBanner syncing={isSyncing} /> : null}
       <View style={styles.flex}>
-        <StatusBar style="light" />
+        <StatusBar style={childPortal ? 'dark' : statusBarStyle} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
@@ -60,11 +69,13 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <HouseholdProvider>
-        <ToastProvider>
-          <AppShell />
-        </ToastProvider>
-      </HouseholdProvider>
+      <ThemeProvider>
+        <HouseholdProvider>
+          <ToastProvider>
+            <AppShell />
+          </ToastProvider>
+        </HouseholdProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

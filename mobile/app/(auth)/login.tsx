@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/src/contexts/AuthContext';
 import {
   SocialAuthButtons,
@@ -23,13 +23,16 @@ import {
 } from '@/src/components/auth/AuthForm';
 import { normalizeUSPhone } from '@/src/utils/phone';
 import { hasCompletedIntro } from '@/src/services/onboardingStorage';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 
 type LoginMode = 'email' | 'phone';
 
 export default function LoginScreen() {
+  const styles = useAppStyles(createStyles);
   const { login } = useAuth();
   const router = useRouter();
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [mode, setMode] = useState<LoginMode>('email');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -74,7 +77,7 @@ export default function LoginScreen() {
       } else {
         await saveRememberedIdentifier(null);
       }
-      router.replace('/');
+      router.replace((redirect as `/${string}`) || '/');
     } catch (e: unknown) {
       setError((e as Error).message || 'Check your credentials and try again.');
     } finally {
@@ -200,7 +203,8 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   title: {
     fontFamily: theme.fonts.titleExtra,
     fontSize: 26,
@@ -231,3 +235,4 @@ const styles = StyleSheet.create({
     color: theme.colors.primaryLight,
   },
 });
+}

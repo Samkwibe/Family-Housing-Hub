@@ -11,13 +11,19 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { AppLogo } from '@/src/components/AppLogo';
-import { theme } from '@/src/theme';
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 
-export function FamilyHubBrand({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+export function FamilyHubBrand({ size='md' }: { size?: 'sm' | 'md' | 'lg' }) {
+  const styles = useAppStyles(createStyles);
   return <AppLogo size={size} style={styles.brandRow} />;
 }
 
 export function AuthBackButton({ onPress }: { onPress: () => void }) {
+  const styles = useAppStyles(createStyles);
+  const theme = useTheme();
+
   return (
     <Pressable
       style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
@@ -32,6 +38,7 @@ export function AuthBackButton({ onPress }: { onPress: () => void }) {
 }
 
 export function AuthHeroLogin() {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.heroWrap}>
       <LinearGradient
@@ -55,6 +62,7 @@ export function AuthHeroLogin() {
 }
 
 export function AuthHeroRegister() {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.heroWrap}>
       <LinearGradient
@@ -88,6 +96,7 @@ type AuthSegmentTabsProps = {
 };
 
 export function AuthSegmentTabs({ tabs, value, onChange, disabled }: AuthSegmentTabsProps) {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.segmentWrap}>
       {tabs.map((tab) => {
@@ -127,6 +136,9 @@ export function AuthField({
   style,
   ...props
 }: AuthFieldProps) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const [visible, setVisible] = useState(false);
   const isSecure = showPasswordToggle ? !visible : secureTextEntry;
 
@@ -160,6 +172,7 @@ export function AuthField({
 }
 
 export function PhonePrefix() {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.phonePrefix}>
       <Text style={styles.phoneFlag}>🇺🇸</Text>
@@ -184,6 +197,7 @@ export function AuthGradientButton({
   disabled,
   style,
 }: AuthGradientButtonProps) {
+  const styles = useAppStyles(createStyles);
   return (
     <Pressable
       onPress={onPress}
@@ -203,17 +217,14 @@ export function AuthGradientButton({
   );
 }
 
-export function AuthCheckbox({
-  checked,
-  onToggle,
-  label,
-  disabled,
-}: {
+export function AuthCheckbox({ checked, onToggle, label, disabled }: {
   checked: boolean;
   onToggle: () => void;
   label: ReactNode;
   disabled?: boolean;
 }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <Pressable style={styles.checkRow} onPress={onToggle} disabled={disabled}>
       <View style={[styles.checkBox, checked && styles.checkBoxOn]}>
@@ -225,6 +236,7 @@ export function AuthCheckbox({
 }
 
 export function SecurityBanner() {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.securityBanner}>
       <View style={styles.securityIcon}>
@@ -240,7 +252,8 @@ export function SecurityBanner() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   brandRow: { marginBottom: 14 },
   backBtn: {
     width: 48,
@@ -489,3 +502,4 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 });
+}

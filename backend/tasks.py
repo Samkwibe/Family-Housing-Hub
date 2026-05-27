@@ -57,8 +57,10 @@ def send_household_invite_email_task(to_email: str, subject: str, html: str) -> 
 
 @celery_app.task(name='tasks.send_push_notification')
 def send_push_notification_task(user_id: str, title: str, body: str, data: dict | None = None) -> dict:
-    print(f'[celery] push notification → user {user_id}: {title} — {body}')
-    return {'ok': True, 'userId': user_id}
+    from push_service import send_push_to_user
+
+    result = send_push_to_user(user_id, title, body, data)
+    return {'ok': result.get('ok', False), 'userId': user_id, **result}
 
 
 @celery_app.task(name='tasks.generate_ai_tips')
@@ -158,6 +160,27 @@ def run_automation_engine_task() -> dict:
     return {'ok': True, 'householdsProcessed': count}
 
 
+@celery_app.task(name='tasks.run_recurring_chores')
+def run_recurring_chores_task() -> dict:
+    import time
+    from database import get_db
+    from recurring_chore_service import run_recurring_chore_maintenance
+
+    start = time.perf_counter()
+    try:
+        db = get_db()
+        result = run_recurring_chore_maintenance(db)
+        from observability_service import trace_celery_task
+        trace_celery_task('run_recurring_chores', duration_ms=(time.perf_counter() - start) * 1000, success=True, result=result)
+        print(f'[celery] recurring chores: {result}')
+        return {'ok': True, **result}
+    except Exception as exc:
+        from observability_service import trace_celery_task
+        trace_celery_task('run_recurring_chores', duration_ms=(time.perf_counter() - start) * 1000, success=False, result={'error': str(exc)})
+        raise
+
+
 @celery_app.task(name='tasks.run_hourly_automation')
 def run_hourly_automation_task() -> dict:
+    run_recurring_chores_task()
     return run_automation_engine_task()

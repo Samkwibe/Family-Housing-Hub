@@ -24,8 +24,10 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import messagingService from '../../services/messagingService';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function GroupChatPanel({ group, currentUser, onClose }) {
+  const { userProfile } = useAuth();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
@@ -83,12 +85,20 @@ export default function GroupChatPanel({ group, currentUser, onClose }) {
       return;
     }
 
+    const text = message.trim();
     try {
-      // Send group message logic here
+      await messagingService.sendGroupMessage({
+        groupId: group.id,
+        senderId: currentUser.uid,
+        senderName:
+          currentUser.displayName ||
+          `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() ||
+          'Member',
+        message: text,
+      });
       setMessage('');
-      toast.success('Message sent!');
     } catch (error) {
-      toast.error('Failed to send message');
+      toast.error(error?.message || 'Failed to send message');
     }
   };
 

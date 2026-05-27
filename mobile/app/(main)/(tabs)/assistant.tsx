@@ -20,7 +20,9 @@ import { useVoiceAssistant } from '@/src/hooks/useVoiceAssistant';
 import { getRoleExperience, normalizeUserType } from '@/src/config/userExperience';
 import { useTabScreenInsets } from '@/src/hooks/useTabScreenInsets';
 import api from '@/src/services/api';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type Msg = { id: string; role: 'user' | 'assistant'; text: string };
 
@@ -33,6 +35,8 @@ const AI_PERSONAS = [
 ];
 
 export default function AssistantScreen() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const { prompt } = useLocalSearchParams<{ prompt?: string }>();
   const { userProfile } = useAuth();
   const { buildAiContext } = useHousehold();
@@ -270,7 +274,8 @@ export default function AssistantScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   aiHeader: {
     flexDirection: 'row',
@@ -428,3 +433,4 @@ const styles = StyleSheet.create({
   },
   sendDisabled: { opacity: 0.5 },
 });
+}

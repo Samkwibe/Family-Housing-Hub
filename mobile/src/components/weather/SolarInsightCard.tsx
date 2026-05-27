@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 import { fetchSolarInsights } from '@/src/services/weatherService';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type Props = {
   lat: number | null;
   lng: number | null;
 };
 
-export default function SolarInsightCard({ lat, lng }: Props) {
+export default function SolarInsightCard({
+  lat, lng }: Props) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const [loading, setLoading] = useState(false);
   const [panels, setPanels] = useState<number | null>(null);
   const [sunHours, setSunHours] = useState<number | null>(null);
@@ -63,7 +69,8 @@ export default function SolarInsightCard({ lat, lng }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   card: {
     backgroundColor: theme.colors.surfaceElevated,
     borderRadius: theme.radius.lg,
@@ -92,3 +99,4 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 12, color: theme.colors.textMuted, fontWeight: '600', marginTop: 2 },
   hint: { fontSize: 12, color: theme.colors.textMuted, marginTop: 8, lineHeight: 17 },
 });
+}

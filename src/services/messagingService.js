@@ -507,6 +507,40 @@ class MessagingService {
   }
 
   /**
+   * Send a message to a group chat
+   */
+  async sendGroupMessage({ groupId, senderId, senderName, message, type = 'text' }) {
+    if (!groupId || !senderId || !String(message || '').trim()) {
+      throw new Error('groupId, senderId, and message are required');
+    }
+
+    try {
+      const payload = {
+        groupId,
+        senderId,
+        senderName: senderName || 'Member',
+        message: String(message).trim(),
+        type,
+        read: false,
+        createdAt: serverTimestamp(),
+      };
+
+      await addDoc(collection(db, 'groupMessages'), payload);
+      await updateDoc(doc(db, 'groupChats', groupId), {
+        lastActivity: serverTimestamp(),
+      }).catch(() => {
+        /* group doc may be missing lastActivity field */
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error sending group message:', error);
+      toast.error('Failed to send message');
+      throw error;
+    }
+  }
+
+  /**
    * Listen to group chat messages
    */
   listenToGroupChat(groupId, callback) {

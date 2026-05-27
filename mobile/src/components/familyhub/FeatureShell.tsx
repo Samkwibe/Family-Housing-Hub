@@ -2,7 +2,8 @@ import { ReactNode, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, ViewStyle, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 import { FHBackLink } from './ui';
 
 type FeatureShellProps = {
@@ -30,6 +31,8 @@ export function FeatureShell({
   children,
   headerStyle,
 }: FeatureShellProps) {
+  const styles = useAppStyles(createStyles);
+
   useEffect(() => {
     if (!onBack) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -63,7 +66,8 @@ export function FeatureShell({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   backBar: {
     paddingHorizontal: 16,
@@ -97,3 +101,4 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
 });
+}

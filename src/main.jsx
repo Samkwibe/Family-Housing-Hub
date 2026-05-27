@@ -5,6 +5,7 @@ import App from './App.jsx'
 import './index.css'
 import { initObservability } from './lib/observability'
 import { initFeatureFlags } from './services/featureFlags'
+import { loadGoogleMaps } from './utils/loadGoogleMaps'
 
 // Safe DOM access with null check
 const rootElement = document.getElementById('root');
@@ -21,3 +22,6 @@ ReactDOM.createRoot(rootElement).render(
 // Boot optional runtime services (non-blocking)
 initObservability();
 initFeatureFlags();
+loadGoogleMaps().catch(() => {
+  console.warn('Google Maps API failed to load. Map features may be limited.');
+});

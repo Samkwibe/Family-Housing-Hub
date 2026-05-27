@@ -12,9 +12,13 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { listenToGroupChat, sendGroupMessage, type ChatMessage } from '@/src/services/messaging';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function GroupChatScreen() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const { groupId, groupName, draft } = useLocalSearchParams<{
     groupId: string;
     groupName?: string;
@@ -112,7 +116,8 @@ export default function GroupChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   flex: { flex: 1, backgroundColor: theme.colors.background },
   list: { padding: 16, paddingBottom: 8 },
   bubble: { maxWidth: '85%', padding: 12, borderRadius: 16, marginBottom: 8 },
@@ -154,3 +159,4 @@ const styles = StyleSheet.create({
   sendDisabled: { opacity: 0.6 },
   sendText: { color: theme.colors.textInverse, fontWeight: '700' },
 });
+}

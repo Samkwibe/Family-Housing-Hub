@@ -23,6 +23,7 @@ from household_service import (
     create_household_invite,
     ensure_user_household,
     get_invite_preview,
+    list_household_invites,
     list_user_households,
     switch_active_household,
 )
@@ -546,21 +547,8 @@ def _build_recommendations(inventory, chores, expenses, user) -> list:
     return recs[:4]
 
 
-@household_bp.route('/dashboard', methods=['GET'])
-def household_dashboard():
-    user, err = _require_user()
-    if err:
-        return err
-    start = time.perf_counter()
-    hid = _hid(user)
-    cached, _meta = get_cached_dashboard(hid)
-    if cached:
-        payload = {k: v for k, v in cached.items() if not k.startswith('_')}
-        resp = jsonify(payload)
-        resp.headers['X-Cache'] = 'HIT'
-        resp.headers['X-Response-Time-Ms'] = str(round((time.perf_counter() - start) * 1000, 2))
-        return resp
-
+def build_renter_dashboard_payload(user) -> dict:
+    """Build the full renter household dashboard payload. Shared by legacy and portal routes."""
     uid = _user_id(user)
     db = get_db()
     inventory = list(db.inventory.find(_scope(user)).sort('expiresAt', 1))
@@ -673,10 +661,30 @@ def household_dashboard():
         payload['expenses'] = [_serialize_expense(e, anomaly_map) for e in expenses]
     if can_documents:
         payload['documents'] = [_serialize_document(d) for d in documents]
+    return payload
 
+
+@household_bp.route('/dashboard', methods=['GET'])
+def household_dashboard():
+    user, err = _require_user()
+    if err:
+        return err
+    start = time.perf_counter()
+    hid = _hid(user)
+    cached, _meta = get_cached_dashboard(hid)
+    if cached:
+        payload = {k: v for k, v in cached.items() if not k.startswith('_')}
+        resp = jsonify(payload)
+        resp.headers['X-Cache'] = 'HIT'
+        resp.headers['X-Deprecation'] = 'Use /api/dashboard/renter'
+        resp.headers['X-Response-Time-Ms'] = str(round((time.perf_counter() - start) * 1000, 2))
+        return resp
+
+    payload = build_renter_dashboard_payload(user)
     set_cached_dashboard(hid, payload)
     resp = jsonify(payload)
     resp.headers['X-Cache'] = 'MISS'
+    resp.headers['X-Deprecation'] = 'Use /api/dashboard/renter'
     resp.headers['X-Response-Time-Ms'] = str(round((time.perf_counter() - start) * 1000, 2))
     return resp
 
@@ -771,6 +779,9 @@ def chores_list_create():
         'householdId': _hid(user),
         'title': title,
         'assignee': data.get('assignee', ''),
+        'assigneeUserId': data.get('assigneeUserId') or data.get('assigneeUser_id'),
+        'childProfileId': data.get('childProfileId'),
+        'points': max(0, int(data.get('points') or 5)),
         'dueDate': data.get('dueDate', ''),
         'completed': bool(data.get('completed')),
         'priority': data.get('priority', 'medium'),
@@ -801,7 +812,7 @@ def chore_update_delete(chore_id):
         return jsonify({'ok': True})
 
     data = request.json or {}
-    updates = {k: data[k] for k in ('title', 'assignee', 'dueDate', 'completed', 'priority') if k in data}
+    updates = {k: data[k] for k in ('title', 'assignee', 'assigneeUserId', 'childProfileId', 'points', 'dueDate', 'completed', 'priority') if k in data}
     if updates:
         db.chores.update_one({**{'_id': oid}, **_scope(user)}, {'$set': updates})
     doc = db.chores.find_one({**{'_id': oid}, **_scope(user)})
@@ -939,6 +950,10 @@ def maintenance_update_delete(req_id):
         db.maintenance.delete_one({**{'_id': oid}, **_scope(user)})
         return jsonify({'ok': True})
 
+    original = db.maintenance.find_one({**{'_id': oid}, **_scope(user)})
+    if not original:
+        return jsonify({'error': 'Not found'}), 404
+
     data = request.json or {}
     updates = {
         k: data[k]
@@ -947,6 +962,19 @@ def maintenance_update_delete(req_id):
     }
     if updates:
         db.maintenance.update_one({**{'_id': oid}, **_scope(user)}, {'$set': updates})
+        
+        new_status = updates.get('status')
+        if new_status and new_status != original.get('status'):
+            title = original.get('title', 'Maintenance request')
+            message = f"Maintenance request '{title}' status updated to {new_status}."
+            try:
+                from household_service import get_household_member_user_ids
+                from push_service import send_push_to_user
+                for uid in get_household_member_user_ids(_hid(user)):
+                    send_push_to_user(uid, "Maintenance Update 🛠️", message)
+            except Exception as e:
+                print(f"[push] Error sending maintenance push: {e}")
+
     doc = db.maintenance.find_one({**{'_id': oid}, **_scope(user)})
     if not doc:
         return jsonify({'error': 'Not found'}), 404
@@ -1531,13 +1559,36 @@ def send_household_invite():
     data = request.json or {}
     email = (data.get('email') or '').strip()
     role = (data.get('role') or 'renter').strip()
+    invite_type = (data.get('inviteType') or '').strip() or None
+    display_name = (data.get('displayName') or data.get('firstName') or '').strip() or None
+    date_of_birth = data.get('dateOfBirth')
     try:
-        invite = create_household_invite(user, email, role)
+        invite = create_household_invite(
+            user,
+            email,
+            role,
+            invite_type=invite_type,
+            display_name=display_name,
+            date_of_birth=date_of_birth,
+        )
     except PermissionError as exc:
         return jsonify({'error': str(exc)}), 403
     except ValueError as exc:
         return jsonify({'error': str(exc)}), 400
     return jsonify({'invite': invite}), 201
+
+
+@household_bp.route('/invites', methods=['GET'])
+def list_household_invites_route():
+    user, err = _require_user()
+    if err:
+        return err
+    invite_type = (request.args.get('inviteType') or '').strip() or None
+    try:
+        invites = list_household_invites(user, invite_type=invite_type)
+    except PermissionError as exc:
+        return jsonify({'error': str(exc)}), 403
+    return jsonify({'invites': invites})
 
 
 @household_bp.route('/invites/<token>', methods=['GET'])

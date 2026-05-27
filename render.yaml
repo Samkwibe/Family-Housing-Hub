@@ -10,6 +10,7 @@ envVarGroups:
         value: production
       - key: MONGODB_URI
         sync: false
+        # MUST be URL-encoded: @ → %40, ! → %21 in password (see docs/deployment/RENDER_URGENT_FIXES.md)
       - key: MONGODB_DB
         value: family_housing_hub
       - key: JWT_SECRET
@@ -19,6 +20,10 @@ envVarGroups:
       - key: FIELD_ENCRYPTION_KEY
         sync: false
       - key: REDIS_URL
+        sync: false
+
+      # ── Push (Firebase Cloud Messaging) ─────────────────────────────────────
+      - key: FCM_SERVER_KEY
         sync: false
 
       # ── Email (SendGrid) ────────────────────────────────────────────────────
@@ -116,5 +121,16 @@ services:
     region: virginia
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && celery -A celery_app worker --loglevel=info --concurrency=2
+    envVarGroups:
+      - name: fhh-backend-shared
+
+  # ── Celery Beat — hourly automation + recurring chores ─────────────────────
+  - type: worker
+    name: family-housing-hub-beat
+    runtime: python
+    plan: starter
+    region: virginia
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && celery -A celery_app beat --loglevel=info
     envVarGroups:
       - name: fhh-backend-shared

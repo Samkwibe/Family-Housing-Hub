@@ -10,8 +10,10 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 import type { SearchSuggestion } from '@/src/services/placesService';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type Props = {
   query: string;
@@ -44,6 +46,9 @@ export default function SearchAutocomplete({
   onClear,
   variant = 'default',
 }: Props) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -146,7 +151,8 @@ export default function SearchAutocomplete({
     </View>
   );
 }
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   wrap: {
     paddingHorizontal: theme.spacing.md,
     paddingTop: theme.spacing.sm,
@@ -227,3 +233,4 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 });
+}

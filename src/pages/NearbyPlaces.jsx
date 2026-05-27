@@ -29,7 +29,7 @@ const categoryToPlaceType = {
     'gas': 'gas_station', 'shopping': 'shopping_mall'
 };
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBfm3u4-vEnsVvHEqjqpoGdlbNgaza8JnA';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const placesCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000;
 

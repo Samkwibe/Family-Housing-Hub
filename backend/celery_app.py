@@ -33,4 +33,10 @@ celery_app.conf.update(
     task_default_queue='default',
     broker_use_ssl=_SSL_OPTS,
     redis_backend_use_ssl=_SSL_OPTS,
+    beat_schedule={
+        'hourly-automation': {
+            'task': 'tasks.run_hourly_automation',
+            'schedule': 3600.0,
+        },
+    },
 )

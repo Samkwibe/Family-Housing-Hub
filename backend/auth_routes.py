@@ -18,6 +18,8 @@ from database import get_db, ping_db
 from household_service import ensure_user_household
 from oauth_service import OAuthError, verify_oauth_provider
 from rate_limit_service import check_auth_rate_limit, rate_limit_response
+from portal_context_service import default_active_portal, derive_experience_type
+from audit_service import log_audit
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
@@ -90,6 +92,9 @@ def _serialize_user(doc: dict) -> dict:
     out['uid'] = out['id']
     out['activeHouseholdId'] = doc.get('activeHouseholdId')
     out['ownedHouseholdIds'] = doc.get('ownedHouseholdIds') or []
+    out['experienceType'] = doc.get('experienceType') or derive_experience_type(doc)
+    out['activePortal'] = doc.get('activePortal') or default_active_portal(out['experienceType'])
+    out['activePropertyId'] = doc.get('activePropertyId')
     return out
 
 
@@ -134,6 +139,8 @@ def _validate_register_body(data: dict):
         return None, ('First name is required', 400)
 
     phone = _normalize_phone(data.get('phone', ''))
+    user_type = data.get('userType', 'renter')
+    experience_type = data.get('experienceType') or ('owner' if user_type == 'owner' else 'renter')
     user_doc = {
         'email': email,
         'passwordHash': _hash_password(password),
@@ -142,7 +149,10 @@ def _validate_register_body(data: dict):
         'phone': data.get('phone', '') if phone else '',
         'phoneDigits': phone or None,
         'role': data.get('role', 'family'),
-        'userType': data.get('userType', 'renter'),
+        'userType': user_type,
+        'experienceType': experience_type,
+        'activePortal': data.get('activePortal') or default_active_portal(experience_type),
+        'activePropertyId': data.get('activePropertyId'),
         'emailVerified': bool(data.get('emailVerified', False)),
         'phoneVerified': bool(data.get('phoneVerified', False)),
         'profileComplete': False,
@@ -187,15 +197,44 @@ def register():
         if existing_phone:
             return jsonify({'error': 'An account with this phone number already exists'}), 409
 
+    invite_token = (data.get('inviteToken') or '').strip()
+    invite = None
+    if invite_token:
+        from household_service import validate_invite_for_registration
+        try:
+            invite = validate_invite_for_registration(invite_token, user_doc['email'])
+        except LookupError as exc:
+            return jsonify({'error': str(exc)}), 404
+        except PermissionError as exc:
+            return jsonify({'error': str(exc)}), 403
+        if (invite.get('inviteType') or '').lower() == 'child':
+            from portal_context_service import age_tier_to_experience, compute_age_tier
+            dob = invite.get('dateOfBirth')
+            user_doc['userType'] = 'family'
+            user_doc['experienceType'] = age_tier_to_experience(compute_age_tier(dob))
+            user_doc['activePortal'] = 'child'
+            user_doc['firstName'] = invite.get('displayName') or user_doc['firstName']
+            user_doc['profileComplete'] = True
+            user_doc['onboardingComplete'] = True
+
     result = db.users.insert_one(user_doc)
     user_id = str(result.inserted_id)
     user_doc['_id'] = result.inserted_id
-    ensure_user_household(user_doc)
+
+    accept_result = None
+    if invite_token:
+        from household_service import accept_household_invite
+        accept_result = accept_household_invite(user_doc, invite_token)
+    else:
+        ensure_user_household(user_doc)
+
     token = _create_token(user_id)
+    serialized = _serialize_user(db.users.find_one({'_id': result.inserted_id}))
 
     return jsonify({
         'token': token,
-        'user': _serialize_user(user_doc),
+        'user': serialized,
+        'inviteAccept': accept_result,
     }), 201
 
 
@@ -320,10 +359,16 @@ def update_profile():
     data = request.json or {}
     allowed = {
         'firstName', 'lastName', 'phone', 'userType', 'role',
+        'experienceType', 'activePortal', 'activePropertyId',
         'address', 'profileComplete', 'onboardingComplete',
-        'emailVerified', 'phoneVerified',
+        'emailVerified', 'phoneVerified', 'themePreference',
     }
     update = {k: v for k, v in data.items() if k in allowed}
+    if 'themePreference' in update:
+        pref = str(update['themePreference']).strip().lower()
+        if pref not in ('light', 'dark', 'system'):
+            return jsonify({'error': 'themePreference must be light, dark, or system'}), 400
+        update['themePreference'] = pref
     if 'phone' in update:
         digits = _normalize_phone(str(update['phone']))
         update['phoneDigits'] = digits or None
@@ -339,6 +384,55 @@ def update_profile():
     db.users.update_one({'_id': user['_id']}, {'$set': update})
     refreshed = db.users.find_one({'_id': user['_id']})
     return jsonify({'user': _serialize_user(refreshed)})
+
+
+@auth_bp.route('/portal/switch', methods=['POST'])
+def switch_portal():
+    """Switch active portal context (renter / owner / child)."""
+    user = get_current_user_doc()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.json or {}
+    active_portal = (data.get('activePortal') or '').strip().lower()
+    if active_portal not in ('renter', 'owner', 'child', 'teen'):
+        return jsonify({'error': 'activePortal must be renter, owner, child, or teen'}), 400
+
+    update = {
+        'activePortal': 'child' if active_portal == 'teen' else active_portal,
+        'updatedAt': _utcnow().isoformat(),
+    }
+    if 'activePropertyId' in data:
+        update['activePropertyId'] = data.get('activePropertyId') or None
+    if 'activeHouseholdId' in data and data.get('activeHouseholdId'):
+        update['activeHouseholdId'] = data.get('activeHouseholdId')
+
+    db = get_db()
+    db.users.update_one({'_id': user['_id']}, {'$set': update})
+    refreshed = db.users.find_one({'_id': user['_id']})
+    from portal_context_service import resolve_portal_context
+    ctx = resolve_portal_context(refreshed, request)
+    log_audit(
+        'portal.switch',
+        user_id=str(user['_id']),
+        portal_context=ctx,
+        metadata={'activePortal': update['activePortal']},
+    )
+    return jsonify({
+        'user': _serialize_user(refreshed),
+        'portalContext': ctx.to_dict() if ctx else None,
+    })
+
+
+@auth_bp.route('/portal/context', methods=['GET'])
+def portal_context():
+    """Return resolved PortalContext for the current session."""
+    user = get_current_user_doc()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    from portal_context_service import resolve_portal_context
+    ctx = resolve_portal_context(user, request)
+    return jsonify({'portalContext': ctx.to_dict() if ctx else None})
 
 
 @auth_bp.route('/lookup-email', methods=['GET'])
@@ -492,6 +586,38 @@ def _send_reset_email(to_email: str, reset_link: str) -> None:
     server.login(SMTP_USER, SMTP_PASSWORD)
     server.sendmail(sender, [to_email], msg.as_string())
     server.quit()
+
+
+@auth_bp.route('/push-token', methods=['POST'])
+def register_push_token_route():
+    """Register FCM/Expo push token for the authenticated user."""
+    user = get_current_user_doc()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.json or {}
+    token = (data.get('token') or '').strip()
+    platform = (data.get('platform') or 'unknown').strip()
+    if not token:
+        return jsonify({'error': 'token is required'}), 400
+    from push_service import register_push_token
+
+    register_push_token(str(user['_id']), token, platform)
+    return jsonify({'ok': True})
+
+
+@auth_bp.route('/test-push', methods=['POST'])
+def test_push_route():
+    """Trigger a manual test push notification for the authenticated user."""
+    user = get_current_user_doc()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.json or {}
+    title = (data.get('title') or "Test Push Alert 🚀").strip()
+    body = (data.get('body') or "This is a direct push notification from your Family Housing Hub backend!").strip()
+
+    from push_service import send_push_to_user
+    res = send_push_to_user(str(user['_id']), title, body, data.get('data'))
+    return jsonify({'ok': True, 'delivery': res})
 
 
 @auth_bp.route('/forgot-password', methods=['POST'])

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Alert, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, Alert, ScrollView, Switch, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useHousehold } from '@/src/contexts/HouseholdContext';
 import { useToast } from '@/src/contexts/ToastContext';
+import { useTheme, useThemePreference, type ThemePreference } from '@/src/contexts/ThemeContext';
 import { Button, Input } from '@/src/components/ui';
 import {
   fetchHouseholds,
@@ -12,25 +13,43 @@ import {
   fetchLocationSharing,
   grantMemberPermission,
   sendHouseholdInvite,
+  sendChildInvite,
+  fetchHouseholdInvites,
   switchHousehold,
   updateLocationSharing,
   type HouseholdSummary,
   type MemberPermissions,
+  type HouseholdInvitePreview,
 } from '@/src/services/householdService';
 import {
   refreshGeofenceSharingState,
   setGeofenceSharingEnabled,
   startGeofenceBackgroundPings,
 } from '@/src/services/geofenceLocation';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+
+const THEME_OPTIONS: { key: ThemePreference; label: string }[] = [
+  { key: 'light', label: 'Light' },
+  { key: 'dark', label: 'Dark' },
+  { key: 'system', label: 'System' },
+];
 
 export default function SettingsScreen() {
+  const theme = useTheme();
+  const { preference, setPreference } = useThemePreference();
+  const styles = useAppStyles(createStyles);
   const { logout, currentUser } = useAuth();
   const { members, refresh } = useHousehold();
   const toast = useToast();
   const router = useRouter();
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [childName, setChildName] = useState('');
+  const [childEmail, setChildEmail] = useState('');
+  const [childDob, setChildDob] = useState('');
+  const [invitingChild, setInvitingChild] = useState(false);
+  const [pendingChildInvites, setPendingChildInvites] = useState<HouseholdInvitePreview[]>([]);
   const [households, setHouseholds] = useState<HouseholdSummary[]>([]);
   const [activeHouseholdId, setActiveHouseholdId] = useState<string | null>(null);
   const [locationSharing, setLocationSharing] = useState(false);
@@ -69,11 +88,55 @@ export default function SettingsScreen() {
     }
   }, []);
 
+  const loadChildInvites = useCallback(async () => {
+    try {
+      const res = await fetchHouseholdInvites('child');
+      setPendingChildInvites(res.invites);
+    } catch {
+      setPendingChildInvites([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadHouseholds();
     loadLocationSharing();
     loadPermissions();
-  }, [loadHouseholds, loadLocationSharing, loadPermissions]);
+    loadChildInvites();
+  }, [loadHouseholds, loadLocationSharing, loadPermissions, loadChildInvites]);
+
+  const onInviteChild = async () => {
+    const email = childEmail.trim().toLowerCase();
+    const displayName = childName.trim();
+    const dateOfBirth = childDob.trim();
+    if (!displayName) {
+      toast.error("Enter your child's name");
+      return;
+    }
+    if (!email.includes('@')) {
+      toast.error('Enter a valid email for your child');
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) {
+      toast.error('Enter birthday as YYYY-MM-DD');
+      return;
+    }
+    setInvitingChild(true);
+    try {
+      const res = await sendChildInvite({ email, displayName, dateOfBirth });
+      setChildName('');
+      setChildEmail('');
+      setChildDob('');
+      await loadChildInvites();
+      toast.success(`Invite sent to ${displayName}`);
+      if (__DEV__ && res.invite.inviteLink) {
+        Alert.alert('Dev child invite link', res.invite.inviteLink);
+      }
+    } catch (e: unknown) {
+      toast.error((e as Error).message || 'Could not send child invite');
+    } finally {
+      setInvitingChild(false);
+    }
+  };
 
   const onLogout = async () => {
     await logout();
@@ -155,6 +218,29 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.cardTitle}>Appearance</Text>
+          <Text style={styles.meta}>Choose light, dark, or match your device setting.</Text>
+          <View style={styles.themeRow}>
+            {THEME_OPTIONS.map((opt) => {
+              const active = preference === opt.key;
+              return (
+                <Pressable
+                  key={opt.key}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  style={[styles.themeOption, active && styles.themeOptionActive]}
+                  onPress={() => setPreference(opt.key)}
+                >
+                  <Text style={[styles.themeOptionText, active && styles.themeOptionTextActive]}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>Privacy & location</Text>
           <View style={styles.toggleRow}>
             <View style={{ flex: 1 }}>
@@ -200,7 +286,44 @@ export default function SettingsScreen() {
           ))}
           {isOwner ? (
             <>
-              <Text style={[styles.label, { marginTop: 12 }]}>Invite by email</Text>
+              <Text style={[styles.sectionHeading, { marginTop: 16 }]}>Invite a child</Text>
+              <Text style={styles.meta}>
+                Send a family invite with your child&apos;s name and birthday. They&apos;ll land directly in the child portal.
+              </Text>
+              <Input
+                value={childName}
+                onChangeText={setChildName}
+                placeholder="Child's first name"
+                autoCapitalize="words"
+              />
+              <Input
+                value={childEmail}
+                onChangeText={setChildEmail}
+                placeholder="child@email.com"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={{ marginTop: 8 }}
+              />
+              <Input
+                value={childDob}
+                onChangeText={setChildDob}
+                placeholder="Birthday YYYY-MM-DD"
+                autoCapitalize="none"
+                style={{ marginTop: 8 }}
+              />
+              <Button title="Invite child" onPress={onInviteChild} loading={invitingChild} style={{ marginTop: 8 }} />
+              {pendingChildInvites.length > 0 ? (
+                <View style={{ marginTop: 12 }}>
+                  <Text style={styles.label}>Pending child invites</Text>
+                  {pendingChildInvites.map((inv) => (
+                    <Text key={inv.token} style={styles.memberLine}>
+                      {inv.displayName || inv.email} · {inv.childInviteStatus || 'pending'}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
+
+              <Text style={[styles.sectionHeading, { marginTop: 16 }]}>Invite roommate</Text>
               <Input
                 value={inviteEmail}
                 onChangeText={setInviteEmail}
@@ -259,7 +382,8 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   container: { padding: 20, paddingBottom: 40 },
   card: {
@@ -271,6 +395,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.borderLight,
   },
   cardTitle: { ...theme.typography.label, color: theme.colors.text, marginBottom: 12 },
+  sectionHeading: { fontSize: 14, fontWeight: '700', color: theme.colors.text, marginBottom: 6 },
   label: { fontSize: 12, color: theme.colors.textMuted, textTransform: 'uppercase', fontWeight: '600' },
   value: { fontSize: 17, fontWeight: '600', color: theme.colors.text, marginTop: 4 },
   meta: { fontSize: 14, color: theme.colors.textMuted, marginTop: 2 },
@@ -281,4 +406,21 @@ const styles = StyleSheet.create({
   permBlock: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.colors.borderLight },
   permLabel: { flex: 1, fontSize: 15, color: theme.colors.textSecondary },
   logout: { marginTop: 20, marginBottom: 8 },
+  themeRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  themeOption: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
+    backgroundColor: theme.colors.surfaceInset,
+    alignItems: 'center',
+  },
+  themeOptionActive: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.glowPurple,
+  },
+  themeOptionText: { fontSize: 14, fontWeight: '600', color: theme.colors.textSecondary },
+  themeOptionTextActive: { color: theme.colors.text },
 });
+}

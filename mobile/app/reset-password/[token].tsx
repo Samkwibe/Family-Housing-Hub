@@ -4,9 +4,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Input } from '@/src/components/ui';
 import { resetPassword } from '@/src/services/authService';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 
 export default function ResetPasswordDeepLinkScreen() {
+  const styles = useAppStyles(createStyles);
   const { token } = useLocalSearchParams<{ token: string }>();
   const router = useRouter();
   const [newPassword, setNewPassword] = useState('');
@@ -52,9 +54,11 @@ export default function ResetPasswordDeepLinkScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   container: { flex: 1, padding: 24, justifyContent: 'center', gap: 12 },
   title: { ...theme.typography.h2, color: theme.colors.text, marginBottom: 8 },
   error: { color: theme.colors.danger, fontSize: 14 },
 });
+}

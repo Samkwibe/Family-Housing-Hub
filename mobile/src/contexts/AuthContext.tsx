@@ -19,6 +19,7 @@ import {
 import { checkProfileComplete } from '../services/userService';
 import { getCachedJson, setCachedJson, clearCacheKey } from '../utils/cache';
 import { normalizeUSPhone } from '../utils/phone';
+import { registerForPushNotificationsAsync } from '../services/pushNotificationService';
 
 type UserProfile = AuthUser & Record<string, unknown>;
 
@@ -82,6 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           applyUser(user);
           await persistUserCache(user);
           await setCachedJson('session_user', user);
+          registerForPushNotificationsAsync().catch(err => {
+            console.error('[push] Startup registration failed:', err);
+          });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -97,6 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyUser(user);
     await persistUserCache(user);
     await setCachedJson('session_user', user);
+    try {
+      await registerForPushNotificationsAsync();
+    } catch (e) {
+      console.error('[push] Login push registration failed:', e);
+    }
   };
 
   const oauthLogin = async (
@@ -107,6 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyUser(user);
     await persistUserCache(user);
     await setCachedJson('session_user', user);
+    try {
+      await registerForPushNotificationsAsync();
+    } catch (e) {
+      console.error('[push] OAuth login push registration failed:', e);
+    }
   };
 
   const signup = async (
@@ -123,12 +137,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       lastName: String(userData.lastName || ''),
       phone: digits ? phone : undefined,
       userType: String(userData.userType || 'renter'),
+      inviteToken: userData.inviteToken ? String(userData.inviteToken) : undefined,
       emailVerified: userData.emailVerified !== false,
       phoneVerified: userData.phoneVerified !== false,
     });
     applyUser(user);
     await persistUserCache(user);
     await setCachedJson('session_user', user);
+    try {
+      await registerForPushNotificationsAsync();
+    } catch (e) {
+      console.error('[push] Signup push registration failed:', e);
+    }
     return user;
   };
 

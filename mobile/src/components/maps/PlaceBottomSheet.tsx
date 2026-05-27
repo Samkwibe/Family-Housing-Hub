@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Linking, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 import { usePlaceInsights } from '@/src/hooks/usePlaceInsights';
 import {
   getCategoryDef,
@@ -9,6 +10,7 @@ import {
   type Place,
 } from '@/src/services/placesService';
 import { streetViewProxyUrl } from '@/src/services/weatherService';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type Props = {
   place: Place | null;
@@ -16,7 +18,11 @@ type Props = {
   origin?: { lat: number; lng: number } | null;
 };
 
-export default function PlaceBottomSheet({ place, onClose, origin }: Props) {
+export default function PlaceBottomSheet({
+  place, onClose, origin }: Props) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const [photoFailed, setPhotoFailed] = useState(false);
   const [streetFailed, setStreetFailed] = useState(false);
   const [showStreetView, setShowStreetView] = useState(false);
@@ -166,7 +172,8 @@ export default function PlaceBottomSheet({ place, onClose, origin }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
@@ -319,3 +326,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+}

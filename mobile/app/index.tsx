@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react';
 import { Redirect } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { resolveActivePortal } from '@/src/portals/resolvePortal';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { hasCompletedIntro, hasSkippedIntro } from '@/src/services/onboardingStorage';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 
 export default function Index() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const { currentUser, profileComplete, loading, userProfile } = useAuth();
   const [gate, setGate] = useState<{ complete: boolean; skipped: boolean } | null>(null);
 
@@ -31,8 +36,10 @@ export default function Index() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  if (userProfile?.role === 'child') {
-    return <Redirect href="/(main)/(tabs)/dashboard" />;
+  const portal = resolveActivePortal(userProfile as Record<string, unknown> | null);
+
+  if (portal === 'child') {
+    return <Redirect href="/(main)" />;
   }
 
   if (!profileComplete) {
@@ -42,7 +49,8 @@ export default function Index() {
   return <Redirect href="/(main)/(tabs)/dashboard" />;
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   center: {
     flex: 1,
     justifyContent: 'center',
@@ -50,3 +58,4 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
 });
+}

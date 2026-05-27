@@ -10,7 +10,9 @@ import {
   TextInputProps,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type ButtonProps = {
   title: string;
@@ -29,6 +31,9 @@ export function Button({
   variant = 'primary',
   style,
 }: ButtonProps) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
   const isDanger = variant === 'danger';
@@ -71,7 +76,11 @@ type InputProps = TextInputProps & {
   showPasswordToggle?: boolean;
 };
 
-export function Input({ label, error, style, showPasswordToggle, secureTextEntry, ...props }: InputProps) {
+export function Input({
+  label, error, style, showPasswordToggle, secureTextEntry, ...props }: InputProps) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const [visible, setVisible] = useState(false);
   const isSecure = showPasswordToggle ? !visible : secureTextEntry;
 
@@ -116,6 +125,7 @@ type CardProps = {
 };
 
 export function Card({ children, style, onPress }: CardProps) {
+  const styles = useAppStyles(createStyles);
   if (onPress) {
     return (
       <Pressable style={[styles.card, style]} onPress={onPress}>
@@ -127,6 +137,7 @@ export function Card({ children, style, onPress }: CardProps) {
 }
 
 export function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -135,15 +146,20 @@ export function SectionHeader({ title, subtitle }: { title: string; subtitle?: s
   );
 }
 
-export function Badge({ text, color = theme.colors.primaryLight }: { text: string; color?: string }) {
+export function Badge({ text, color }: { text: string; color?: string }) {
+  const theme = useTheme();
+  const resolvedColor = color ?? theme.colors.primaryLight;
+
+  const styles = useAppStyles(createStyles);
   return (
-    <View style={[styles.badge, { backgroundColor: `${color}22` }]}>
+    <View style={[styles.badge, { backgroundColor: `${resolvedColor}22` }]}>
       <Text style={[styles.badgeText, { color: theme.colors.primary }]}>{text}</Text>
     </View>
   );
 }
 
 export function EmptyState({ icon, title, message }: { icon?: string; title: string; message: string }) {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.empty}>
       {icon ? <Text style={styles.emptyIcon}>{icon}</Text> : null}
@@ -153,7 +169,8 @@ export function EmptyState({ icon, title, message }: { icon?: string; title: str
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   button: {
     paddingVertical: 16,
     paddingHorizontal: 20,
@@ -240,3 +257,4 @@ const styles = StyleSheet.create({
   emptyTitle: { ...theme.typography.h3, color: theme.colors.text, marginBottom: 6 },
   emptyMessage: { ...theme.typography.caption, color: theme.colors.textSecondary, textAlign: 'center' },
 });
+}

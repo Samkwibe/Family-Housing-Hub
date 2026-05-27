@@ -16,8 +16,10 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Button, EmptyState } from '@/src/components/ui';
 import { useTabScreenInsets } from '@/src/hooks/useTabScreenInsets';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 import { createGroup, listUserGroups, type MessageGroup } from '@/src/services/messaging';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 function formatTime(iso?: string | null) {
   if (!iso) return '';
@@ -35,6 +37,8 @@ function formatTime(iso?: string | null) {
 }
 
 export default function MessagesScreen() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { currentUser } = useAuth();
   const [groups, setGroups] = useState<MessageGroup[]>([]);
@@ -168,7 +172,8 @@ export default function MessagesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   header: {
     flexDirection: 'row',
@@ -239,3 +244,4 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.inputBg,
   },
 });
+}

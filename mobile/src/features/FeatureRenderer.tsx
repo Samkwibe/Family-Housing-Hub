@@ -1,4 +1,4 @@
-import { ReactElement, ReactNode, useEffect, useState } from 'react';
+import { ReactElement, ReactNode, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, TextInput, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,7 +56,10 @@ import { getUploadUrl, uploadFileToPresignedUrl } from '@/src/services/storageSe
 import * as ImagePicker from 'expo-image-picker';
 import { useToast } from '@/src/contexts/ToastContext';
 import { QuickAddForm } from '@/src/components/household/QuickAddForm';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { formatUserLocation, formatUserSearchQuery, formatUserZip } from '@/src/utils/formatAddress';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type Props = { slug: string; onBack: () => void };
 
@@ -64,7 +67,10 @@ function askAi(router: ReturnType<typeof useRouter>, prompt: string) {
   router.push({ pathname: '/(main)/(tabs)/assistant', params: { prompt } });
 }
 
-function StubFeature({ slug, onBack }: Props) {
+function StubFeature({
+  slug, onBack }: Props) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const registryFeature = getFeature(slug);
   const stubFeature = STUB_FEATURES.find((f) => f.slug === slug);
@@ -97,6 +103,8 @@ function StubFeature({ slug, onBack }: Props) {
 }
 
 function EmptyBlock({ title, body }: { title: string; body: string }) {
+  const theme = useTheme();
+
   return (
     <View style={{ padding: 16 }}>
       <Text style={{ fontSize: 14, fontWeight: '700', color: theme.colors.text }}>{title}</Text>
@@ -106,6 +114,8 @@ function EmptyBlock({ title, body }: { title: string; body: string }) {
 }
 
 function RentSplitScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { expenses, members, snapshot, refreshHousehold } = useHousehold();
   const [showAdd, setShowAdd] = useState(false);
@@ -227,6 +237,8 @@ function RentSplitScreen({ onBack }: { onBack: () => void }) {
 function MemberRow({ initials, name, sub, you, paid, pending }: {
   initials: string; name: string; sub: string; you?: boolean; paid?: boolean; pending?: boolean;
 }) {
+  const styles = useAppStyles(createStyles);
+
   const bg = pending ? 'rgba(239,68,68,.12)' : you ? 'rgba(124,58,237,.2)' : 'rgba(245,158,11,.12)';
   const color = pending ? '#EF4444' : you ? '#A78BFA' : '#F59E0B';
   return (
@@ -248,6 +260,8 @@ function MemberRow({ initials, name, sub, you, paid, pending }: {
 }
 
 function CreditBuilderScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { creditSummary, refreshHousehold } = useHousehold();
   const { estimatedScore, grade, onTimeCount, missedCount, monthsReported, ytdChange, monthlyPayments, bureaus } = creditSummary;
@@ -325,6 +339,8 @@ function CreditBuilderScreen({ onBack }: { onBack: () => void }) {
 }
 
 function FinancialGoalsScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const {
     financialGoals,
@@ -340,7 +356,7 @@ function FinancialGoalsScreen({ onBack }: { onBack: () => void }) {
   const [forecastLoading, setForecastLoading] = useState(false);
   const flaggedIds = new Set(spendingAnomalies.map((a) => a.expenseId));
   const monthlyBills = expenses.filter((e) => !e.paid);
-  const goalIcon = (icon: string): keyof typeof Ionicons.glyphMap => {
+  const resolveGoalIcon = (icon: string): keyof typeof Ionicons.glyphMap => {
     if (icon === 'home') return 'home';
     if (icon === 'car') return 'car';
     if (icon === 'business') return 'business';
@@ -511,7 +527,7 @@ function FinancialGoalsScreen({ onBack }: { onBack: () => void }) {
           financialGoals.map((g, i) => (
             <GoalRow
               key={g.id}
-              icon={goalIcon(g.icon)}
+              icon={resolveGoalIcon(g.icon)}
               color="#14B8A6"
               title={g.title}
               goal={`$${g.targetAmount.toFixed(0)}`}
@@ -545,6 +561,8 @@ function FinancialGoalsScreen({ onBack }: { onBack: () => void }) {
 function GoalRow({ icon, color, title, goal, saved, pct, hint, last }: {
   icon: keyof typeof Ionicons.glyphMap; color: string; title: string; goal: string; saved: string; pct: number; hint: string; last?: boolean;
 }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={[styles.goalRow, !last && styles.goalBorder]}>
       <View style={styles.goalHeader}>
@@ -566,6 +584,8 @@ function GoalRow({ icon, color, title, goal, saved, pct, hint, last }: {
 }
 
 function EnergyScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { utilitySummary, refreshHousehold } = useHousehold();
   const [showAdd, setShowAdd] = useState(false);
@@ -636,6 +656,9 @@ function EnergyScreen({ onBack }: { onBack: () => void }) {
 }
 
 function MoveInScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+  const theme = useTheme();
+
   const router = useRouter();
   const toast = useToast();
   const { checklistItems, refreshHousehold } = useHousehold();
@@ -740,6 +763,8 @@ function MoveInScreen({ onBack }: { onBack: () => void }) {
 }
 
 function PackageScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { packages, refreshHousehold } = useHousehold();
   const [showAdd, setShowAdd] = useState(false);
@@ -845,6 +870,8 @@ function PackageScreen({ onBack }: { onBack: () => void }) {
 }
 
 function LeaseRenewalScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { documents, expenses } = useHousehold();
   const { userProfile } = useAuth();
@@ -892,6 +919,8 @@ function LeaseRenewalScreen({ onBack }: { onBack: () => void }) {
 }
 
 function CommunityScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { communityPosts, refreshHousehold } = useHousehold();
   const [showAdd, setShowAdd] = useState(false);
@@ -940,6 +969,8 @@ function CommunityScreen({ onBack }: { onBack: () => void }) {
 }
 
 function DocumentSignScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { documents } = useHousehold();
   const pending = documents.filter((d) => d.category === 'lease' || d.notes?.toLowerCase().includes('sign'));
@@ -968,6 +999,8 @@ function DocumentSignScreen({ onBack }: { onBack: () => void }) {
 }
 
 function NeighborhoodScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { userProfile } = useAuth();
   const location = [userProfile?.city, userProfile?.state].filter(Boolean).join(', ') || userProfile?.address || 'Your area';
@@ -987,6 +1020,8 @@ function NeighborhoodScreen({ onBack }: { onBack: () => void }) {
 }
 
 function PurchaseReadinessScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const [data, setData] = useState<Awaited<ReturnType<typeof fetchPurchaseReadiness>>['purchaseReadiness'] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -1029,6 +1064,8 @@ function PurchaseReadinessScreen({ onBack }: { onBack: () => void }) {
 }
 
 function HouseSearchScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { userProfile } = useAuth();
   const { rentAffordability } = useHousehold();
@@ -1039,12 +1076,13 @@ function HouseSearchScreen({ onBack }: { onBack: () => void }) {
   const [affordFilterOn, setAffordFilterOn] = useState(true);
   const [tab, setTab] = useState<'search' | 'market'>('search');
   const [rentMarket, setRentMarket] = useState<Awaited<ReturnType<typeof fetchRentMarket>>['rentMarket'] | null>(null);
+  const autoSearchDone = useRef(false);
   const maxRent = rentAffordability?.recommendedMax ?? null;
-  const userZip = (userProfile?.address as { zipCode?: string } | undefined)?.zipCode || '';
+  const userZip = formatUserZip(userProfile?.address);
 
   useEffect(() => {
-    const addr = userProfile?.address || userProfile?.city || '';
-    if (addr) setQuery(String(addr));
+    const nextQuery = formatUserSearchQuery(userProfile?.address, userProfile?.city);
+    if (nextQuery) setQuery(nextQuery);
   }, [userProfile]);
 
   useEffect(() => {
@@ -1079,8 +1117,12 @@ function HouseSearchScreen({ onBack }: { onBack: () => void }) {
   };
 
   useEffect(() => {
-    if (query.length > 3) runSearch();
-  }, []);
+    if (autoSearchDone.current || tab !== 'search') return;
+    const trimmed = query.trim();
+    if (trimmed.length < 3) return;
+    autoSearchDone.current = true;
+    runSearch();
+  }, [query, tab]);
 
   return (
     <FeatureShell
@@ -1168,6 +1210,8 @@ function HouseSearchScreen({ onBack }: { onBack: () => void }) {
 }
 
 function OwnerPortalScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const { expenses, maintenance, members } = useHousehold();
   const { userProfile } = useAuth();
   const isOwner = userProfile?.userType === 'owner' || userProfile?.role === 'owner';
@@ -1239,6 +1283,8 @@ function OwnerPortalScreen({ onBack }: { onBack: () => void }) {
 }
 
 function MaintenanceRatingScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { maintenance, refreshHousehold } = useHousehold();
   const [showAdd, setShowAdd] = useState(false);
@@ -1352,6 +1398,8 @@ function MaintenanceRatingScreen({ onBack }: { onBack: () => void }) {
 }
 
 function HealthScreen({ onBack }: { onBack: () => void }) {
+  const styles = useAppStyles(createStyles);
+
   const router = useRouter();
   const { refreshHousehold } = useHousehold();
   const [members, setMembers] = useState<HealthMember[]>([]);
@@ -1385,6 +1433,11 @@ function HealthScreen({ onBack }: { onBack: () => void }) {
       } else {
         setVaccinations([]);
       }
+    } catch {
+      setMembers([]);
+      setTimeline([]);
+      setMedications([]);
+      setVaccinations([]);
     } finally {
       setLoading(false);
     }
@@ -1549,6 +1602,8 @@ function RoomCard({ title, tag, tagVariant, children }: {
   title: string; tag: string; tagVariant: 'green' | 'amber' | 'violet' | 'red';
   children: ReactNode;
 }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={styles.roomCard}>
       <View style={styles.roomHdr}>
@@ -1562,10 +1617,14 @@ function RoomCard({ title, tag, tagVariant, children }: {
 
 // Helpers
 function Toggle({ on }: { on: boolean }) {
+  const styles = useAppStyles(createStyles);
+
   return <View style={[styles.toggle, on && styles.toggleOn]}><View style={[styles.toggleKnob, on && styles.toggleKnobOn]} /></View>;
 }
 
 function UtilBox({ icon, label, value, color }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; color: string }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={[styles.utilBox, { borderColor: `${color}33` }]}>
       <Ionicons name={icon} size={18} color={color} />
@@ -1576,6 +1635,8 @@ function UtilBox({ icon, label, value, color }: { icon: keyof typeof Ionicons.gl
 }
 
 function MiniStat({ value, label, color }: { value: string; label: string; color: string }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={[styles.miniStat, { borderColor: `${color}33` }]}>
       <Text style={[styles.miniStatVal, { color }]}>{value}</Text>
@@ -1585,6 +1646,8 @@ function MiniStat({ value, label, color }: { value: string; label: string; color
 }
 
 function CheckRow({ done, title, sub, camera, pending, last }: { done?: boolean; title: string; sub: string; camera?: boolean; pending?: boolean; last?: boolean }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={[styles.checkRow, !last && styles.checkBorder]}>
       <View style={[styles.checkBox, done && styles.checkDone, !done && styles.checkEmpty]} />
@@ -1602,6 +1665,8 @@ function CheckRow({ done, title, sub, camera, pending, last }: { done?: boolean;
 }
 
 function MarketCol({ label, value, color }: { label: string; value: string; color: string }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={styles.marketCol}>
       <Text style={styles.marketLbl}>{label}</Text>
@@ -1611,6 +1676,8 @@ function MarketCol({ label, value, color }: { label: string; value: string; colo
 }
 
 function TalkingPoint({ color, title, text }: { color: string; title: string; text: string }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={[styles.talkingPoint, { borderLeftColor: color }]}>
       <Text style={styles.tpTitle}>{title}</Text>
@@ -1623,6 +1690,8 @@ function PostCard({ initials, name, time, tag, tagVariant, borderColor, body, li
   initials: string; name: string; time: string; tag: string; tagVariant: 'amber' | 'red' | 'violet';
   borderColor: string; body: string; likes: number; replies: number;
 }) {
+  const styles = useAppStyles(createStyles);
+
   const avatarColor = tagVariant === 'red' ? '#EF4444' : tagVariant === 'amber' ? '#F59E0B' : '#A78BFA';
   return (
     <View style={[styles.post, { borderColor }]}>
@@ -1646,6 +1715,8 @@ function PostCard({ initials, name, time, tag, tagVariant, borderColor, body, li
 }
 
 function ChecklistItem({ done, text, muted }: { done?: boolean; text: string; muted?: boolean }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={styles.checklistItem}>
       <View style={[styles.checkBox, done && styles.checkDone, !done && styles.checkEmpty]} />
@@ -1655,6 +1726,8 @@ function ChecklistItem({ done, text, muted }: { done?: boolean; text: string; mu
 }
 
 function ScoreMini({ label, value, color }: { label: string; value: string; color: string }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={[styles.scoreMini, { borderColor: `${color}33` }]}>
       <Text style={styles.scoreMiniLbl}>{label}</Text>
@@ -1693,12 +1766,14 @@ const RICH_SCREENS: Record<string, (p: { onBack: () => void }) => ReactElement> 
 };
 
 export function FeatureRenderer({ slug, onBack }: Props) {
+  const styles = useAppStyles(createStyles);
   const Screen = RICH_SCREENS[slug];
   if (Screen) return <Screen onBack={onBack} />;
   return <StubFeature slug={slug} onBack={onBack} />;
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   emptyHint: { fontSize: theme.fontSize.sm, color: theme.colors.textSecondary, padding: 14, lineHeight: 21 },
   memberPickerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 4, paddingBottom: 4 },
   memberChip: {
@@ -1925,3 +2000,4 @@ const styles = StyleSheet.create({
   affordRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8 },
   affordText: { flex: 1, fontSize: 12, color: '#14B8A6' },
 });
+}

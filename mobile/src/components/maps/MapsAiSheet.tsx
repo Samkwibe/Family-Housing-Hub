@@ -10,7 +10,9 @@ import {
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { useAppStyles } from '@/src/hooks/useStyles';
 import api from '@/src/services/api';
 import type { Place } from '@/src/services/placesService';
 import type { WeatherSummary } from '@/src/services/weatherService';
@@ -90,6 +92,9 @@ export default function MapsAiSheet({
   weather,
   onRunSearch,
 }: Props) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const [input, setInput] = useState('');
   const [response, setResponse] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -226,7 +231,8 @@ export default function MapsAiSheet({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
@@ -381,3 +387,4 @@ const styles = StyleSheet.create({
     color: theme.colors.primaryLight,
   },
 });
+}

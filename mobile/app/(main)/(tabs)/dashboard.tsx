@@ -20,9 +20,13 @@ import {
   normalizeUserType,
 } from '@/src/config/userExperience';
 import { useTabScreenInsets } from '@/src/hooks/useTabScreenInsets';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function DashboardScreen() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const { userProfile, refreshProfile } = useAuth();
   const { snapshot, alerts, aiRecommendations, forecastSummary, topDocumentRisk, geofenceEvents, healthGapSummary, purchaseReadiness, refreshHousehold, error } = useHousehold();
   const router = useRouter();
@@ -124,6 +128,15 @@ export default function DashboardScreen() {
             <StatPill label="Tasks" value={snapshot.pendingTasks} color="#A78BFA" />
           </View>
         </LinearGradient>
+
+        <Pressable style={styles.familyHubCard} onPress={() => router.push('/(main)/my-children')}>
+          <Text style={styles.familyHubEmoji}>👨‍👩‍👧‍👦</Text>
+          <View style={styles.familyHubBody}>
+            <Text style={styles.familyHubTitle}>My Children</Text>
+            <Text style={styles.familyHubSub}>Manage chores, rewards & family activity</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
+        </Pressable>
 
         {coords ? (
           <View style={styles.weatherWrap}>
@@ -318,6 +331,8 @@ export default function DashboardScreen() {
 }
 
 function StatPill({ label, value, color }: { label: string; value: number; color: string }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={[styles.statPill, { borderColor: `${color}33` }]}>
       <Text style={[styles.statVal, { color }]}>{value}</Text>
@@ -326,9 +341,27 @@ function StatPill({ label, value, color }: { label: string; value: number; color
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   container: { paddingBottom: 16 },
+  familyHubCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: theme.spacing.lg,
+    marginTop: 12,
+    marginBottom: 4,
+    backgroundColor: '#F5F3FF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,.18)',
+  },
+  familyHubEmoji: { fontSize: 32 },
+  familyHubBody: { flex: 1 },
+  familyHubTitle: { fontFamily: theme.fonts.title, fontSize: 16, fontWeight: '700', color: '#1E1B4B' },
+  familyHubSub: { fontFamily: theme.fonts.body, fontSize: 12, color: '#6B7280', marginTop: 2 },
   weatherWrap: {
     paddingHorizontal: theme.spacing.lg,
     marginTop: -8,
@@ -651,3 +684,4 @@ const styles = StyleSheet.create({
   aiCtaTitle: { fontFamily: theme.fonts.title, fontSize: theme.fontSize.lg, color: '#fff' },
   aiCtaSub: { fontFamily: theme.fonts.body, fontSize: theme.fontSize.sm, color: 'rgba(255,255,255,.85)', marginTop: 2 },
 });
+}

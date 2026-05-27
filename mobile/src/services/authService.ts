@@ -9,6 +9,9 @@ export type AuthUser = {
   firstName?: string;
   lastName?: string;
   userType?: string;
+  experienceType?: string;
+  activePortal?: string;
+  activeHouseholdId?: string;
   role?: string;
   phone?: string;
   phoneDigits?: string;
@@ -16,6 +19,7 @@ export type AuthUser = {
   phoneVerified?: boolean;
   profileComplete?: boolean;
   onboardingComplete?: boolean;
+  themePreference?: 'light' | 'dark' | 'system';
   address?: Record<string, unknown>;
   createdAt?: string;
   lastLogin?: string;
@@ -37,6 +41,7 @@ export async function registerUser(payload: {
   lastName?: string;
   phone?: string;
   userType?: string;
+  inviteToken?: string;
   emailVerified?: boolean;
   phoneVerified?: boolean;
 }): Promise<AuthUser> {

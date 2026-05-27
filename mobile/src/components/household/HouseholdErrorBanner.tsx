@@ -1,13 +1,15 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useHousehold } from '@/src/contexts/HouseholdContext';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 
 type Props = {
   onRetry?: () => void;
 };
 
 export function HouseholdErrorBanner({ onRetry }: Props) {
+  const styles = useAppStyles(createStyles);
   const { error, refreshHousehold, loading } = useHousehold();
   if (!error) return null;
 
@@ -29,7 +31,8 @@ export function HouseholdErrorBanner({ onRetry }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -66,3 +69,4 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
 });
+}

@@ -10,26 +10,7 @@
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Family Housing Hub</title>
-    <!-- Google Maps JavaScript API with Places Library - Using callback for better loading control -->
-    <script>
-      // Load Google Maps API with callback to handle loading errors gracefully
-      window.initGoogleMaps = function() {
-        window.googleMapsLoaded = true;
-        window.dispatchEvent(new Event('googlemapsloaded'));
-      };
-      
-      window.handleGoogleMapsError = function() {
-        console.warn('Google Maps API failed to load. Some features may be limited.');
-        window.googleMapsError = true;
-        window.dispatchEvent(new Event('googlemapserror'));
-      };
-    </script>
-    <script 
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBfm3u4-vEnsVvHEqjqpoGdlbNgaza8JnA&libraries=places&loading=async&callback=initGoogleMaps" 
-      async 
-      defer
-      onerror="handleGoogleMapsError()"
-    ></script>
+    <!-- Google Maps loaded at runtime via src/utils/loadGoogleMaps.js (env key only) -->
   </head>
   <body>
     <div id="root"></div>

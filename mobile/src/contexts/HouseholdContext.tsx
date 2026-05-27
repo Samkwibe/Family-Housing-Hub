@@ -8,6 +8,7 @@ import {
   ReactNode,
 } from 'react';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { resolveActivePortal } from '@/src/portals/resolvePortal';
 import {
   fetchHouseholdDashboard,
   toggleChoreComplete,
@@ -167,7 +168,11 @@ type HouseholdContextValue = {
 const HouseholdContext = createContext<HouseholdContextValue | null>(null);
 
 export function HouseholdProvider({ children }: { children: ReactNode }) {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
+  const skipHousehold = useMemo(
+    () => Boolean(currentUser) && resolveActivePortal(userProfile) === 'child',
+    [currentUser, userProfile],
+  );
   const [snapshot, setSnapshot] = useState<HouseholdSnapshot>(EMPTY_SNAPSHOT);
   const [alerts, setAlerts] = useState<HouseholdAlert[]>([]);
   const [members, setMembers] = useState<HouseholdMember[]>([]);
@@ -276,6 +281,14 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (skipHousehold) {
+      setIsOffline(false);
+      setIsSyncing(false);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     const online = await isOnline();
     setIsOffline(!online);
 
@@ -310,10 +323,10 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [currentUser, applyDashboardData]);
+  }, [currentUser, skipHousehold, applyDashboardData]);
 
   const syncAfterReconnect = useCallback(async () => {
-    if (!currentUser) return;
+    if (!currentUser || skipHousehold) return;
     setIsSyncing(true);
     try {
       await flushOfflineQueue({
@@ -329,22 +342,27 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setIsSyncing(false);
       setIsOffline(false);
     }
-  }, [currentUser, refreshHousehold]);
+  }, [currentUser, skipHousehold, refreshHousehold]);
 
   useEffect(() => {
+    if (skipHousehold) {
+      setIsOffline(false);
+      setIsSyncing(false);
+      return;
+    }
     refreshHousehold();
-  }, [refreshHousehold]);
+  }, [refreshHousehold, skipHousehold]);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || skipHousehold) return;
     return subscribeNetworkStatus((online) => {
       setIsOffline(!online);
       if (online) void syncAfterReconnect();
     });
-  }, [currentUser, syncAfterReconnect]);
+  }, [currentUser, skipHousehold, syncAfterReconnect]);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || skipHousehold) return;
     let cleanup: (() => void) | undefined;
     void connectRealtime({
       onHouseholdUpdated: () => {
@@ -360,10 +378,10 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       cleanup = fn;
     });
     return () => cleanup?.();
-  }, [currentUser, refreshHousehold]);
+  }, [currentUser, skipHousehold, refreshHousehold]);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || skipHousehold) return;
     let cleanup: (() => void) | undefined;
     (async () => {
       const { refreshGeofenceSharingState, startGeofenceBackgroundPings, bindGeofenceAppState } =
@@ -373,7 +391,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       cleanup = bindGeofenceAppState();
     })();
     return () => cleanup?.();
-  }, [currentUser]);
+  }, [currentUser, skipHousehold]);
 
   const visibleAlerts = useMemo(
     () => alerts.filter((a) => !dismissedIds.has(a.id)),

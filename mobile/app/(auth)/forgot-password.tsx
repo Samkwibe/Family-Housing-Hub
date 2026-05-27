@@ -12,9 +12,11 @@ import {
 } from '@/src/components/auth/AuthScreen';
 import { AuthBackButton } from '@/src/components/auth/AuthForm';
 import { forgotPassword, resetPassword } from '@/src/services/authService';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 
 export default function ForgotPasswordScreen() {
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
@@ -155,7 +157,8 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   backHint: {
     fontSize: theme.fontSize.sm,
     color: theme.colors.textSecondary,
@@ -186,3 +189,4 @@ const styles = StyleSheet.create({
   sentTitle: { fontSize: 14, fontWeight: '700', color: theme.colors.text, marginBottom: 6 },
   sentBody: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 18 },
 });
+}

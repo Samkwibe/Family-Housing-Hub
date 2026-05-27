@@ -1,108 +1,15 @@
-/** FamilyHub dark design system — premium household OS aesthetic */
-export const theme = {
-  fonts: {
-    title: 'Syne_700Bold',
-    titleExtra: 'Syne_800ExtraBold',
-    body: 'DMSans_400Regular',
-    bodyMedium: 'DMSans_500Medium',
-    bodyBold: 'DMSans_700Bold',
-  },
-  colors: {
-    primary: '#7C3AED',
-    primaryDark: '#6D28D9',
-    primaryLight: '#A78BFA',
-    accent: '#14B8A6',
-    accentWarm: '#F59E0B',
-    accentPink: '#EC4899',
-    success: '#14B8A6',
-    danger: '#EF4444',
-    background: '#07051E',
-    backgroundAlt: '#0E0B2E',
-    surface: '#0E0B2E',
-    surfaceElevated: '#160F35',
-    surfaceInset: '#131826',
-    border: 'rgba(167, 139, 250, 0.12)',
-    borderLight: 'rgba(167, 139, 250, 0.08)',
-    borderFocus: 'rgba(124, 58, 237, 0.45)',
-    text: '#EDE9FE',
-    textSecondary: '#A99FD4',
-    textMuted: '#8B7DB8',
-    textInverse: '#FFFFFF',
-    overlay: 'rgba(6, 4, 26, 0.75)',
-    tabBar: '#0C0A26',
-    tabActive: '#F59E0B',
-    tabInactive: '#6B5F9A',
-    ctaYellow: '#FDE68A',
-    authBg: '#06041A',
-    authSurface: '#0E0B2E',
-    inputBg: '#0E0B2E',
-    headerBg: '#0E0B2E',
-    glowPurple: 'rgba(124, 58, 237, 0.25)',
-    glowGold: 'rgba(245, 158, 11, 0.15)',
-    glowTeal: 'rgba(20, 184, 166, 0.15)',
-    aiGradientStart: '#160F35',
-    aiGradientEnd: '#0E0B2E',
-  },
-  spacing: {
-    xs: 4,
-    sm: 8,
-    md: 12,
-    lg: 16,
-    xl: 20,
-    xxl: 24,
-    xxxl: 32,
-  },
-  radius: {
-    sm: 8,
-    md: 12,
-    lg: 16,
-    xl: 20,
-    full: 999,
-  },
-  fontSize: {
-    xs: 12,
-    sm: 14,
-    md: 16,
-    lg: 18,
-    xl: 22,
-    xxl: 26,
-    hero: 32,
-  },
-  typography: {
-    hero: { fontSize: 32, fontWeight: '800' as const, letterSpacing: -0.5 },
-    h1: { fontSize: 26, fontWeight: '800' as const },
-    h2: { fontSize: 23, fontWeight: '800' as const },
-    h3: { fontSize: 20, fontWeight: '700' as const },
-    body: { fontSize: 17, fontWeight: '400' as const, lineHeight: 24 },
-    bodyMedium: { fontSize: 17, fontWeight: '600' as const, lineHeight: 24 },
-    caption: { fontSize: 15, fontWeight: '500' as const, lineHeight: 21 },
-    label: { fontSize: 12, fontWeight: '700' as const, letterSpacing: 0.8, textTransform: 'uppercase' as const },
-    overline: { fontSize: 11, fontWeight: '700' as const, letterSpacing: 1.2, textTransform: 'uppercase' as const },
-    stat: { fontSize: 22, fontWeight: '800' as const },
-  },
-  shadow: {
-    sm: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    md: {
-      shadowColor: '#7C3AED',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 12,
-      elevation: 4,
-    },
-    lg: {
-      shadowColor: '#7C3AED',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.25,
-      shadowRadius: 24,
-      elevation: 8,
-    },
-  },
-};
+/**
+ * App theme — use `useTheme()` from ThemeContext in components.
+ * Static `theme` export is the dark palette (legacy fallback only).
+ */
+export type { AppTheme } from './themes';
+export type { ColorScheme } from './tokens';
+export { darkTheme, lightTheme, themeForScheme } from './themes';
+export { sharedTokens } from './tokens';
 
-export type Theme = typeof theme;
+import { darkTheme } from './themes';
+
+/** @deprecated Use useTheme() — kept for type re-exports and migration */
+export const theme = darkTheme;
+
+export type Theme = typeof darkTheme;

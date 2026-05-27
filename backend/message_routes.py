@@ -248,4 +248,20 @@ def send_message(group_id):
         emit_new_message(household_id, serialized)
         after_household_write(household_id, 'message', serialized)
 
+    # Send push notifications to other group members
+    member_ids = group.get('memberIds') or []
+    if member_ids:
+        try:
+            from push_service import send_push_to_user
+            for mid in member_ids:
+                if mid != user_id:
+                    send_push_to_user(
+                        mid,
+                        title=group.get('name', 'Family Chat'),
+                        body=f"{sender_name}: {text}",
+                        data={'groupId': group_id}
+                    )
+        except Exception as e:
+            print(f"[push] Error sending message push: {e}")
+
     return jsonify({'message': serialized}), 201

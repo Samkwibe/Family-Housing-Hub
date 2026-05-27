@@ -2,10 +2,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function StubScreen({
-  title,
-  description,
-}: {
+export default function StubScreen({ title, description }: {
   title: string;
   description?: string;
 }) {

@@ -3,9 +3,10 @@ import { Tabs } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_BAR_BASE_HEIGHT } from '@/src/hooks/useTabScreenInsets';
-import { theme } from '@/src/theme';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function TabLayout() {
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(
     insets.bottom,

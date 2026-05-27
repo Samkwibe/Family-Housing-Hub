@@ -1,6 +1,14 @@
 import api from './api';
 import { connectRealtime } from './realtimeService';
-import type { ChatMessage } from './messaging';
+
+export type ChatMessage = {
+  id: string;
+  groupId: string;
+  senderId: string;
+  senderName: string;
+  message: string;
+  createdAt: string;
+};
 
 export type MessageGroup = {
   id: string;
@@ -9,8 +17,6 @@ export type MessageGroup = {
   lastMessageAt?: string | null;
   lastMessagePreview?: string;
 };
-
-export type { ChatMessage };
 
 export async function listUserGroups(_userId: string): Promise<MessageGroup[]> {
   const res = await api.request<{ groups: MessageGroup[] }>('/api/messages/groups', {

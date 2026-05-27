@@ -31,7 +31,9 @@ import {
 import { getUploadUrl, uploadFileToPresignedUrl } from '@/src/services/storageService';
 import * as DocumentPicker from 'expo-document-picker';
 import { QuickAddForm } from '@/src/components/household/QuickAddForm';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 type ScreenProps = { onBack: () => void };
 
@@ -40,6 +42,9 @@ function askAi(router: ReturnType<typeof useRouter>, prompt: string) {
 }
 
 function EmptyBlock({ title, body }: { title: string; body: string }) {
+  const styles = useAppStyles(createStyles);
+  const theme = useTheme();
+
   return (
     <View style={styles.emptyBlock}>
       <Ionicons name="albums-outline" size={28} color={theme.colors.textMuted} />
@@ -49,7 +54,11 @@ function EmptyBlock({ title, body }: { title: string; body: string }) {
   );
 }
 
-export function SmartFridgeScreen({ onBack }: ScreenProps) {
+export function SmartFridgeScreen({
+  onBack }: ScreenProps) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { foodItems, refreshHousehold, loading } = useHousehold();
   const { showToast } = useToast();
@@ -159,7 +168,11 @@ export function SmartFridgeScreen({ onBack }: ScreenProps) {
   );
 }
 
-export function MealPlannerScreen({ onBack }: ScreenProps) {
+export function MealPlannerScreen({
+  onBack }: ScreenProps) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { foodItems } = useHousehold();
   const [plan, setPlan] = useState('');
@@ -203,6 +216,7 @@ export function MealPlannerScreen({ onBack }: ScreenProps) {
 }
 
 export function InventoryScreen({ onBack }: ScreenProps) {
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { foodItems } = useHousehold();
   const lowStock = foodItems.filter((f) => f.expiresInDays <= 5);
@@ -225,6 +239,7 @@ export function InventoryScreen({ onBack }: ScreenProps) {
 }
 
 export function ChoresScreen({ onBack }: ScreenProps) {
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { members, chores, refreshHousehold, isOffline } = useHousehold();
   const [showAdd, setShowAdd] = useState(false);
@@ -301,6 +316,7 @@ export function ChoresScreen({ onBack }: ScreenProps) {
 }
 
 export function CalendarScreen({ onBack }: ScreenProps) {
+  const styles = useAppStyles(createStyles);
   const { expenses, chores } = useHousehold();
   const events = [
     ...expenses.map((e) => ({ id: e.id, title: e.title, sub: e.dueDate ? `Due ${e.dueDate}` : 'Bill', icon: 'cash' as const })),
@@ -321,7 +337,11 @@ export function CalendarScreen({ onBack }: ScreenProps) {
   );
 }
 
-export function NotificationsScreen({ onBack }: ScreenProps) {
+export function NotificationsScreen({
+  onBack }: ScreenProps) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const { alerts, dismissAlert } = useHousehold();
   const router = useRouter();
   return (
@@ -345,6 +365,7 @@ export function NotificationsScreen({ onBack }: ScreenProps) {
 }
 
 export function AutomationsScreen({ onBack }: ScreenProps) {
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const [rules, setRules] = useState<Array<{ id: string; name: string; enabled: boolean; lastFired?: string | null }>>([]);
   const [loading, setLoading] = useState(true);
@@ -355,6 +376,8 @@ export function AutomationsScreen({ onBack }: ScreenProps) {
         const { fetchAutomationRules } = await import('@/src/services/householdService');
         const res = await fetchAutomationRules();
         setRules(res.rules || []);
+      } catch {
+        setRules([]);
       } finally {
         setLoading(false);
       }
@@ -385,6 +408,7 @@ export function AutomationsScreen({ onBack }: ScreenProps) {
 }
 
 export function SubscriptionsScreen({ onBack }: ScreenProps) {
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { expenses } = useHousehold();
   const subs = expenses.filter((e) => ['subscription', 'utility', 'internet'].includes(e.category));
@@ -408,6 +432,7 @@ export function SubscriptionsScreen({ onBack }: ScreenProps) {
 }
 
 export function SmartHomeScreen({ onBack }: ScreenProps) {
+  const styles = useAppStyles(createStyles);
   const { smartDevices, refreshHousehold } = useHousehold();
   const [showAdd, setShowAdd] = useState(false);
   const online = smartDevices.filter((d) => d.status === 'online').length;
@@ -471,6 +496,7 @@ export function SmartHomeScreen({ onBack }: ScreenProps) {
 }
 
 export function DocumentVaultScreen({ onBack }: ScreenProps) {
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const toast = useToast();
   const { documents, refreshHousehold } = useHousehold();
@@ -616,6 +642,7 @@ export function DocumentVaultScreen({ onBack }: ScreenProps) {
 }
 
 export function ShoppingScreen({ onBack }: ScreenProps) {
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { foodItems } = useHousehold();
   const [items, setItems] = useState<{ id: string; name: string; autoAdded?: boolean }[]>([]);
@@ -659,6 +686,7 @@ export function ShoppingScreen({ onBack }: ScreenProps) {
 }
 
 export function SafetyScreen({ onBack }: ScreenProps) {
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { emergencyProfile, geofenceEvents, refreshHousehold } = useHousehold();
   const [editing, setEditing] = useState(false);
@@ -756,6 +784,7 @@ export function SafetyScreen({ onBack }: ScreenProps) {
 }
 
 export function SecurityScreen({ onBack }: ScreenProps) {
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { smartDevices } = useHousehold();
   const locks = smartDevices.filter((d) => d.deviceType === 'lock' || d.deviceType === 'camera' || d.deviceType === 'doorbell');
@@ -798,6 +827,8 @@ export const HOUSEHOLD_OS_SCREENS: Record<string, (p: ScreenProps) => ReactEleme
 
 // Helpers
 function ScanBtn({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={styles.scanBtn}>
       <Ionicons name={icon} size={20} color="#14B8A6" />
@@ -807,6 +838,8 @@ function ScanBtn({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label:
 }
 
 function ConnectPill({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
+  const styles = useAppStyles(createStyles);
+
   return (
     <View style={styles.connectPill}>
       <Ionicons name={icon} size={16} color="#A78BFA" />
@@ -816,6 +849,9 @@ function ConnectPill({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; la
 }
 
 function AutoRule({ trigger, action, color, on }: { trigger: string; action: string; color: string; on: boolean }) {
+  const styles = useAppStyles(createStyles);
+  const theme = useTheme();
+
   return (
     <View style={styles.autoRule}>
       <View style={[styles.autoDot, { backgroundColor: on ? color : theme.colors.textMuted }]} />
@@ -828,7 +864,8 @@ function AutoRule({ trigger, action, color, on }: { trigger: string; action: str
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   scanRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   scanBtn: { flex: 1, backgroundColor: theme.colors.surface, borderRadius: 12, padding: 12, alignItems: 'center', gap: 6, borderWidth: 1, borderColor: theme.colors.borderLight },
   scanLabel: { fontSize: 10, fontWeight: '700', color: theme.colors.textSecondary, textAlign: 'center' },
@@ -872,3 +909,4 @@ const styles = StyleSheet.create({
   planText: { fontFamily: theme.fonts.body, fontSize: theme.fontSize.sm, color: theme.colors.text, lineHeight: 22, padding: 14 },
   errorText: { color: theme.colors.danger, fontSize: theme.fontSize.sm, padding: 14 },
 });
+}

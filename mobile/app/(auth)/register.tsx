@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Linking, ActivityIndicator } from 'react-native';
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { SocialAuthButtons } from '@/src/components/SocialAuthButtons';
 import {
@@ -25,11 +25,17 @@ import {
   sendEmailVerificationCode,
   verifyEmailCode,
 } from '@/src/services/verification';
-import { theme } from '@/src/theme';
+import { fetchInvitePreview } from '@/src/services/householdService';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function RegisterScreen() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const { signup } = useAuth();
   const router = useRouter();
+  const { invite: inviteToken } = useLocalSearchParams<{ invite?: string }>();
   const [role, setRole] = useState<UserRole>('renter');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -44,20 +50,40 @@ export default function RegisterScreen() {
   const [step, setStep] = useState<'form' | 'verify'>('form');
   const [verificationCode, setVerificationCode] = useState('');
   const [devCodeHint, setDevCodeHint] = useState<string | null>(null);
+  const [childInvite, setChildInvite] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(Boolean(inviteToken));
 
   useEffect(() => {
     hasCompletedIntro().then(setOnboardingReady);
     loadPreSignupAnswers().then((saved) => {
-      if (saved?.role) setRole(saved.role);
+      if (saved?.role && !inviteToken) setRole(saved.role);
     });
-  }, []);
+  }, [inviteToken]);
+
+  useEffect(() => {
+    if (!inviteToken) {
+      setInviteLoading(false);
+      return;
+    }
+    fetchInvitePreview(inviteToken)
+      .then((res) => {
+        const preview = res.invite;
+        const isChild = preview.inviteType === 'child';
+        setChildInvite(isChild);
+        if (preview.email) setEmail(preview.email);
+        if (preview.displayName) setFirstName(preview.displayName);
+        if (isChild) setRole('family');
+      })
+      .catch((e: Error) => setError(e.message || 'Invite not found'))
+      .finally(() => setInviteLoading(false));
+  }, [inviteToken]);
 
   const passwordsMatch = useMemo(() => {
     if (!confirmPassword) return null;
     return password === confirmPassword;
   }, [password, confirmPassword]);
 
-  if (onboardingReady === null) {
+  if (onboardingReady === null || inviteLoading) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -65,7 +91,7 @@ export default function RegisterScreen() {
     );
   }
 
-  if (!onboardingReady) {
+  if (!onboardingReady && !inviteToken) {
     return <Redirect href="/(auth)/intro" />;
   }
 
@@ -113,7 +139,7 @@ export default function RegisterScreen() {
     }
 
     const finalEmail = email.trim().toLowerCase();
-    const userType = role === 'owner' ? 'owner' : role === 'family' ? 'family' : 'renter';
+    const userType = childInvite ? 'family' : role === 'owner' ? 'owner' : role === 'family' ? 'family' : 'renter';
     const savedAnswers = await loadPreSignupAnswers();
     try {
       setLoading(true);
@@ -125,6 +151,7 @@ export default function RegisterScreen() {
         emailVerified: true,
         phoneVerified: Boolean(phone.trim()),
         userType,
+        inviteToken: inviteToken || undefined,
         householdSize: savedAnswers?.householdSize,
         onboardingPriorities: savedAnswers?.priorities,
       });
@@ -149,14 +176,16 @@ export default function RegisterScreen() {
     >
       <AuthBackButton onPress={() => router.back()} />
 
-      <Text style={styles.title}>Create your account ✨</Text>
+      <Text style={styles.title}>{childInvite ? 'Join your family 🎉' : 'Create your account ✨'}</Text>
       <Text style={styles.subtitle}>
-        Join FamilyHub and bring all aspects of your home life into one smart app.
+        {childInvite
+          ? 'Your parent invited you to FamilyHub. Create your account to see chores, rewards, and family chat.'
+          : 'Join FamilyHub and bring all aspects of your home life into one smart app.'}
       </Text>
 
       <AuthHeroRegister />
 
-      <RolePicker value={role} onChange={setRole} disabled={loading} />
+      {!childInvite ? <RolePicker value={role} onChange={setRole} disabled={loading} /> : null}
 
       <FormErrorBanner message={error} />
 
@@ -195,7 +224,7 @@ export default function RegisterScreen() {
         textContentType="emailAddress"
         value={email}
         onChangeText={setEmail}
-        editable={!loading}
+        editable={!loading && !childInvite}
       />
 
       <AuthField
@@ -299,7 +328,8 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   loading: {
     flex: 1,
     justifyContent: 'center',
@@ -347,3 +377,4 @@ const styles = StyleSheet.create({
   verifyHint: { fontSize: 14, color: theme.colors.textSecondary, marginBottom: 12, lineHeight: 20 },
   devCode: { fontSize: 13, color: '#A78BFA', fontWeight: '700', marginBottom: 10 },
 });
+}

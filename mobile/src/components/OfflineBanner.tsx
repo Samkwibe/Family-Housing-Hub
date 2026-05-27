@@ -1,11 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
 
 type Props = {
   syncing?: boolean;
 };
 
 export function OfflineBanner({ syncing }: Props) {
+  const styles = useAppStyles(createStyles);
   return (
     <View style={styles.banner} accessibilityRole="text">
       <Text style={styles.text}>
@@ -15,7 +17,8 @@ export function OfflineBanner({ syncing }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   banner: {
     backgroundColor: '#92400e',
     paddingVertical: 6,
@@ -28,3 +31,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+}

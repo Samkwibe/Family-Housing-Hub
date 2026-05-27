@@ -13,10 +13,19 @@ import {
   getRoleExperience,
   normalizeUserType,
 } from '@/src/config/userExperience';
+import {
+  FEATURE_TIER_COLORS,
+  FEATURE_TIER_LABELS,
+  getFeatureTier,
+} from '@/src/config/featureTiers';
 import { useTabScreenInsets } from '@/src/hooks/useTabScreenInsets';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 export default function MoreScreen() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   const router = useRouter();
   const { userProfile, logout } = useAuth();
   const { scrollBottomPadding } = useTabScreenInsets();
@@ -60,6 +69,15 @@ export default function MoreScreen() {
           <Ionicons name="mic" size={18} color="#A78BFA" />
         </Pressable>
 
+        <Pressable style={styles.familyBanner} onPress={() => router.push('/(main)/my-children')}>
+          <Text style={styles.familyEmoji}>👨‍👩‍👧‍👦</Text>
+          <View style={styles.aiBannerBody}>
+            <Text style={styles.familyBannerTitle}>My Children</Text>
+            <Text style={styles.familyBannerSub}>Chores, rewards, activity & family hub</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
+        </Pressable>
+
         {categoryOrder.map((cat) => {
           const items = featuresByCategoryForUser(cat, userType);
           if (items.length === 0) return null;
@@ -80,7 +98,17 @@ export default function MoreScreen() {
                     </View>
                     <View style={styles.menuBody}>
                       <Text style={styles.menuText}>{item.label}</Text>
-                      {item.badge ? <Text style={styles.badge}>{item.badge}</Text> : null}
+                      <View style={styles.badgeRow}>
+                        {(() => {
+                          const tier = getFeatureTier(item.slug);
+                          return (
+                            <Text style={[styles.tierBadge, { color: FEATURE_TIER_COLORS[tier], borderColor: `${FEATURE_TIER_COLORS[tier]}55` }]}>
+                              {FEATURE_TIER_LABELS[tier]}
+                            </Text>
+                          );
+                        })()}
+                        {item.badge ? <Text style={styles.badge}>{item.badge}</Text> : null}
+                      </View>
                     </View>
                     <Ionicons name="chevron-forward" size={12} color={theme.colors.textMuted} />
                   </Pressable>
@@ -127,7 +155,8 @@ export default function MoreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   container: { padding: 16, paddingBottom: 32 },
   profileCard: {
@@ -177,6 +206,20 @@ const styles = StyleSheet.create({
   aiBannerBody: { flex: 1 },
   aiBannerTitle: { fontFamily: theme.fonts.title, fontSize: 15, color: theme.colors.text },
   aiBannerSub: { fontFamily: theme.fonts.body, fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
+  familyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#F5F3FF',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,.2)',
+  },
+  familyEmoji: { fontSize: 28 },
+  familyBannerTitle: { fontFamily: theme.fonts.title, fontSize: 15, color: '#1E1B4B' },
+  familyBannerSub: { fontFamily: theme.fonts.body, fontSize: 11, color: '#6B7280', marginTop: 2 },
   groupLabel: {
     ...theme.typography.overline,
     fontFamily: theme.fonts.bodyBold,
@@ -215,8 +258,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  menuBody: { flex: 1 },
   menuText: { fontSize: 15, fontFamily: theme.fonts.bodyMedium, color: theme.colors.text },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, flexWrap: 'wrap' },
+  tierBadge: {
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 9,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
   badge: {
     fontSize: 9,
     fontFamily: theme.fonts.bodyBold,
@@ -243,3 +297,4 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
 });
+}

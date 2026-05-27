@@ -16,6 +16,16 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import toast from 'react-hot-toast';
+import { validateUSPhone } from '../../shared/utils/phone.js';
+
+/** Backend base URL — prefer VITE_API_URL (Render), then VITE_BACKEND_URL. */
+function getBackendUrl() {
+  const url =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_BACKEND_URL ||
+    'https://family-housing-hub-api.onrender.com';
+  return String(url).replace(/\/$/, '');
+}
 
 /**
  * Generate a 6-digit verification code
@@ -83,42 +93,7 @@ export const validateEmail = (email) => {
 /**
  * Validate phone number format (US format)
  */
-export const validatePhoneNumber = (phone) => {
-  if (!phone) {
-    return { isValid: false, message: 'Phone number is required' };
-  }
-
-  // Remove all non-digit characters
-  const digitsOnly = phone.replace(/\D/g, '');
-
-  // Check if it's a valid US phone number (10 digits)
-  if (digitsOnly.length !== 10) {
-    return { isValid: false, message: 'Phone number must be 10 digits' };
-  }
-
-  // Check for fake/test numbers
-  const fakeNumbers = [
-    '0000000000',
-    '1111111111',
-    '1234567890',
-    '9999999999',
-    '5555555555',
-  ];
-
-  if (fakeNumbers.includes(digitsOnly)) {
-    return { isValid: false, message: 'Please use a valid phone number' };
-  }
-
-  // Format: (XXX) XXX-XXXX
-  const formatted = `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
-
-  return { 
-    isValid: true, 
-    message: 'Phone number is valid',
-    formatted,
-    digitsOnly
-  };
-};
+export const validatePhoneNumber = validateUSPhone;
 
 /** Pick the newest pending verification doc (handles resends). */
 function pickLatestPendingDoc(docList) {
@@ -160,7 +135,7 @@ class VerificationService {
       createdAt: serverTimestamp(),
     });
 
-    const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
+    const backendUrl = getBackendUrl();
     let delivered = false;
 
     try {
@@ -234,7 +209,7 @@ class VerificationService {
       createdAt: serverTimestamp(),
     });
 
-    const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
+    const backendUrl = getBackendUrl();
     let delivered = false;
 
     try {

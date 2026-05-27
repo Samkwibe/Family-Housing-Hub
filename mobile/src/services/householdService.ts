@@ -288,7 +288,7 @@ export type MemberPermissions = {
 };
 
 export async function fetchHouseholdDashboard(): Promise<HouseholdDashboard> {
-  return api.request<HouseholdDashboard>('/api/household/dashboard', { method: 'GET' });
+  return api.request<HouseholdDashboard>('/api/dashboard/renter', { method: 'GET' });
 }
 
 export async function addInventoryItem(item: {
@@ -610,7 +610,34 @@ export type HouseholdInvitePreview = {
   inviterName: string;
   email: string;
   role: string;
+  inviteType?: string;
+  displayName?: string;
+  relationshipType?: string;
+  childInviteStatus?: string;
   expiresAt?: string;
+};
+
+export type HouseholdInviteAcceptResult = {
+  householdId: string;
+  householdName: string;
+  role: string;
+  inviteType?: string;
+  relationshipType?: string;
+  activePortal?: string;
+  experienceType?: string;
+  childProfileId?: string;
+  childInviteStatus?: string;
+  user?: {
+    userType?: string;
+    experienceType?: string;
+    activePortal?: string;
+  };
+};
+
+export type ChildInvitePayload = {
+  email: string;
+  displayName: string;
+  dateOfBirth: string;
 };
 
 export async function fetchHouseholds() {
@@ -634,10 +661,31 @@ export async function switchHousehold(householdId: string) {
 }
 
 export async function sendHouseholdInvite(email: string, role: 'renter' | 'family' = 'renter') {
-  return api.request<{ invite: { email: string; inviteLink: string; role: string } }>(
+  return api.request<{ invite: { email: string; inviteLink: string; role: string; inviteType?: string } }>(
     '/api/household/invites',
     { method: 'POST', body: JSON.stringify({ email, role }) },
   );
+}
+
+export async function sendChildInvite(payload: ChildInvitePayload) {
+  return api.request<{ invite: { email: string; inviteLink: string; inviteType: string; displayName: string; childInviteStatus: string } }>(
+    '/api/household/invites',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        email: payload.email.trim().toLowerCase(),
+        role: 'family',
+        inviteType: 'child',
+        displayName: payload.displayName.trim(),
+        dateOfBirth: payload.dateOfBirth,
+      }),
+    },
+  );
+}
+
+export async function fetchHouseholdInvites(inviteType?: string) {
+  const query = inviteType ? `?inviteType=${encodeURIComponent(inviteType)}` : '';
+  return api.request<{ invites: HouseholdInvitePreview[] }>(`/api/household/invites${query}`);
 }
 
 export async function fetchInvitePreview(token: string) {
@@ -645,7 +693,7 @@ export async function fetchInvitePreview(token: string) {
 }
 
 export async function acceptHouseholdInvite(token: string) {
-  return api.request<{ householdId: string; householdName: string; role: string }>(
+  return api.request<HouseholdInviteAcceptResult>(
     `/api/household/invites/${token}/accept`,
     { method: 'POST', body: JSON.stringify({}) },
   );

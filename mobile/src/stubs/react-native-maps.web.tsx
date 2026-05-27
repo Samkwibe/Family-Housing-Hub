@@ -15,7 +15,8 @@ type MapViewProps = {
   children?: ReactNode;
 };
 
-export default function MapView({ style, children }: MapViewProps) {
+export default function MapView({
+  style, children }: MapViewProps) {
   return (
     <View style={[styles.map, style]}>
       <Text style={styles.label}>Map preview unavailable on web</Text>

@@ -39,7 +39,7 @@ import {
 import toast from 'react-hot-toast';
 import propertyService from '../services/propertyService';
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBfm3u4-vEnsVvHEqjqpoGdlbNgaza8JnA';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 // Property types
 const propertyTypes = [

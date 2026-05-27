@@ -35,6 +35,14 @@ INVITE_LINK_BASE = (
     or 'familyhousinghub://invite'
 ).rstrip('/')
 
+VALID_INVITE_TYPES = frozenset({'child', 'spouse', 'roommate', 'tenant'})
+INVITE_TYPE_TO_RELATIONSHIP = {
+    'child': 'child',
+    'spouse': 'spouse',
+    'roommate': 'roommate',
+    'tenant': 'tenant',
+}
+
 SMTP_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
 SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
 SMTP_USER = os.getenv('SMTP_USER')
@@ -352,7 +360,121 @@ def _send_email(to_email: str, subject: str, html_body: str) -> None:
     server.quit()
 
 
-def create_household_invite(user, email: str, role: str = 'renter') -> dict:
+def _parse_invite_dob(value):
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace('Z', '+00:00'))
+        except ValueError:
+            return None
+    return None
+
+
+def _relationship_from_invite(invite: dict) -> str:
+    invite_type = (invite.get('inviteType') or '').lower()
+    if invite_type in INVITE_TYPE_TO_RELATIONSHIP:
+        return INVITE_TYPE_TO_RELATIONSHIP[invite_type]
+    role = (invite.get('role') or 'renter').lower()
+    if role == 'family':
+        return 'child'
+    if role == 'owner':
+        return 'parent'
+    return 'roommate'
+
+
+def _is_child_invite(invite: dict) -> bool:
+    return (invite.get('inviteType') or '').lower() == 'child'
+
+
+def validate_invite_for_registration(token: str, email: str) -> dict:
+    """Validate pending invite token matches registration email."""
+    db = get_db()
+    invite = db.household_invites.find_one({'token': token})
+    if not invite:
+        raise LookupError('Invite not found')
+    if invite.get('status') != 'pending':
+        raise LookupError('Invite is no longer valid')
+    if invite.get('expiresAt') and _coerce_utc_datetime(invite['expiresAt']) < _utcnow():
+        db.household_invites.update_one({'_id': invite['_id']}, {'$set': {'status': 'expired', 'childInviteStatus': 'expired'}})
+        raise LookupError('Invite has expired')
+    normalized = (email or '').strip().lower()
+    if normalized != (invite.get('email') or '').strip().lower():
+        raise PermissionError('This invite was sent to a different email address')
+    return invite
+
+
+def _member_payload_from_invite(invite: dict, household_id: str, uid: str, now) -> dict:
+    relationship = _relationship_from_invite(invite)
+    payload = {
+        'householdId': household_id,
+        'userId': uid,
+        'role': invite.get('role', 'renter'),
+        'status': 'active',
+        'joinedAt': now,
+        'inviteType': invite.get('inviteType'),
+        'relationshipType': relationship,
+    }
+    if invite.get('displayName'):
+        payload['displayName'] = invite.get('displayName')
+    if invite.get('dateOfBirth'):
+        payload['dateOfBirth'] = invite.get('dateOfBirth')
+    return payload
+
+
+def _finalize_child_invite_accept(db, user: dict, invite: dict, household_id: str) -> dict:
+    """Promote user to child portal, link profile, enforce backend routing."""
+    from portal_context_service import age_tier_to_experience, compute_age_tier
+    from child_service import link_child_profile_from_invite
+
+    dob = invite.get('dateOfBirth')
+    age_tier = compute_age_tier(dob)
+    experience_type = age_tier_to_experience(age_tier)
+    active_portal = 'child' if experience_type in ('child', 'teen') else 'child'
+
+    parent_user_id = invite.get('invitedBy')
+    profile = link_child_profile_from_invite(
+        db,
+        user=user,
+        invite=invite,
+        parent_user_id=parent_user_id,
+        household_id=household_id,
+    )
+
+    now_iso = _utcnow().isoformat()
+    db.users.update_one(
+        {'_id': user['_id']},
+        {'$set': {
+            'userType': 'family',
+            'experienceType': experience_type,
+            'activePortal': active_portal,
+            'activeHouseholdId': household_id,
+            'profileComplete': True,
+            'onboardingComplete': True,
+            'updatedAt': now_iso,
+        }},
+    )
+
+    return {
+        'activePortal': active_portal,
+        'experienceType': experience_type,
+        'ageTier': age_tier,
+        'childProfileId': str(profile['_id']) if profile else None,
+        'childInviteStatus': 'accepted',
+    }
+
+
+def create_household_invite(
+    user,
+    email: str,
+    role: str = 'renter',
+    *,
+    invite_type: str | None = None,
+    display_name: str | None = None,
+    date_of_birth=None,
+) -> dict:
     db = get_db()
     household_id = ensure_user_household(user)
     inviter_membership = db.household_members.find_one({
@@ -368,6 +490,24 @@ def create_household_invite(user, email: str, role: str = 'renter') -> dict:
         raise ValueError('Valid email is required')
 
     if role not in ('renter', 'family', 'owner'):
+        role = 'renter'
+
+    invite_type = (invite_type or '').strip().lower() or None
+    if invite_type and invite_type not in VALID_INVITE_TYPES:
+        raise ValueError('inviteType must be child, spouse, roommate, or tenant')
+
+    if invite_type == 'child':
+        role = 'family'
+        display_name = (display_name or '').strip()
+        if not display_name:
+            raise ValueError("Child's name is required")
+        parsed_dob = _parse_invite_dob(date_of_birth)
+        if not parsed_dob:
+            raise ValueError("Child's date of birth is required (YYYY-MM-DD)")
+        date_of_birth = parsed_dob
+    elif invite_type == 'spouse':
+        role = 'family'
+    elif invite_type in ('roommate', 'tenant'):
         role = 'renter'
 
     existing_member = db.users.find_one({'email': normalized})
@@ -387,6 +527,14 @@ def create_household_invite(user, email: str, role: str = 'renter') -> dict:
         'token': token,
         'invitedBy': _user_id(user),
         'role': role,
+        'inviteType': invite_type or ('roommate' if role == 'renter' else None),
+        'relationshipType': INVITE_TYPE_TO_RELATIONSHIP.get(
+            invite_type or '',
+            _relationship_from_invite({'role': role, 'inviteType': invite_type}),
+        ),
+        'displayName': (display_name or '').strip() or None,
+        'dateOfBirth': date_of_birth,
+        'childInviteStatus': 'pending' if invite_type == 'child' else None,
         'status': 'pending',
         'createdAt': now,
         'expiresAt': expires_at,
@@ -399,17 +547,32 @@ def create_household_invite(user, email: str, role: str = 'renter') -> dict:
     inviter_name = f"{user.get('firstName', '')} {user.get('lastName', '')}".strip() or 'Someone'
     link = f'{INVITE_LINK_BASE}/{token}'
 
-    html = f"""
-    <html><body style="font-family: Arial, sans-serif; line-height: 1.6;">
-      <h2>You're invited to join {household_name}</h2>
-      <p>{inviter_name} invited you to share a home on Family Housing Hub.</p>
-      <p><a href="{link}" style="background:#6366f1;color:#fff;padding:12px 20px;text-decoration:none;border-radius:8px;">Accept invite</a></p>
-      <p>Or open this link in the app:<br><code>{link}</code></p>
-      <p style="color:#666;font-size:12px;">This invite expires in {INVITE_EXPIRES_DAYS} days.</p>
-    </body></html>
-    """
+    if invite_type == 'child':
+        child_name = display_name or 'your child'
+        html = f"""
+        <html><body style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>You're invited to FamilyHub! 🎉</h2>
+          <p>{inviter_name} invited <strong>{child_name}</strong> to join <strong>{household_name}</strong> on FamilyHub.</p>
+          <p>Accept the invite to see chores, earn rewards, and chat safely with your family.</p>
+          <p><a href="{link}" style="background:#7C3AED;color:#fff;padding:12px 20px;text-decoration:none;border-radius:8px;">Accept family invite</a></p>
+          <p>Or open this link in the app:<br><code>{link}</code></p>
+          <p style="color:#666;font-size:12px;">This invite expires in {INVITE_EXPIRES_DAYS} days.</p>
+        </body></html>
+        """
+        subject = f'{inviter_name} invited you to FamilyHub'
+    else:
+        html = f"""
+        <html><body style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>You're invited to join {household_name}</h2>
+          <p>{inviter_name} invited you to share a home on Family Housing Hub.</p>
+          <p><a href="{link}" style="background:#6366f1;color:#fff;padding:12px 20px;text-decoration:none;border-radius:8px;">Accept invite</a></p>
+          <p>Or open this link in the app:<br><code>{link}</code></p>
+          <p style="color:#666;font-size:12px;">This invite expires in {INVITE_EXPIRES_DAYS} days.</p>
+        </body></html>
+        """
+        subject = f'Join {household_name} on Family Housing Hub'
     try:
-        _send_email(normalized, f'Join {household_name} on Family Housing Hub', html)
+        _send_email(normalized, subject, html)
     except Exception as exc:
         print(f'Invite email failed for {normalized}: {exc}')
 
@@ -417,9 +580,43 @@ def create_household_invite(user, email: str, role: str = 'renter') -> dict:
         'id': token,
         'email': normalized,
         'role': role,
+        'inviteType': invite_doc.get('inviteType'),
+        'displayName': invite_doc.get('displayName'),
+        'childInviteStatus': invite_doc.get('childInviteStatus'),
         'expiresAt': expires_at.isoformat(),
         'inviteLink': link,
     }
+
+
+def list_household_invites(user, invite_type: str | None = None) -> list[dict]:
+    db = get_db()
+    household_id = ensure_user_household(user)
+    membership = db.household_members.find_one({
+        'householdId': household_id,
+        'userId': _user_id(user),
+        'status': 'active',
+    })
+    if not membership or membership.get('role') != 'owner':
+        raise PermissionError('Only household owners can view invites')
+
+    query = {'householdId': household_id, 'status': 'pending'}
+    if invite_type:
+        query['inviteType'] = invite_type
+    invites = list(db.household_invites.find(query).sort('createdAt', -1))
+    out = []
+    for inv in invites:
+        out.append({
+            'token': inv.get('token'),
+            'email': inv.get('email'),
+            'role': inv.get('role', 'renter'),
+            'inviteType': inv.get('inviteType'),
+            'displayName': inv.get('displayName'),
+            'childInviteStatus': inv.get('childInviteStatus') or 'pending',
+            'relationshipType': inv.get('relationshipType'),
+            'expiresAt': inv['expiresAt'].isoformat() if inv.get('expiresAt') else None,
+            'createdAt': inv['createdAt'].isoformat() if inv.get('createdAt') else None,
+        })
+    return out
 
 
 def get_invite_preview(token: str) -> dict:
@@ -430,7 +627,10 @@ def get_invite_preview(token: str) -> dict:
     if invite.get('status') != 'pending':
         raise LookupError('Invite is no longer valid')
     if invite.get('expiresAt') and _coerce_utc_datetime(invite['expiresAt']) < _utcnow():
-        db.household_invites.update_one({'_id': invite['_id']}, {'$set': {'status': 'expired'}})
+        db.household_invites.update_one(
+            {'_id': invite['_id']},
+            {'$set': {'status': 'expired', 'childInviteStatus': 'expired'}},
+        )
         raise LookupError('Invite has expired')
 
     household = db.households.find_one({'_id': ObjectId(invite['householdId'])})
@@ -445,6 +645,10 @@ def get_invite_preview(token: str) -> dict:
         'inviterName': inviter_name,
         'email': invite.get('email'),
         'role': invite.get('role', 'renter'),
+        'inviteType': invite.get('inviteType'),
+        'displayName': invite.get('displayName'),
+        'relationshipType': invite.get('relationshipType') or _relationship_from_invite(invite),
+        'childInviteStatus': invite.get('childInviteStatus') or ('pending' if _is_child_invite(invite) else None),
         'expiresAt': invite['expiresAt'].isoformat() if invite.get('expiresAt') else None,
     }
 
@@ -457,7 +661,10 @@ def accept_household_invite(user, token: str) -> dict:
     if invite.get('status') != 'pending':
         raise LookupError('Invite is no longer valid')
     if invite.get('expiresAt') and _coerce_utc_datetime(invite['expiresAt']) < _utcnow():
-        db.household_invites.update_one({'_id': invite['_id']}, {'$set': {'status': 'expired'}})
+        db.household_invites.update_one(
+            {'_id': invite['_id']},
+            {'$set': {'status': 'expired', 'childInviteStatus': 'expired'}},
+        )
         raise LookupError('Invite has expired')
 
     user_email = (user.get('email') or '').strip().lower()
@@ -467,45 +674,58 @@ def accept_household_invite(user, token: str) -> dict:
     household_id = invite['householdId']
     uid = _user_id(user)
     now = _utcnow()
+    is_child = _is_child_invite(invite)
+    member_fields = _member_payload_from_invite(invite, household_id, uid, now)
 
     existing = db.household_members.find_one({
         'householdId': household_id,
         'userId': uid,
     })
     if existing and existing.get('status') == 'active':
+        db.household_members.update_one(
+            {'_id': existing['_id']},
+            {'$set': {k: v for k, v in member_fields.items() if k not in ('householdId', 'userId')}},
+        )
         db.household_invites.update_one(
             {'_id': invite['_id']},
-            {'$set': {'status': 'accepted', 'acceptedAt': now}},
+            {'$set': {'status': 'accepted', 'acceptedAt': now, 'childInviteStatus': 'accepted' if is_child else invite.get('childInviteStatus')}},
         )
     else:
         if existing:
             db.household_members.update_one(
                 {'_id': existing['_id']},
-                {'$set': {'status': 'active', 'role': invite.get('role', 'renter'), 'joinedAt': now}},
+                {'$set': member_fields},
             )
         else:
-            db.household_members.insert_one({
-                'householdId': household_id,
-                'userId': uid,
-                'role': invite.get('role', 'renter'),
-                'status': 'active',
-                'joinedAt': now,
-            })
+            db.household_members.insert_one(member_fields)
 
         db.household_invites.update_one(
             {'_id': invite['_id']},
-            {'$set': {'status': 'accepted', 'acceptedAt': now}},
+            {'$set': {'status': 'accepted', 'acceptedAt': now, 'childInviteStatus': 'accepted' if is_child else invite.get('childInviteStatus')}},
         )
 
-    db.users.update_one(
-        {'_id': user['_id']},
-        {'$set': {'activeHouseholdId': household_id, 'updatedAt': now.isoformat()}},
-    )
+    user_updates = {'activeHouseholdId': household_id, 'updatedAt': now.isoformat()}
+    db.users.update_one({'_id': user['_id']}, {'$set': user_updates})
     sync_household_message_group(household_id)
 
+    child_result = {}
+    if is_child:
+        child_result = _finalize_child_invite_accept(db, user, invite, household_id)
+
     household = db.households.find_one({'_id': ObjectId(household_id)})
-    return {
+    refreshed_user = db.users.find_one({'_id': user['_id']})
+
+    result = {
         'householdId': household_id,
         'householdName': (household or {}).get('name', 'Home'),
         'role': invite.get('role', 'renter'),
+        'inviteType': invite.get('inviteType'),
+        'relationshipType': member_fields.get('relationshipType'),
+        'user': {
+            'userType': refreshed_user.get('userType'),
+            'experienceType': refreshed_user.get('experienceType'),
+            'activePortal': refreshed_user.get('activePortal'),
+        },
     }
+    result.update(child_result)
+    return result

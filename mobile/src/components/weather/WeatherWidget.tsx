@@ -10,7 +10,9 @@ import {
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import {
   formatWeatherDayLabel,
   topPollenLabel,
@@ -27,6 +29,8 @@ type Props = {
 };
 
 function Temp({ value, unit }: { value?: number; unit?: string }) {
+  const styles = useAppStyles(createStyles);
+
   if (value == null) return <Text style={styles.tempDash}>—</Text>;
   return (
     <Text style={styles.tempMain}>
@@ -43,6 +47,9 @@ export default function WeatherWidget({
   variant = 'card',
   onPress,
 }: Props) {
+  const theme = useTheme();
+
+  const styles = useAppStyles(createStyles);
   const [sheetOpen, setSheetOpen] = useState(false);
   const current = weather?.current;
   const iconUri = weatherIconUri(current);
@@ -181,19 +188,16 @@ export default function WeatherWidget({
   );
 }
 
-function WeatherDetailSheet({
-  visible,
-  onClose,
-  weather,
-  loading,
-  error,
-}: {
+function WeatherDetailSheet({ visible, onClose, weather, loading, error }: {
   visible: boolean;
   onClose: () => void;
   weather: WeatherSummary | null;
   loading?: boolean;
   error?: string | null;
 }) {
+  const styles = useAppStyles(createStyles);
+  const theme = useTheme();
+
   const current = weather?.current;
   const iconUri = weatherIconUri(current);
 
@@ -294,7 +298,8 @@ function WeatherDetailSheet({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   compactChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -487,3 +492,4 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 });
+}

@@ -36,9 +36,14 @@ from automation_routes import automation_bp
 from safety_routes import safety_bp
 from health_routes import health_bp, build_health_dashboard_summary
 from predictive_routes import predictive_bp, build_purchase_readiness_summary
+from dashboard_routes import dashboard_bp
+from owner_routes import owner_bp
+from child_routes import child_bp
+from observability_routes import observability_bp
 from household_context_builder import build_rag_household_context
 from realtime_service import socketio
 from request_logging_middleware import register_request_logging
+from portal_middleware import register_portal_middleware
 from rate_limit_service import (
     AUTH_LIMITS,
     check_auth_rate_limit,
@@ -72,10 +77,15 @@ app.register_blueprint(automation_bp)
 app.register_blueprint(safety_bp)
 app.register_blueprint(health_bp)
 app.register_blueprint(predictive_bp)
+app.register_blueprint(dashboard_bp)
+app.register_blueprint(owner_bp)
+app.register_blueprint(child_bp)
+app.register_blueprint(observability_bp)
 
 _cors_origin_list = [o.strip() for o in _cors_origins.split(',') if o.strip()]
 socketio.init_app(app, cors_allowed_origins=_cors_origin_list or '*')
 register_request_logging(app)
+register_portal_middleware(app)
 
 
 @app.before_request
@@ -992,65 +1002,28 @@ def solar_insights_route():
         return jsonify({'error': str(e)}), 500
 
 
-# ==================== AUTOMATION SERVICES ====================
+# ==================== AUTOMATION SERVICES (legacy — use /api/household/automation/*) ====================
 
 @app.route('/api/automation/reminders', methods=['POST'])
 def create_reminder():
-    """Create automated reminder"""
-    try:
-        data = request.json
-        title = data.get('title')
-        description = data.get('description')
-        due_date = data.get('due_date')
-        user_id = data.get('user_id')
-        
-        # Store reminder (in production, use database)
-        reminder = {
-            'id': f"rem_{int(time.time())}",
-            'title': title,
-            'description': description,
-            'due_date': due_date,
-            'user_id': user_id,
-            'created_at': datetime.now().isoformat(),
-            'status': 'pending'
-        }
-        
-        # Schedule reminder check (in production, use proper task queue)
-        # For now, just return the reminder
-        
-        return jsonify({
-            'reminder': reminder,
-            'message': 'Reminder created successfully'
-        })
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    """Deprecated — use POST /api/household/health-reminders or household chores."""
+    return jsonify({
+        'deprecated': True,
+        'error': 'This endpoint is deprecated.',
+        'useInstead': '/api/household/health-reminders',
+        'message': 'Create reminders via household health reminders or chores APIs.',
+    }), 410
 
 @app.route('/api/automation/notifications', methods=['GET'])
 def get_notifications():
-    """Get automated notifications"""
-    try:
-        user_id = request.args.get('user_id')
-        
-        # In production, fetch from database
-        notifications = [
-            {
-                'id': '1',
-                'type': 'reminder',
-                'title': 'Rent Due Soon',
-                'message': 'Your rent payment is due in 3 days',
-                'timestamp': datetime.now().isoformat(),
-                'read': False
-            }
-        ]
-        
-        return jsonify({
-            'notifications': notifications,
-            'unread_count': len([n for n in notifications if not n.get('read')])
-        })
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    """Deprecated — household alerts live on the dashboard bundle."""
+    return jsonify({
+        'deprecated': True,
+        'message': 'Use GET /api/household/dashboard or GET /api/dashboard/renter for real household alerts.',
+        'useInstead': '/api/dashboard/renter',
+        'notifications': [],
+        'unread_count': 0,
+    })
 
 # ==================== DATA PROCESSING ====================
 
@@ -1788,8 +1761,6 @@ def build_zillow_url():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    from database import ping_db
-
     if MAPBOX_ACCESS_TOKEN:
         nearby_provider = 'mapbox'
         search_provider = 'mapbox'
@@ -1800,11 +1771,34 @@ def health_check():
         nearby_provider = 'openstreetmap'
         search_provider = 'nominatim'
 
+    try:
+        from env_check import build_services_config_report
+        from observability_service import get_snapshot, observability_enabled
+        config_report = build_services_config_report()
+        obs = get_snapshot() if observability_enabled() else {}
+    except Exception:
+        config_report = {}
+        obs = {}
+
+    mongo_cfg = config_report.get('mongodb', {}) if config_report else {}
+    mongodb_status = 'connected' if mongo_cfg.get('connected') else (
+        'uri_encoding_error' if mongo_cfg.get('issue') else 'not connected'
+    )
+
     return jsonify({
-        'status': 'healthy',
+        'status': 'healthy' if mongo_cfg.get('connected') else 'degraded',
         'timestamp': datetime.now().isoformat(),
+        'config': config_report,
+        'observability': {
+            'enabled': bool(obs),
+            'socketActive': obs.get('socket', {}).get('active_connections', 0),
+            'timelineSize': obs.get('timelineSize', 0),
+            'budgetViolations': obs.get('counters', {}).get('budget_exceeded', 0),
+        },
         'services': {
-            'mongodb': 'connected' if ping_db() else 'not connected',
+            'mongodb': mongodb_status,
+            'mongodbIssue': mongo_cfg.get('issue'),
+            'redis': 'connected' if config_report.get('redis', {}).get('connected') else 'not connected',
             'openai': 'configured' if OPENAI_API_KEY else 'not configured',
             'gemini': 'configured' if GEMINI_API_KEY else 'not configured',
             'nvidia': 'configured' if NVIDIA_API_KEY else 'not configured',
@@ -1815,7 +1809,10 @@ def health_check():
             'nearby_places': nearby_provider,
             'place_search': search_provider,
             'email': 'configured' if (SMTP_USER and SMTP_PASSWORD) else 'not configured',
-            'sms': 'configured' if (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER) else 'not configured'
+            'sms': 'configured' if (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER) else 'not configured',
+            'storage': 'configured' if config_report.get('storage', {}).get('configured') else 'not configured',
+            'push': 'configured' if config_report.get('push', {}).get('configured') else 'not configured',
+            'celery': 'redis_required' if config_report.get('redis', {}).get('configured') else 'redis_missing',
         }
     })
 

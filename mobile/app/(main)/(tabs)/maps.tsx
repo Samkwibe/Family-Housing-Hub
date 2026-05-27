@@ -1,10 +1,14 @@
 import { View, Text, StyleSheet, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/src/theme';
+import { type AppTheme } from '@/src/theme';
+import { useAppStyles } from '@/src/hooks/useStyles';
+import { useTheme } from '@/src/contexts/ThemeContext';
 
 /** Web / fallback — native maps live in maps.native.tsx */
 export default function MapsScreen() {
+  const theme = useTheme();
+  const styles = useAppStyles(createStyles);
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.card}>
@@ -27,7 +31,8 @@ export default function MapsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background, padding: theme.spacing.lg },
   card: {
     flex: 1,
@@ -74,3 +79,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+}

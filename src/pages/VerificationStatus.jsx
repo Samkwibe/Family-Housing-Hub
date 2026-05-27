@@ -27,7 +27,12 @@ export default function VerificationStatus() {
   const [adminToken, setAdminToken] = useState('');
 
   const backendUrl = useMemo(
-    () => (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000').replace(/\/$/, ''),
+    () =>
+      (
+        import.meta.env.VITE_API_URL ||
+        import.meta.env.VITE_BACKEND_URL ||
+        'https://family-housing-hub-api.onrender.com'
+      ).replace(/\/$/, ''),
     []
   );
 

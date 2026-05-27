@@ -2077,7 +2077,7 @@ def index():
         'message': 'Family Housing Hub API',
         'version': '1.0.0',
         'endpoints': {
-            'auth': '/api/auth/register, /api/auth/login, /api/auth/me, /api/auth/logout',
+            'auth': '/api/auth/register, /api/auth/login, /api/auth/me, /api/auth/logout, /api/auth/push-token, /api/auth/test-push, /api/auth/portal/switch, /api/auth/portal/context',
             'ai': '/api/ai/chat',
             'meals': '/api/meals/generate-plan',
             'budget': '/api/budget/analyze',
@@ -2087,7 +2087,8 @@ def index():
             'verification_status': '/api/verification/status',
             'verification_metrics': '/api/verification/metrics',
             'verification_test_send': '/api/verification/test-send',
-            'health': '/api/health'
+            'health': '/api/health',
+            'child_portal': '/api/child/homework/<id>/complete, /api/child/sos, /api/child/wallet/adjust, /api/child/wallet/goal'
         }
     })
 
